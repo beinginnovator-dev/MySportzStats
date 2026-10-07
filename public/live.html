@@ -2924,11 +2924,13 @@ input, select, textarea {
     function closeModal(){try{$('modal-ov').classList.add('hidden')}catch(e){}}
 
     // ---------- Stadium atmosphere (procedural Web Audio — no downloads) ----------
+    // Default ON. Toggle via Audio menu → Stadium FX.
     var stadiumOn=(function(){try{return localStorage.getItem('cricket_stadium_on')!=='0'}catch(e){return true}})();
     var __stadCtx=null, __stadMaster=null, __stadAmbientGain=null, __stadNoiseSrc=null;
     var __stadAmbientStarted=false, __stadRandTimer=null, __stadUnlocked=false;
-    var STAD_BASE=0.035;   // distant crowd floor
-    var STAD_PEAK=0.55;    // boundary/wicket peak
+    var __stadWicketStreak=0, __stadLastWicketBall=-99;
+    var STAD_BASE=0.12;
+    var STAD_PEAK=0.72;
 
     function stadEnsureCtx(){
       try{
@@ -2952,7 +2954,6 @@ input, select, textarea {
         __stadUnlocked=true;
       }catch(e){}
     }
-    // Unlock audio on first user gesture (browser policy)
     (function stadUnlockBind(){
       var once=function(){ stadResume(); if(stadiumOn) stadStartAmbient(); };
       ['touchstart','pointerdown','click'].forEach(function(ev){
@@ -2978,11 +2979,10 @@ input, select, textarea {
         if(!buf) return;
         var src=c.createBufferSource();
         src.buffer=buf; src.loop=true;
-        // Low-pass → distant crowd murmur
         var lp=c.createBiquadFilter();
-        lp.type='lowpass'; lp.frequency.value=900; lp.Q.value=0.6;
+        lp.type='lowpass'; lp.frequency.value=1100; lp.Q.value=0.55;
         var bp=c.createBiquadFilter();
-        bp.type='bandpass'; bp.frequency.value=450; bp.Q.value=0.4;
+        bp.type='bandpass'; bp.frequency.value=520; bp.Q.value=0.35;
         src.connect(lp); lp.connect(bp); bp.connect(__stadAmbientGain);
         src.start(0);
         __stadNoiseSrc=src;
@@ -3009,11 +3009,10 @@ input, select, textarea {
       }catch(e2){}
       if(stadiumOn){ stadStartAmbient(); }
       else { stadStopAmbient(); }
-      updateCommToolsLabel();
+      try{ updateCommToolsLabel(); }catch(e3){}
     }
     function toggleStadium(){ stadSetEnabled(!stadiumOn); }
 
-    /** Brief gain swell on ambient bus */
     function stadSwell(peak, riseMs, holdMs, fallMs){
       if(!stadiumOn) return;
       var c=stadEnsureCtx(); if(!c||!__stadAmbientGain) return;
@@ -3025,21 +3024,20 @@ input, select, textarea {
         g.cancelScheduledValues(now);
         g.setValueAtTime(Math.max(g.value, STAD_BASE), now);
         g.linearRampToValueAtTime(pk, now+riseMs/1000);
-        g.linearRampToValueAtTime(pk*0.85, now+(riseMs+holdMs)/1000);
+        g.linearRampToValueAtTime(pk*0.88, now+(riseMs+holdMs)/1000);
         g.linearRampToValueAtTime(STAD_BASE, now+(riseMs+holdMs+fallMs)/1000);
       }catch(e){}
     }
 
-    /** Burst of filtered noise = crowd roar / gasp */
     function stadBurst(opts){
       if(!stadiumOn) return;
       var c=stadEnsureCtx(); if(!c||!__stadMaster) return;
       stadResume();
       opts=opts||{};
       var dur=opts.dur||0.7;
-      var vol=opts.vol||0.35;
+      var vol=opts.vol||0.4;
       var freq=opts.freq||1200;
-      var type=opts.type||'roar'; // roar | gasp | cheer
+      var type=opts.type||'roar';
       try{
         var buf=stadMakeNoiseBuffer(Math.max(0.4, dur+0.2));
         var src=c.createBufferSource();
@@ -3049,17 +3047,19 @@ input, select, textarea {
           filter.type='highpass'; filter.frequency.value=1800; filter.Q.value=0.7;
         } else if(type==='cheer'){
           filter.type='bandpass'; filter.frequency.value=freq; filter.Q.value=0.5;
+        } else if(type==='clap'){
+          filter.type='highpass'; filter.frequency.value=2200; filter.Q.value=0.9;
         } else {
           filter.type='lowpass'; filter.frequency.value=freq; filter.Q.value=0.8;
         }
         var gain=c.createGain();
         var now=c.currentTime;
         gain.gain.setValueAtTime(0.001, now);
-        gain.gain.exponentialRampToValueAtTime(Math.max(0.01, vol), now+0.05);
-        if(type==='gasp'){
-          gain.gain.exponentialRampToValueAtTime(0.001, now+Math.min(0.35, dur));
+        gain.gain.exponentialRampToValueAtTime(Math.max(0.01, vol), now+0.04);
+        if(type==='gasp'||type==='clap'){
+          gain.gain.exponentialRampToValueAtTime(0.001, now+Math.min(0.28, dur));
         } else {
-          gain.gain.linearRampToValueAtTime(vol*0.7, now+dur*0.4);
+          gain.gain.linearRampToValueAtTime(vol*0.75, now+dur*0.35);
           gain.gain.exponentialRampToValueAtTime(0.001, now+dur);
         }
         src.connect(filter); filter.connect(gain); gain.connect(__stadMaster);
@@ -3067,48 +3067,179 @@ input, select, textarea {
       }catch(e){}
     }
 
+    function stadWhistle(opts){
+      if(!stadiumOn) return;
+      var c=stadEnsureCtx(); if(!c||!__stadMaster) return;
+      stadResume();
+      opts=opts||{};
+      var vol=opts.vol!=null?opts.vol:0.28;
+      var count=opts.count||1;
+      try{
+        for(var i=0;i<count;i++){
+          (function(i){
+            var t0=c.currentTime + i*0.18;
+            var osc=c.createOscillator();
+            osc.type='sine';
+            osc.frequency.setValueAtTime(2100+i*80, t0);
+            osc.frequency.linearRampToValueAtTime(2600+i*60, t0+0.08);
+            var g=c.createGain();
+            g.gain.setValueAtTime(0.001, t0);
+            g.gain.exponentialRampToValueAtTime(vol, t0+0.02);
+            g.gain.exponentialRampToValueAtTime(0.001, t0+0.14);
+            osc.connect(g); g.connect(__stadMaster);
+            osc.start(t0); osc.stop(t0+0.16);
+          })(i);
+        }
+      }catch(e){}
+    }
+
+    function stadClapRhythm(n, gapMs, vol){
+      if(!stadiumOn) return;
+      n=n||4; gapMs=gapMs||160; vol=vol||0.22;
+      for(var i=0;i<n;i++){
+        (function(i){
+          setTimeout(function(){
+            stadBurst({ type:'clap', vol:vol*(0.85+Math.random()*0.2), dur:0.12, freq:2500 });
+          }, i*gapMs);
+        })(i);
+      }
+    }
+
+    function stadChant(opts){
+      if(!stadiumOn) return;
+      var c=stadEnsureCtx(); if(!c||!__stadMaster) return;
+      stadResume();
+      opts=opts||{};
+      var bars=opts.bars||2;
+      var bpm=opts.bpm||110;
+      var beat=60/bpm;
+      var vol=opts.vol||0.2;
+      var notes=opts.notes||[320, 360, 400, 480, 320, 360, 400, 520];
+      try{
+        var now=c.currentTime+0.02;
+        for(var i=0;i<notes.length*bars;i++){
+          var note=notes[i%notes.length];
+          var t0=now + i*(beat*0.5);
+          var osc=c.createOscillator();
+          osc.type='triangle';
+          osc.frequency.setValueAtTime(note, t0);
+          var vib=c.createOscillator();
+          vib.frequency.value=5;
+          var vibG=c.createGain(); vibG.gain.value=6;
+          vib.connect(vibG); vibG.connect(osc.frequency);
+          var g=c.createGain();
+          var accent=((i%4)===3)?1.35:1;
+          g.gain.setValueAtTime(0.001, t0);
+          g.gain.exponentialRampToValueAtTime(vol*accent, t0+0.03);
+          g.gain.exponentialRampToValueAtTime(0.001, t0+beat*0.42);
+          var nBuf=stadMakeNoiseBuffer(0.3);
+          if(nBuf){
+            var ns=c.createBufferSource(); ns.buffer=nBuf;
+            var nf=c.createBiquadFilter(); nf.type='bandpass'; nf.frequency.value=note*2; nf.Q.value=0.8;
+            var ng=c.createGain();
+            ng.gain.setValueAtTime(0.001, t0);
+            ng.gain.exponentialRampToValueAtTime(vol*0.35*accent, t0+0.02);
+            ng.gain.exponentialRampToValueAtTime(0.001, t0+beat*0.35);
+            ns.connect(nf); nf.connect(ng); ng.connect(__stadMaster);
+            ns.start(t0); ns.stop(t0+0.35);
+          }
+          osc.connect(g); g.connect(__stadMaster);
+          osc.start(t0); osc.stop(t0+beat*0.5);
+          vib.start(t0); vib.stop(t0+beat*0.5);
+        }
+      }catch(e){}
+    }
+
     function stadScheduleRandomCheer(){
       try{ if(__stadRandTimer) clearTimeout(__stadRandTimer); }catch(e){}
       if(!stadiumOn||!__stadAmbientStarted) return;
-      // Far, sparse random murmurs every 8–22s
-      var delay=8000+Math.random()*14000;
+      var delay=7000+Math.random()*12000;
       __stadRandTimer=setTimeout(function(){
         if(!stadiumOn) return;
-        // Only while match feels "live"
-        try{
-          if(lastData && lastData.matchEnded){ stadScheduleRandomCheer(); return; }
-        }catch(e){}
-        if(Math.random()<0.55){
-          stadBurst({ type:'cheer', vol:0.06+Math.random()*0.05, dur:0.5+Math.random()*0.6, freq:700+Math.random()*500 });
-          stadSwell(STAD_BASE+0.02, 200, 300, 800);
+        try{ if(lastData && lastData.matchEnded){ stadScheduleRandomCheer(); return; } }catch(e){}
+        var r=Math.random();
+        if(r<0.25){
+          stadClapRhythm(3+Math.floor(Math.random()*3), 150+Math.random()*40, 0.12);
+        } else if(r<0.45){
+          stadChant({ bars:1, bpm:100+Math.random()*20, vol:0.1, notes:[300,340,380,440] });
+        } else if(r<0.75){
+          stadBurst({ type:'cheer', vol:0.12+Math.random()*0.08, dur:0.6+Math.random()*0.5, freq:700+Math.random()*500 });
+          stadSwell(STAD_BASE+0.04, 200, 300, 900);
+        } else {
+          stadWhistle({ count:1, vol:0.12 });
         }
         stadScheduleRandomCheer();
       }, delay);
     }
 
-    /** Map cricket events → stadium reaction */
     function stadiumReact(ev, data){
       if(!stadiumOn||!ev) return;
       var e=String(ev).toLowerCase();
+      var balls=(data&&(data.balls|0))||0;
       try{
         if(e==='six'||e==='6'){
-          stadBurst({ type:'roar', vol:0.48, dur:1.4, freq:1400 });
-          setTimeout(function(){ stadBurst({ type:'cheer', vol:0.32, dur:1.0, freq:1100 }); }, 180);
-          stadSwell(0.42, 80, 600, 1400);
+          stadWhistle({ count:1+Math.floor(Math.random()*2), vol:0.32 });
+          stadBurst({ type:'roar', vol:0.58, dur:1.5, freq:1450 });
+          setTimeout(function(){ stadBurst({ type:'cheer', vol:0.4, dur:1.1, freq:1100 }); }, 150);
+          setTimeout(function(){ stadClapRhythm(6, 140, 0.26); }, 200);
+          if(Math.random()<0.7) setTimeout(function(){ stadChant({ bars:2, bpm:120, vol:0.18 }); }, 400);
+          stadSwell(0.55, 70, 700, 1500);
+          __stadWicketStreak=0;
         } else if(e==='four'||e==='4'||e==='boundary'){
-          stadBurst({ type:'roar', vol:0.36, dur:1.0, freq:1200 });
-          stadSwell(0.32, 100, 400, 1000);
+          stadWhistle({ count:1, vol:0.26 });
+          stadBurst({ type:'roar', vol:0.48, dur:1.15, freq:1250 });
+          setTimeout(function(){ stadClapRhythm(4, 150, 0.22); }, 120);
+          if(Math.random()<0.5) setTimeout(function(){ stadChant({ bars:1, bpm:115, vol:0.14, notes:[340,380,420,500] }); }, 350);
+          stadSwell(0.45, 90, 450, 1100);
+          __stadWicketStreak=0;
+        } else if(e==='hattrick'||e==='hat-trick'||e==='hat_trick'){
+          stadWhistle({ count:3, vol:0.38 });
+          stadBurst({ type:'roar', vol:0.65, dur:2.0, freq:1500 });
+          setTimeout(function(){ stadClapRhythm(8, 130, 0.3); }, 100);
+          setTimeout(function(){ stadChant({ bars:3, bpm:125, vol:0.22, notes:[360,400,440,520,360,400,480,560] }); }, 300);
+          stadSwell(0.65, 60, 1200, 2200);
         } else if(e==='wicket'||e==='w'||e==='out'){
-          stadBurst({ type:'gasp', vol:0.28, dur:0.35 });
+          if(balls>0 && balls-__stadLastWicketBall<=1) __stadWicketStreak++;
+          else __stadWicketStreak=1;
+          __stadLastWicketBall=balls;
+          stadBurst({ type:'gasp', vol:0.32, dur:0.35 });
           setTimeout(function(){
-            stadBurst({ type:'roar', vol:0.45, dur:1.5, freq:1000 });
-            stadSwell(0.40, 60, 700, 1600);
-          }, 200);
-        } else if(e==='fifty'||e==='100'||e==='hundred'||e==='milestone'){
-          stadBurst({ type:'cheer', vol:0.38, dur:1.3, freq:1300 });
-          stadSwell(0.35, 100, 800, 1500);
+            stadWhistle({ count:1, vol:0.3 });
+            stadBurst({ type:'roar', vol:0.55, dur:1.6, freq:1050 });
+            stadClapRhythm(5, 145, 0.24);
+            stadSwell(0.5, 50, 800, 1700);
+          }, 180);
+          if(__stadWicketStreak>=3){
+            setTimeout(function(){ stadiumReact('hattrick', data); }, 400);
+            __stadWicketStreak=0;
+          }
+        } else if(e==='fifty'||e==='50'){
+          stadWhistle({ count:2, vol:0.3 });
+          stadBurst({ type:'cheer', vol:0.5, dur:1.4, freq:1300 });
+          setTimeout(function(){ stadClapRhythm(6, 140, 0.25); }, 150);
+          setTimeout(function(){ stadChant({ bars:2, bpm:118, vol:0.17, notes:[320,360,400,480,320,380,440,520] }); }, 350);
+          stadSwell(0.5, 90, 900, 1600);
+          __stadWicketStreak=0;
+        } else if(e==='100'||e==='hundred'||e==='century'){
+          stadWhistle({ count:3, vol:0.36 });
+          stadBurst({ type:'roar', vol:0.62, dur:1.8, freq:1400 });
+          setTimeout(function(){ stadClapRhythm(8, 135, 0.28); }, 120);
+          setTimeout(function(){ stadChant({ bars:3, bpm:122, vol:0.2 }); }, 300);
+          stadSwell(0.6, 80, 1100, 2000);
+          __stadWicketStreak=0;
+        } else if(e==='milestone'){
+          stadWhistle({ count:2, vol:0.28 });
+          stadBurst({ type:'cheer', vol:0.45, dur:1.3, freq:1250 });
+          stadClapRhythm(5, 150, 0.22);
+          stadSwell(0.42, 100, 700, 1400);
         } else if(e==='three'||e==='two'||e==='2'||e==='3'){
-          if(Math.random()<0.4) stadBurst({ type:'cheer', vol:0.10, dur:0.45, freq:800 });
+          if(Math.random()<0.45){
+            stadClapRhythm(2, 160, 0.14);
+            stadBurst({ type:'cheer', vol:0.14, dur:0.45, freq:800 });
+          }
+          __stadWicketStreak=0;
+        } else {
+          if(e && e!=='dot' && e!=='0' && e!=='zero') __stadWicketStreak=0;
         }
       }catch(err){}
     }
@@ -3116,33 +3247,38 @@ input, select, textarea {
     function stadiumMatchEnd(data){
       if(!stadiumOn) return;
       stadStartAmbient();
-      // Building celebration
-      stadBurst({ type:'roar', vol:0.5, dur:1.8, freq:1500 });
-      setTimeout(function(){ stadBurst({ type:'cheer', vol:0.4, dur:1.5, freq:1200 }); }, 250);
-      setTimeout(function(){ stadBurst({ type:'roar', vol:0.35, dur:2.0, freq:900 }); }, 700);
-      stadSwell(0.5, 100, 2000, 3500);
-      // Fade ambient back after celebration
+      stadWhistle({ count:3, vol:0.35 });
+      stadBurst({ type:'roar', vol:0.6, dur:2.0, freq:1500 });
+      setTimeout(function(){ stadClapRhythm(10, 130, 0.28); }, 150);
+      setTimeout(function(){ stadChant({ bars:3, bpm:120, vol:0.2 }); }, 300);
+      setTimeout(function(){ stadBurst({ type:'cheer', vol:0.45, dur:1.8, freq:1200 }); }, 500);
+      stadSwell(0.62, 100, 2200, 3800);
       setTimeout(function(){
         try{
           var c=stadEnsureCtx();
           if(c&&__stadAmbientGain){
             var now=c.currentTime;
             __stadAmbientGain.gain.cancelScheduledValues(now);
-            __stadAmbientGain.gain.linearRampToValueAtTime(STAD_BASE*0.6, now+2);
+            __stadAmbientGain.gain.linearRampToValueAtTime(STAD_BASE*0.7, now+2);
           }
         }catch(e){}
-      }, 4500);
+      }, 5000);
     }
 
     // ---------- Text-to-speech (Commentary): Device + AI, language + voice gender ----------
-    var ttsOn=(function(){try{return localStorage.getItem('cricket_tts_on')==='1'}catch(e){return false}})();
+    var ttsOn=(function(){try{var v=localStorage.getItem('cricket_tts_on'); if(v===null||v===undefined||v==='') return true; return v!=='0'&&v!=='false'}catch(e){return true}})();
     var ttsLang=(function(){try{return localStorage.getItem('cricket_tts_lang')||'en'}catch(e){return 'en'}})();
     var ttsGender=(function(){try{return localStorage.getItem('cricket_tts_gender')||'auto'}catch(e){return 'auto'}})();
     // 'device' = Web Speech API (instant). 'ai' = neural/online audio with device fallback.
-    var ttsEngine=(function(){try{var e=localStorage.getItem('cricket_tts_engine');return (e==='ai'||e==='device')?e:'device'}catch(e){return 'device'}})();
+    var ttsEngine=(function(){try{var e=localStorage.getItem('cricket_tts_engine');return (e==='ai'||e==='device')?e:'ai'}catch(e){return 'ai'}})();
     var TTS_AI_VOICES=['asteria','luna','athena','stella','hera','angus','orion','zeus','orpheus','arcas','helios','perseus'];
     var ttsAiVoice=(function(){try{var v=(localStorage.getItem('cricket_tts_ai_voice')||'asteria').toLowerCase();return TTS_AI_VOICES.indexOf(v)>=0?v:'asteria'}catch(e){return 'asteria'}})();
     var ttsVoiceCache={};
+    try{
+      if(localStorage.getItem('cricket_tts_on')===null) localStorage.setItem('cricket_tts_on','1');
+      if(localStorage.getItem('cricket_tts_engine')===null) localStorage.setItem('cricket_tts_engine','ai');
+      if(localStorage.getItem('cricket_stadium_on')===null) localStorage.setItem('cricket_stadium_on','1');
+    }catch(eDef){}
     var __ttsAudio=null;          // current HTMLAudioElement (AI)
     var __ttsAbort=null;          // AbortController for in-flight AI fetch
     var __ttsGen=0;               // generation token — stale responses ignored
@@ -3716,6 +3852,19 @@ input, select, textarea {
         if(sr0===50)ev='fifty';
         if(sr0===100)ev='hundred';
       }catch(eM){}
+      try{
+        if(data.hatTrick||data.hattrick||data.isHatTrick) ev='hattrick';
+        var le=String(data.lastEvent||'').toLowerCase();
+        if(le.indexOf('hat')>=0) ev='hattrick';
+        var lastLine='';
+        try{
+          var carr=data.commentary||[];
+          if(carr.length) lastLine=String(carr[carr.length-1]);
+        }catch(eL){}
+        if(/hat[\s\-]?trick/i.test(lastLine)) ev='hattrick';
+        if(/\b(fifty|50\b)/i.test(lastLine) && !/100|century|hundred/i.test(lastLine)) { if(!ev||ev==='runs') ev='fifty'; }
+        if(/\b(hundred|century|100\b)/i.test(lastLine)) ev='hundred';
+      }catch(eHT){}
       // Key by balls+runs+event — NOT ts (ts updates every publish and was replaying the same FOUR/TWO forever)
       var ek=(data.balls|0)+':'+(data.runs|0)+':'+(data.wickets|0)+':'+(ev||'')+':'+(data.strikerRuns|0);
       if(ev && ek!==lastEventKey){
