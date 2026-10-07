@@ -1,15 +1,12 @@
-const CACHE_NAME = "mysportzstats-scorer-v2";
+const CACHE_NAME = "mysportzstats-live-v2";
 const ASSETS = [
-  "/",
-  "/index.html",
   "/live",
   "/live.html",
-  "/manifest.json",
   "/manifest-live.json",
-  "/icon-192.png",
-  "/icon-512.png",
   "/icon-live-192.png",
-  "/icon-live-512.png"
+  "/icon-live-512.png",
+  "/icon-192.png",
+  "/icon-512.png"
 ];
 
 self.addEventListener("install", (e) => {
@@ -30,7 +27,6 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   const url = e.request.url;
-  // Never cache websocket, API, or non-GET
   if (
     e.request.method !== "GET" ||
     url.includes("/ws") ||
