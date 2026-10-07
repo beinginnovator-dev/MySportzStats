@@ -1395,9 +1395,24 @@ input, select, textarea {
           <select id="comm-tools-dd" class="icon-btn" style="padding:6px 10px;max-width:58%" onchange="onCommToolsChange(this.value)">
             <option value="">Audio · EN · Off</option>
             <option value="lang">Toggle language EN/HI</option>
-            <option value="voice-auto">Voice: Auto</option>
-            <option value="voice-female">Voice: Female</option>
-            <option value="voice-male">Voice: Male</option>
+            <option value="engine-device">TTS: Device (fast)</option>
+            <option value="engine-ai">TTS: AI (neural)</option>
+            <option value="aivoice-asteria">AI · Asteria (F)</option>
+            <option value="aivoice-luna">AI · Luna (F)</option>
+            <option value="aivoice-athena">AI · Athena (F)</option>
+            <option value="aivoice-stella">AI · Stella (F)</option>
+            <option value="aivoice-hera">AI · Hera (F)</option>
+            <option value="aivoice-angus">AI · Angus (M)</option>
+            <option value="aivoice-orion">AI · Orion (M)</option>
+            <option value="aivoice-zeus">AI · Zeus (M)</option>
+            <option value="aivoice-orpheus">AI · Orpheus (M)</option>
+            <option value="aivoice-arcas">AI · Arcas (M)</option>
+            <option value="aivoice-helios">AI · Helios (M)</option>
+            <option value="aivoice-perseus">AI · Perseus (M)</option>
+            <option value="voice-auto">Device voice: Auto</option>
+            <option value="voice-female">Device voice: Female</option>
+            <option value="voice-male">Device voice: Male</option>
+            <option value="stadium">Stadium FX: On/Off</option>
             <option value="sound">Toggle sound on/off</option>
           </select>
           <button type="button" class="icon-btn" id="lang-btn" onclick="toggleLang()" style="display:none">EN</button>
@@ -2908,11 +2923,230 @@ input, select, textarea {
     }
     function closeModal(){try{$('modal-ov').classList.add('hidden')}catch(e){}}
 
-    // ---------- Text-to-speech (Commentary): language + voice gender ----------
+    // ---------- Stadium atmosphere (procedural Web Audio — no downloads) ----------
+    var stadiumOn=(function(){try{return localStorage.getItem('cricket_stadium_on')!=='0'}catch(e){return true}})();
+    var __stadCtx=null, __stadMaster=null, __stadAmbientGain=null, __stadNoiseSrc=null;
+    var __stadAmbientStarted=false, __stadRandTimer=null, __stadUnlocked=false;
+    var STAD_BASE=0.035;   // distant crowd floor
+    var STAD_PEAK=0.55;    // boundary/wicket peak
+
+    function stadEnsureCtx(){
+      try{
+        if(__stadCtx) return __stadCtx;
+        var AC=window.AudioContext||window.webkitAudioContext;
+        if(!AC) return null;
+        __stadCtx=new AC();
+        __stadMaster=__stadCtx.createGain();
+        __stadMaster.gain.value=stadiumOn?1:0;
+        __stadMaster.connect(__stadCtx.destination);
+        __stadAmbientGain=__stadCtx.createGain();
+        __stadAmbientGain.gain.value=STAD_BASE;
+        __stadAmbientGain.connect(__stadMaster);
+        return __stadCtx;
+      }catch(e){ return null; }
+    }
+    function stadResume(){
+      try{
+        var c=stadEnsureCtx();
+        if(c && c.state==='suspended') c.resume();
+        __stadUnlocked=true;
+      }catch(e){}
+    }
+    // Unlock audio on first user gesture (browser policy)
+    (function stadUnlockBind(){
+      var once=function(){ stadResume(); if(stadiumOn) stadStartAmbient(); };
+      ['touchstart','pointerdown','click'].forEach(function(ev){
+        document.addEventListener(ev, once, {passive:true, once:true});
+      });
+    })();
+
+    function stadMakeNoiseBuffer(seconds){
+      var c=stadEnsureCtx(); if(!c) return null;
+      var len=Math.floor(c.sampleRate*(seconds||2));
+      var buf=c.createBuffer(1, len, c.sampleRate);
+      var d=buf.getChannelData(0);
+      for(var i=0;i<len;i++) d[i]=(Math.random()*2-1);
+      return buf;
+    }
+    function stadStartAmbient(){
+      if(!stadiumOn) return;
+      var c=stadEnsureCtx(); if(!c) return;
+      stadResume();
+      if(__stadAmbientStarted) return;
+      try{
+        var buf=stadMakeNoiseBuffer(3);
+        if(!buf) return;
+        var src=c.createBufferSource();
+        src.buffer=buf; src.loop=true;
+        // Low-pass → distant crowd murmur
+        var lp=c.createBiquadFilter();
+        lp.type='lowpass'; lp.frequency.value=900; lp.Q.value=0.6;
+        var bp=c.createBiquadFilter();
+        bp.type='bandpass'; bp.frequency.value=450; bp.Q.value=0.4;
+        src.connect(lp); lp.connect(bp); bp.connect(__stadAmbientGain);
+        src.start(0);
+        __stadNoiseSrc=src;
+        __stadAmbientStarted=true;
+        stadScheduleRandomCheer();
+      }catch(e){}
+    }
+    function stadStopAmbient(){
+      try{ if(__stadRandTimer){ clearTimeout(__stadRandTimer); __stadRandTimer=null; } }catch(e){}
+      try{ if(__stadNoiseSrc){ __stadNoiseSrc.stop(); __stadNoiseSrc.disconnect(); __stadNoiseSrc=null; } }catch(e){}
+      __stadAmbientStarted=false;
+      try{ if(__stadAmbientGain) __stadAmbientGain.gain.value=0; }catch(e){}
+    }
+    function stadSetEnabled(on){
+      stadiumOn=!!on;
+      try{ localStorage.setItem('cricket_stadium_on', stadiumOn?'1':'0'); }catch(e){}
+      try{
+        if(__stadMaster){
+          var c=stadEnsureCtx();
+          var now=c?c.currentTime:0;
+          __stadMaster.gain.cancelScheduledValues(now);
+          __stadMaster.gain.linearRampToValueAtTime(stadiumOn?1:0, now+0.15);
+        }
+      }catch(e2){}
+      if(stadiumOn){ stadStartAmbient(); }
+      else { stadStopAmbient(); }
+      updateCommToolsLabel();
+    }
+    function toggleStadium(){ stadSetEnabled(!stadiumOn); }
+
+    /** Brief gain swell on ambient bus */
+    function stadSwell(peak, riseMs, holdMs, fallMs){
+      if(!stadiumOn) return;
+      var c=stadEnsureCtx(); if(!c||!__stadAmbientGain) return;
+      stadStartAmbient();
+      try{
+        var g=__stadAmbientGain.gain;
+        var now=c.currentTime;
+        var pk=Math.min(STAD_PEAK, Math.max(STAD_BASE, peak));
+        g.cancelScheduledValues(now);
+        g.setValueAtTime(Math.max(g.value, STAD_BASE), now);
+        g.linearRampToValueAtTime(pk, now+riseMs/1000);
+        g.linearRampToValueAtTime(pk*0.85, now+(riseMs+holdMs)/1000);
+        g.linearRampToValueAtTime(STAD_BASE, now+(riseMs+holdMs+fallMs)/1000);
+      }catch(e){}
+    }
+
+    /** Burst of filtered noise = crowd roar / gasp */
+    function stadBurst(opts){
+      if(!stadiumOn) return;
+      var c=stadEnsureCtx(); if(!c||!__stadMaster) return;
+      stadResume();
+      opts=opts||{};
+      var dur=opts.dur||0.7;
+      var vol=opts.vol||0.35;
+      var freq=opts.freq||1200;
+      var type=opts.type||'roar'; // roar | gasp | cheer
+      try{
+        var buf=stadMakeNoiseBuffer(Math.max(0.4, dur+0.2));
+        var src=c.createBufferSource();
+        src.buffer=buf;
+        var filter=c.createBiquadFilter();
+        if(type==='gasp'){
+          filter.type='highpass'; filter.frequency.value=1800; filter.Q.value=0.7;
+        } else if(type==='cheer'){
+          filter.type='bandpass'; filter.frequency.value=freq; filter.Q.value=0.5;
+        } else {
+          filter.type='lowpass'; filter.frequency.value=freq; filter.Q.value=0.8;
+        }
+        var gain=c.createGain();
+        var now=c.currentTime;
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.exponentialRampToValueAtTime(Math.max(0.01, vol), now+0.05);
+        if(type==='gasp'){
+          gain.gain.exponentialRampToValueAtTime(0.001, now+Math.min(0.35, dur));
+        } else {
+          gain.gain.linearRampToValueAtTime(vol*0.7, now+dur*0.4);
+          gain.gain.exponentialRampToValueAtTime(0.001, now+dur);
+        }
+        src.connect(filter); filter.connect(gain); gain.connect(__stadMaster);
+        src.start(now); src.stop(now+dur+0.05);
+      }catch(e){}
+    }
+
+    function stadScheduleRandomCheer(){
+      try{ if(__stadRandTimer) clearTimeout(__stadRandTimer); }catch(e){}
+      if(!stadiumOn||!__stadAmbientStarted) return;
+      // Far, sparse random murmurs every 8–22s
+      var delay=8000+Math.random()*14000;
+      __stadRandTimer=setTimeout(function(){
+        if(!stadiumOn) return;
+        // Only while match feels "live"
+        try{
+          if(lastData && lastData.matchEnded){ stadScheduleRandomCheer(); return; }
+        }catch(e){}
+        if(Math.random()<0.55){
+          stadBurst({ type:'cheer', vol:0.06+Math.random()*0.05, dur:0.5+Math.random()*0.6, freq:700+Math.random()*500 });
+          stadSwell(STAD_BASE+0.02, 200, 300, 800);
+        }
+        stadScheduleRandomCheer();
+      }, delay);
+    }
+
+    /** Map cricket events → stadium reaction */
+    function stadiumReact(ev, data){
+      if(!stadiumOn||!ev) return;
+      var e=String(ev).toLowerCase();
+      try{
+        if(e==='six'||e==='6'){
+          stadBurst({ type:'roar', vol:0.48, dur:1.4, freq:1400 });
+          setTimeout(function(){ stadBurst({ type:'cheer', vol:0.32, dur:1.0, freq:1100 }); }, 180);
+          stadSwell(0.42, 80, 600, 1400);
+        } else if(e==='four'||e==='4'||e==='boundary'){
+          stadBurst({ type:'roar', vol:0.36, dur:1.0, freq:1200 });
+          stadSwell(0.32, 100, 400, 1000);
+        } else if(e==='wicket'||e==='w'||e==='out'){
+          stadBurst({ type:'gasp', vol:0.28, dur:0.35 });
+          setTimeout(function(){
+            stadBurst({ type:'roar', vol:0.45, dur:1.5, freq:1000 });
+            stadSwell(0.40, 60, 700, 1600);
+          }, 200);
+        } else if(e==='fifty'||e==='100'||e==='hundred'||e==='milestone'){
+          stadBurst({ type:'cheer', vol:0.38, dur:1.3, freq:1300 });
+          stadSwell(0.35, 100, 800, 1500);
+        } else if(e==='three'||e==='two'||e==='2'||e==='3'){
+          if(Math.random()<0.4) stadBurst({ type:'cheer', vol:0.10, dur:0.45, freq:800 });
+        }
+      }catch(err){}
+    }
+
+    function stadiumMatchEnd(data){
+      if(!stadiumOn) return;
+      stadStartAmbient();
+      // Building celebration
+      stadBurst({ type:'roar', vol:0.5, dur:1.8, freq:1500 });
+      setTimeout(function(){ stadBurst({ type:'cheer', vol:0.4, dur:1.5, freq:1200 }); }, 250);
+      setTimeout(function(){ stadBurst({ type:'roar', vol:0.35, dur:2.0, freq:900 }); }, 700);
+      stadSwell(0.5, 100, 2000, 3500);
+      // Fade ambient back after celebration
+      setTimeout(function(){
+        try{
+          var c=stadEnsureCtx();
+          if(c&&__stadAmbientGain){
+            var now=c.currentTime;
+            __stadAmbientGain.gain.cancelScheduledValues(now);
+            __stadAmbientGain.gain.linearRampToValueAtTime(STAD_BASE*0.6, now+2);
+          }
+        }catch(e){}
+      }, 4500);
+    }
+
+    // ---------- Text-to-speech (Commentary): Device + AI, language + voice gender ----------
     var ttsOn=(function(){try{return localStorage.getItem('cricket_tts_on')==='1'}catch(e){return false}})();
     var ttsLang=(function(){try{return localStorage.getItem('cricket_tts_lang')||'en'}catch(e){return 'en'}})();
     var ttsGender=(function(){try{return localStorage.getItem('cricket_tts_gender')||'auto'}catch(e){return 'auto'}})();
+    // 'device' = Web Speech API (instant). 'ai' = neural/online audio with device fallback.
+    var ttsEngine=(function(){try{var e=localStorage.getItem('cricket_tts_engine');return (e==='ai'||e==='device')?e:'device'}catch(e){return 'device'}})();
+    var TTS_AI_VOICES=['asteria','luna','athena','stella','hera','angus','orion','zeus','orpheus','arcas','helios','perseus'];
+    var ttsAiVoice=(function(){try{var v=(localStorage.getItem('cricket_tts_ai_voice')||'asteria').toLowerCase();return TTS_AI_VOICES.indexOf(v)>=0?v:'asteria'}catch(e){return 'asteria'}})();
     var ttsVoiceCache={};
+    var __ttsAudio=null;          // current HTMLAudioElement (AI)
+    var __ttsAbort=null;          // AbortController for in-flight AI fetch
+    var __ttsGen=0;               // generation token — stale responses ignored
+    var __ttsFallbackTimer=null;
     var FEMALE_HINTS=/female|woman|zira|samantha|susan|karen|moira|tessa|veena|fiona|kate|salli|joanna|ivy|kendra|amy|emma|aditi|swara|priya|neerja|heera/i;
     var MALE_HINTS=/male|man\b|david|alex\b|daniel|fred|george|james|mark|ryan|guy|ravi|arjun|hemant|rishi|matthew|justin|brian/i;
     function voiceGender(v){var n=v.name||'';if(FEMALE_HINTS.test(n))return'female';if(MALE_HINTS.test(n))return'male';return'unknown'}
@@ -2924,7 +3158,14 @@ input, select, textarea {
         var pool=voices.filter(function(v){return v.lang&&v.lang.toLowerCase().indexOf(langPrefix)===0});
         if(!pool.length)pool=voices;
         var wantGender=gender&&gender!=='auto'?gender:null;
-        function rank(v){var score=0;if(/natural|neural|online|google/i.test(v.name))score+=3;if(langPrefix==='en'&&/en-in/i.test(v.lang))score+=2;if(wantGender&&voiceGender(v)===wantGender)score+=5;else if(wantGender&&voiceGender(v)!=='unknown'&&voiceGender(v)!==wantGender)score-=4;return score}
+        function rank(v){
+          var score=0;
+          if(/natural|neural|online|google|premium|enhanced/i.test(v.name))score+=4;
+          if(langPrefix==='en'&&/en-in|en_IN/i.test(v.lang))score+=2;
+          if(wantGender&&voiceGender(v)===wantGender)score+=5;
+          else if(wantGender&&voiceGender(v)!=='unknown'&&voiceGender(v)!==wantGender)score-=4;
+          return score;
+        }
         pool=pool.slice().sort(function(a,b){return rank(b)-rank(a)});
         return pool[0]||voices[0];
       }catch(e){return null}
@@ -2939,46 +3180,273 @@ input, select, textarea {
         speechSynthesis.onvoiceschanged=function(){ttsVoiceCache={}};
       }
     }catch(e){}
+
+    function stopAllSpeech(){
+      try{ if(__ttsFallbackTimer){ clearTimeout(__ttsFallbackTimer); __ttsFallbackTimer=null; } }catch(e){}
+      try{ if(__ttsAbort){ __ttsAbort.abort(); __ttsAbort=null; } }catch(e){}
+      try{
+        if(__ttsAudio){
+          __ttsAudio.onended=null; __ttsAudio.onerror=null;
+          __ttsAudio.pause();
+          try{ __ttsAudio.removeAttribute('src'); __ttsAudio.load(); }catch(e2){}
+          __ttsAudio=null;
+        }
+      }catch(e){}
+      try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){}
+    }
+
+    function setTtsEngine(eng){
+      ttsEngine=(eng==='ai')?'ai':'device';
+      try{ localStorage.setItem('cricket_tts_engine', ttsEngine); }catch(e){}
+      stopAllSpeech();
+      updateCommToolsLabel();
+      if(ttsOn){
+        try{
+          var name = ttsEngine==='ai' ? ('AI · '+ttsAiVoice) : 'Device';
+          speak(ttsLang==='hi'
+            ? (ttsEngine==='ai'?'एआई आवाज़: '+ttsAiVoice:'डिवाइस आवाज़ चालू')
+            : (name + ' on'), false);
+        }catch(e2){}
+      }
+    }
+    function setAiVoice(v){
+      v = String(v||'asteria').toLowerCase();
+      if(TTS_AI_VOICES.indexOf(v)<0) v='asteria';
+      ttsAiVoice=v;
+      try{ localStorage.setItem('cricket_tts_ai_voice', ttsAiVoice); }catch(e){}
+      ttsEngine='ai';
+      try{ localStorage.setItem('cricket_tts_engine', 'ai'); }catch(e){}
+      stopAllSpeech();
+      updateCommToolsLabel();
+      if(ttsOn){
+        try{ speak('AI voice '+ttsAiVoice, false); }catch(e2){}
+      } else {
+        // briefly enable so user can hear sample
+        try{
+          var was=ttsOn; ttsOn=true;
+          speak('AI voice '+ttsAiVoice, false);
+          setTimeout(function(){ ttsOn=was; updateTtsBtn(); }, 50);
+        }catch(e3){}
+      }
+    }
+
     function updateTtsBtn(){
       var b=$('tts-btn');
       if(b){ b.textContent=ttsOn?'🔊 Sound on':'🔈 Sound off'; b.classList.toggle('on',ttsOn); }
       var s=$('btn-sound-tts');
-      if(s){ s.textContent=ttsOn?'🔊':'🔈'; s.classList.toggle('on',!!ttsOn); s.title=ttsOn?'Sound on':'Sound off'; }
+      if(s){
+        s.textContent=ttsOn?'🔊':'🔈';
+        s.classList.toggle('on',!!ttsOn);
+        s.title=ttsOn?('Sound on · '+(ttsEngine==='ai'?('AI '+ttsAiVoice):'Device')):'Sound off';
+      }
+      updateCommToolsLabel();
     }
     function updateLangBtn(){var b=$('lang-btn');if(b)b.textContent=(ttsLang==='hi')?'हिं':'EN';var sel=$('voice-gender');if(sel)sel.value=ttsGender}
-    function toggleLang(){ttsLang=(ttsLang==='hi')?'en':'hi';try{localStorage.setItem('cricket_tts_lang',ttsLang)}catch(e){}updateLangBtn();lastSpokenLine='';
-    var viewerSwipeIndex=0,viewerSwipeTimer=null,viewerSwipeTouchX=0,viewerSwipeTouchY=0,lastViewerMatchEnded=false,viewerManualSwipe=false;if(lastData)render(lastData)}
+    function updateCommToolsLabel(){
+      try{
+        var lang=(ttsLang==='hi')?'HI':'EN';
+        var eng=ttsEngine==='ai'?('AI:'+ttsAiVoice):'Dev';
+        var on=ttsOn?'On':'Off';
+        var st=stadiumOn?'Stad':'';
+        var dd2=$('comm-tools-dd'); if(dd2&&dd2.options&&dd2.options[0]) dd2.options[0].text='Audio · '+lang+' · '+eng+' · '+on+(st?' · '+st:'');
+      }catch(e){}
+    }
+    function toggleLang(){ttsLang=(ttsLang==='hi')?'en':'hi';try{localStorage.setItem('cricket_tts_lang',ttsLang)}catch(e){}updateLangBtn();lastSpokenLine='';updateCommToolsLabel()}
     function onGenderChange(){var sel=$('voice-gender');if(!sel)return;ttsGender=sel.value;try{localStorage.setItem('cricket_tts_gender',ttsGender)}catch(e){}ttsVoiceCache={};if(ttsOn)try{speak(ttsLang==='hi'?'आवाज़ बदल दी गई':'Voice updated',false)}catch(e2){}}
     function onCommToolsChange(v){
       if(!v)return;
       if(v==='lang') toggleLang();
       else if(v==='sound') toggleTts();
+      else if(v==='stadium') toggleStadium();
+      else if(v==='engine-device') setTtsEngine('device');
+      else if(v==='engine-ai') setTtsEngine('ai');
+      else if(v.indexOf('aivoice-')===0){ setAiVoice(v.replace('aivoice-','')); }
       else if(v.indexOf('voice-')===0){
         var g=v.replace('voice-',''); var sel=$('voice-gender'); if(sel){sel.value=g; onGenderChange();}
+        setTtsEngine('device');
       }
       try{ var dd=$('comm-tools-dd'); if(dd) dd.selectedIndex=0; }catch(e){}
-      try{
-        var lang=($('lang-btn')&&$('lang-btn').textContent)||'EN';
-        var sound=($('tts-btn')&&$('tts-btn').textContent)||'';
-        var dd2=$('comm-tools-dd'); if(dd2) dd2.options[0].text='Audio · '+lang+' · '+(/on/i.test(sound)?'On':'Off');
-      }catch(e2){}
+      updateCommToolsLabel();
     }
-    function toggleTts(){ttsOn=!ttsOn;try{localStorage.setItem('cricket_tts_on',ttsOn?'1':'0')}catch(e){}updateTtsBtn();if(ttsOn){try{speak(ttsLang==='hi'?'कमेंट्री ध्वनि चालू':'Commentary sound on')}catch(e2){}}else{try{speechSynthesis.cancel()}catch(e3){}}}
-    function speak(text,excited){
-      if(!ttsOn||!text)return;
+    function toggleTts(){
+      ttsOn=!ttsOn;
+      try{localStorage.setItem('cricket_tts_on',ttsOn?'1':'0')}catch(e){}
+      updateTtsBtn();try{updateCommToolsLabel()}catch(_u){}
+      if(ttsOn){
+        try{speak(ttsLang==='hi'?'कमेंट्री ध्वनि चालू':'Commentary sound on')}catch(e2){}
+      } else {
+        stopAllSpeech();
+      }
+    }
+
+    /** Device TTS (Web Speech) — instant, no network */
+    function speakDevice(text, excited){
       try{
         if(!('speechSynthesis' in window))return;
+        // Cancel only synthesis, not AI audio mid-handoff carefully
+        try{ speechSynthesis.cancel(); }catch(e0){}
         var u=new SpeechSynthesisUtterance(String(text).replace(/\*/g,''));
         var v=getVoiceFor(ttsLang);
         if(v)u.voice=v;
         u.lang=ttsLang==='hi'?'hi-IN':(v&&v.lang)||'en-IN';
-        // Slightly higher pitch/rate reads as more animated & human on FOUR/SIX/WICKET
         u.rate=excited?1.08:0.98;
         u.pitch=excited?1.18:1.03;
         u.volume=1;
         speechSynthesis.speak(u);
       }catch(e){}
     }
+
+    /** Build AI TTS URL (Google Translate TTS — no API key). Split long text. */
+    function aiTtsUrl(text, lang){
+      var tl = (lang==='hi') ? 'hi' : 'en';
+      var q = String(text||'').replace(/\s+/g,' ').trim().slice(0, 180);
+      if(!q) return null;
+      return 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl='+
+        encodeURIComponent(tl)+'&q='+encodeURIComponent(q);
+    }
+
+    /** Same-origin Worker AI TTS (Aura multi-voice / Melo) */
+    function workerTtsUrl(text, lang, voice){
+      try{
+        if(!API_BASE) return null;
+        return API_BASE.replace(/\/+$/,'')+'/api/tts?lang='+encodeURIComponent(lang==='hi'?'hi':'en')+
+          '&voice='+encodeURIComponent(voice||ttsAiVoice||'asteria')+
+          '&q='+encodeURIComponent(String(text||'').slice(0,200));
+      }catch(e){ return null; }
+    }
+
+    /**
+     * AI path: try audio URL, play via <audio>.
+     * - Aborts previous request (no backlog lag)
+     * - Falls back to Device TTS on error / 2.2s timeout
+     */
+    function speakAi(text, excited, gen){
+      var clean = String(text||'').replace(/\*/g,'').replace(/\s+/g,' ').trim();
+      if(!clean) return;
+
+      var wUrl = workerTtsUrl(clean, ttsLang, ttsAiVoice);
+      var gUrl = aiTtsUrl(clean, ttsLang);
+
+      function playBlobOrUrl(src, onFail){
+        if(!src || gen !== __ttsGen) { onFail(); return; }
+        try{
+          var a = new Audio();
+          a.preload = 'auto';
+          a.volume = 1;
+          __ttsAudio = a;
+          var settled = false;
+          var fail = function(){
+            if(settled) return;
+            settled = true;
+            onFail();
+          };
+          a.onended = function(){ settled = true; };
+          a.onerror = fail;
+          a.src = src;
+          var p = a.play();
+          if(p && typeof p.then === 'function'){
+            p.then(function(){
+              try{ if(__ttsFallbackTimer){ clearTimeout(__ttsFallbackTimer); __ttsFallbackTimer=null; } }catch(e){}
+            }).catch(fail);
+          }
+        }catch(e){ onFail(); }
+      }
+
+      // 2.8s max wait for AI — then Device (keeps live scoring snappy)
+      try{ if(__ttsFallbackTimer) clearTimeout(__ttsFallbackTimer); }catch(e){}
+      __ttsFallbackTimer = setTimeout(function(){
+        if(gen !== __ttsGen) return;
+        try{
+          if(__ttsAudio && !__ttsAudio.paused && __ttsAudio.currentTime > 0) return;
+        }catch(e2){}
+        stopAllSpeech();
+        __ttsGen++;
+        speakDevice(clean, excited);
+      }, 2800);
+
+      // 1) Worker AI (real multi-voice) via fetch → blob URL (handles binary mp3)
+      function tryWorker(thenFail){
+        if(!wUrl || gen !== __ttsGen){ thenFail(); return; }
+        try{
+          if(__ttsAbort) try{ __ttsAbort.abort(); }catch(e){}
+          __ttsAbort = (typeof AbortController!=='undefined') ? new AbortController() : null;
+          var opts = { cache: 'no-store' };
+          if(__ttsAbort) opts.signal = __ttsAbort.signal;
+          fetch(wUrl, opts).then(function(r){
+            if(gen !== __ttsGen) return;
+            if(!r || !r.ok){ thenFail(); return; }
+            var ct = (r.headers.get('content-type')||'');
+            if(ct.indexOf('application/json')>=0){
+              // error JSON from worker
+              thenFail(); return;
+            }
+            return r.blob().then(function(b){
+              if(gen !== __ttsGen) return;
+              if(!b || b.size < 100){ thenFail(); return; }
+              var obj = URL.createObjectURL(b);
+              playBlobOrUrl(obj, thenFail);
+            });
+          }).catch(function(){ thenFail(); });
+        }catch(e){ thenFail(); }
+      }
+
+      // 2) Google translate TTS (single voice, no key)
+      function tryGoogle(thenFail){
+        if(!gUrl || gen !== __ttsGen){ thenFail(); return; }
+        playBlobOrUrl(gUrl, thenFail);
+      }
+
+      tryWorker(function(){
+        tryGoogle(function(){
+          try{ if(__ttsFallbackTimer){ clearTimeout(__ttsFallbackTimer); __ttsFallbackTimer=null; } }catch(e){}
+          if(gen !== __ttsGen) return;
+          speakDevice(clean, excited);
+        });
+      });
+    }
+
+    function speak(text, excited){
+      if(!ttsOn || !text) return;
+      // Invalidate in-flight AI work so rapid balls never queue (no lag)
+      __ttsGen++;
+      var gen = __ttsGen;
+      stopAllSpeech();
+
+      var clean = String(text).replace(/\*/g,'').replace(/\s+/g,' ').trim();
+      if(!clean) return;
+
+      if(ttsEngine === 'ai'){
+        speakAi(clean, !!excited, gen);
+      } else {
+        speakDevice(clean, !!excited);
+      }
+    }
+
+    // Long-press 🔊 to switch Device ↔ AI without opening the menu
+    (function bindTtsEngineHold(){
+      function attach(){
+        var s=$('btn-sound-tts'); if(!s || s.__ttsHoldBound) return;
+        s.__ttsHoldBound=true;
+        var holdT=null, held=false;
+        s.addEventListener('touchstart', function(ev){
+          held=false;
+          holdT=setTimeout(function(){
+            held=true;
+            setTtsEngine(ttsEngine==='ai'?'device':'ai');
+            try{ if(navigator.vibrate) navigator.vibrate(30); }catch(e){}
+          }, 550);
+        }, {passive:true});
+        s.addEventListener('touchend', function(ev){
+          if(holdT) clearTimeout(holdT);
+          if(held){ try{ev.preventDefault()}catch(e){} }
+        });
+        s.addEventListener('contextmenu', function(ev){ ev.preventDefault(); setTtsEngine(ttsEngine==='ai'?'device':'ai'); });
+      }
+      if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', attach);
+      else attach();
+      setTimeout(attach, 800);
+    })();
+
     function speakNewCommentary(data){
       try{
         var arr=(ttsLang==='hi')?(data.commentaryHi||data.commentary):data.commentary;
@@ -2991,6 +3459,7 @@ input, select, textarea {
         var toSay=(parts.title||'')+(parts.body?('. '+parts.body):'')||last;
         var srcForExcited=String((data.commentary||[]).slice(-1)[0]||last);
         var excited=/\b(four|six|wicket|out)\b/i.test(srcForExcited)||/चौका|छक्का|आउट|विकेट/.test(last);
+        // Only speak the latest line — never queue older balls (keeps live lag-free)
         speak(toSay,excited);
       }catch(e){}
     }
@@ -3234,11 +3703,11 @@ input, select, textarea {
       var legalNow=data.balls|0, legalPrev=prevData?(prevData.balls|0):-1;
       var overJustEnded=!!(prevData&&prevData.ts&&!(prevData.matchEnded)&&!data.matchEnded&&(data.innings|0)===(prevData.innings|0)&&legalNow>legalPrev&&legalNow>0&&(legalNow%6)===0);
       if(overJustEnded&&!viewerManualSwipe){ triggerOverAutoSwipe(); }
-      if(data.matchEnded&&!wasEnded){ setViewerSwipe(0,true); try{launchViewerFireworks(data.matchWinner||data.winner||data.result||'')}catch(eFw){} }
+      if(data.matchEnded&&!wasEnded){ setViewerSwipe(0,true); try{launchViewerFireworks(data.matchWinner||data.winner||data.result||'')}catch(eFw){} try{stadiumMatchEnd(data)}catch(eStEnd){} }
       lastViewerMatchEnded=!!data.matchEnded;
       try{settlePrediction(data)}catch(eSp){}
       try{paintPlayerCheers()}catch(eCh){}
-      $('no-data').classList.add('hidden');$('live-root').classList.remove('hidden');
+      $('no-data').classList.add('hidden');$('live-root').classList.remove('hidden');try{if(stadiumOn)stadStartAmbient()}catch(eStad){}
       try{showJoinStatusFlash(data,false)}catch(eJS){}var gb2=$('glow-ball');if(gb2)gb2.classList.toggle('paused',!!data.matchEnded);
       var ev=data.lastEvent||detectEventFromCommentary(data.commentary);
       if(data.milestone&&data.milestone.type){ev=data.milestone.type}
@@ -3253,7 +3722,7 @@ input, select, textarea {
         lastEventKey=ek;
         // Never replay event bursts after match ends, or while points overlay is showing
         if(!data.matchEnded && Date.now()>=skipEventAnimUntil){
-          try{ playAnim(ev,data); }catch(eA){}
+          try{ playAnim(ev,data); try{stadiumReact(ev,data)}catch(eSt){} }catch(eA){}
         }
       }
       try{refreshPtsUI()}catch(eUp){}
