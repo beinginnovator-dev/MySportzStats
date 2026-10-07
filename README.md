@@ -1,41 +1,22 @@
-# MySportzStats – Push-Only Live Cricket + PWA
+# MySportzStats – Updated with Uniform Blue Theme
 
-Pure WebSocket + Durable Objects live cricket scoring with full PWA support (installable on mobile).
+Your original full-featured Scorer (`index.html`) and Live Viewer (`live.html`) with a clean uniform blue theme applied.
 
-## Features
-
-- Zero client polling (true push-only)
-- Real-time score, chat, presence, floats, chase timer
-- Installable PWA (Add to Home Screen)
-- Works on Cloudflare Free plan (SQLite Durable Objects)
+## What changed
+- Uniform button height, border-radius, font weight and blue accent colour
+- Clean dark-blue theme forced across both pages
+- All original functionality kept 100%
 
 ## Deploy
 
-```bash
-npm install
-npx wrangler login
-npx wrangler deploy
-```
+1. Upload the **contents** of this folder to the root of your GitHub repo.
+2. Cloudflare → Retry build.
 
-After deploy:
-
-- Viewer: `https://YOUR_WORKER.workers.dev/live?match=match1`
-- Scorer: `https://YOUR_WORKER.workers.dev/score?match=match1`
-
-## Local Development
-
-```bash
-npx wrangler dev
-```
-
-## Important Notes
-
-- Folder names **must** be lowercase (`src`, `public`)
-- File names **must** be lowercase (`index.js`, not `Index.js`)
-- Icons (`icon-192.png` + `icon-512.png`) are required for proper PWA install prompt
+## URLs after deploy
+- Scorer: `https://YOUR_WORKER.workers.dev/` or `/score`
+- Viewer: `https://YOUR_WORKER.workers.dev/live`
 
 ## Structure
-
 ```
 ├── package.json
 ├── wrangler.toml
@@ -43,10 +24,11 @@ npx wrangler dev
 │   ├── index.js
 │   └── match.js
 └── public/
-    ├── live.html
+    ├── index.html      ← full original scorer + blue theme
+    ├── live.html       ← full original viewer + blue theme
     ├── score.html
     ├── manifest.json
     ├── sw.js
-    ├── icon-192.png   ← you must add
-    └── icon-512.png   ← you must add
+    ├── icon-192.png
+    └── icon-512.png
 ```
