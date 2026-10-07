@@ -1,8 +1,8 @@
 {
-  "name": "cricket-live-push",
+  "name": "mysportzstats",
   "version": "1.0.0",
   "private": true,
-  "description": "Push-only live cricket scoring with Cloudflare Workers + Durable Objects",
+  "description": "Push-only live cricket scoring with Cloudflare Workers + Durable Objects + PWA",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy"

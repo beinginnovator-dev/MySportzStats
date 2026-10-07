@@ -1,10 +1,15 @@
-# Cricket Live – Push-Only Architecture
+# MySportzStats – Push-Only Live Cricket + PWA
 
-Pure WebSocket + Durable Objects live cricket scoring.
+Pure WebSocket + Durable Objects live cricket scoring with full PWA support (installable on mobile).
 
-No client-side polling. Updates are pushed the moment the scorer changes the score.
+## Features
 
-## Quick Start
+- Zero client polling (true push-only)
+- Real-time score, chat, presence, floats, chase timer
+- Installable PWA (Add to Home Screen)
+- Works on Cloudflare Free plan (SQLite Durable Objects)
+
+## Deploy
 
 ```bash
 npm install
@@ -23,29 +28,25 @@ After deploy:
 npx wrangler dev
 ```
 
-Open http://localhost:8787/live and http://localhost:8787/score
+## Important Notes
 
-## Architecture
+- Folder names **must** be lowercase (`src`, `public`)
+- File names **must** be lowercase (`index.js`, not `Index.js`)
+- Icons (`icon-192.png` + `icon-512.png`) are required for proper PWA install prompt
 
-- One Durable Object per match holds live state + all WebSocket connections.
-- Scorer pushes only when something changes.
-- Durable Object fans the update out to every connected viewer.
-- Viewers open a single WebSocket and never poll.
-- On disconnect → automatic reconnect with back-off.
-
-## Scaling Notes
-
-| Plan            | Concurrent users (approx.) | Notes                                      |
-|-----------------|----------------------------|--------------------------------------------|
-| Free            | a few thousand             | 100 k DO requests/day limit                |
-| Workers Paid    | 100 k – 1 M+               | Durable Objects scale horizontally         |
-
-## Files
+## Structure
 
 ```
-src/index.js      – Worker entry + routing
-src/match.js      – Durable Object (state + fan-out)
-public/live.html  – Viewer (pure WebSocket)
-public/score.html – Simple scorer UI
-wrangler.toml     – Cloudflare config
+├── package.json
+├── wrangler.toml
+├── src/
+│   ├── index.js
+│   └── match.js
+└── public/
+    ├── live.html
+    ├── score.html
+    ├── manifest.json
+    ├── sw.js
+    ├── icon-192.png   ← you must add
+    └── icon-512.png   ← you must add
 ```
