@@ -2,29 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Live Cricket</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Live Cricket Score</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Live Score" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
-    .header { background: #1e293b; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
-    .score { font-size: 2.4rem; font-weight: 800; }
-    .overs { font-size: 0.95rem; opacity: 0.75; }
-    .chase { background: #7f1d1d; padding: 8px; text-align: center; font-weight: 700; animation: pulse 1.2s infinite; }
-    .chase.urgent { animation: pulse 0.6s infinite; background: #991b1b; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
-    .tabs { display: flex; background: #1e293b; }
-    .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; }
-    .tab.active { background: #334155; }
-    .panel { display: none; padding: 12px; height: 55vh; overflow-y: auto; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .header { background: #1e293b; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+    .score { font-size: 2.5rem; font-weight: 800; letter-spacing: -1px; }
+    .overs { font-size: 1rem; opacity: 0.75; margin-top: 2px; }
+    .status { font-size: 0.85rem; opacity: 0.8; }
+    .chase { background: #7f1d1d; padding: 10px; text-align: center; font-weight: 700; font-size: 1.05rem; animation: pulse 1.2s infinite; }
+    .chase.urgent { animation: pulse 0.55s infinite; background: #991b1b; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
+    .tabs { display: flex; background: #1e293b; border-bottom: 1px solid #334155; }
+    .tab { flex: 1; padding: 12px 4px; text-align: center; cursor: pointer; font-size: 0.9rem; font-weight: 500; }
+    .tab.active { background: #334155; color: #38bdf8; }
+    .panel { display: none; padding: 14px; height: calc(100vh - 220px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
     .panel.active { display: block; }
-    .chat-input { display: flex; gap: 8px; padding: 8px; background: #1e293b; }
-    .chat-input input { flex: 1; padding: 8px; border-radius: 6px; border: none; }
-    .float { position: fixed; font-size: 2rem; animation: floatUp 3s forwards; pointer-events: none; }
-    @keyframes floatUp { to { transform: translateY(-120px); opacity: 0; } }
-    .anim { position: fixed; top: 40%; left: 50%; transform: translate(-50%,-50%); font-size: 4rem; font-weight: 900; z-index: 99; animation: pop 1.2s forwards; }
-    @keyframes pop { 0%{scale:0.3;opacity:0} 30%{scale:1.2;opacity:1} 100%{scale:1;opacity:0} }
-    .ball { display: inline-block; margin: 4px; padding: 6px 10px; background: #334155; border-radius: 6px; }
+    .chat-input { display: flex; gap: 8px; padding: 10px; background: #1e293b; position: sticky; bottom: 0; }
+    .chat-input input { flex: 1; padding: 12px; border-radius: 10px; border: none; background: #0f172a; color: #e2e8f0; font-size: 1rem; }
+    .chat-input button { padding: 12px 18px; border-radius: 10px; border: none; background: #38bdf8; color: #0f172a; font-weight: 700; }
+    .float { position: fixed; font-size: 2.2rem; animation: floatUp 3s forwards; pointer-events: none; z-index: 50; }
+    @keyframes floatUp { to { transform: translateY(-140px); opacity: 0; } }
+    .anim { position: fixed; top: 38%; left: 50%; transform: translate(-50%,-50%); font-size: 4.2rem; font-weight: 900; z-index: 99; animation: pop 1.25s forwards; text-shadow: 0 4px 20px rgba(0,0,0,.5); }
+    @keyframes pop { 0%{scale:0.2;opacity:0} 25%{scale:1.25;opacity:1} 100%{scale:1;opacity:0} }
+    .ball { display: inline-block; margin: 5px; padding: 8px 12px; background: #334155; border-radius: 8px; font-weight: 600; min-width: 36px; text-align: center; }
+    .viewer-row, .coin-row, .chat-row { padding: 8px 0; border-bottom: 1px solid #1e293b; }
   </style>
 </head>
 <body>
@@ -33,7 +47,7 @@
       <div class="score" id="score">0 / 0</div>
       <div class="overs" id="overs">(0.0)</div>
     </div>
-    <div id="status">Connecting…</div>
+    <div class="status" id="status">Connecting…</div>
   </div>
 
   <div id="chase" class="chase" style="display:none"></div>
@@ -51,7 +65,7 @@
   <div id="coins" class="panel"></div>
 
   <div class="chat-input">
-    <input id="msg" placeholder="Type message…" />
+    <input id="msg" placeholder="Type message…" autocomplete="off" />
     <button onclick="sendChat()">Send</button>
   </div>
 
@@ -65,7 +79,7 @@
       const proto = location.protocol === "https:" ? "wss" : "ws";
       ws = new WebSocket(`${proto}://${location.host}/ws?match=${MATCH}&name=${encodeURIComponent(name)}&role=viewer`);
 
-      ws.onopen = () => document.getElementById("status").textContent = "Live";
+      ws.onopen = () => document.getElementById("status").textContent = "● Live";
       ws.onclose = () => {
         document.getElementById("status").textContent = "Reconnecting…";
         setTimeout(connect, 1500 + Math.random() * 2000);
@@ -87,7 +101,7 @@
         // This over balls
         const overEl = document.getElementById("over");
         overEl.innerHTML = (d.thisOver || [])
-          .map(b => `<span class="ball">${b}</span>`).join("");
+          .map(b => `<span class="ball">${b}</span>`).join("") || "<div style='opacity:.6'>No balls yet</div>";
 
         // Chase timer
         const chase = document.getElementById("chase");
@@ -110,18 +124,18 @@
 
         // Viewers
         document.getElementById("viewers").innerHTML = (d.viewers || [])
-          .map(v => `<div>${v.name} – online since ${new Date(v.joinedAt).toLocaleTimeString()}</div>`)
-          .join("") || "<div>No viewers yet</div>";
+          .map(v => `<div class="viewer-row">${v.name} – online since ${new Date(v.joinedAt).toLocaleTimeString()}</div>`)
+          .join("") || "<div style='opacity:.6'>No viewers yet</div>";
 
         // Gold coins list
         document.getElementById("coins").innerHTML = Object.entries(d.goldCoins || {})
-          .map(([u, c]) => `<div>${u}: ${c} 🪙</div>`).join("") || "No coins yet";
+          .map(([u, c]) => `<div class="coin-row">${u}: ${c} 🪙</div>`).join("") || "<div style='opacity:.6'>No coins yet</div>";
       }
 
       if (msg.type === "chat") {
         const el = document.getElementById("chat");
         el.innerHTML = (msg.data || [])
-          .map(c => `<div><b>${c.name}</b>: ${c.text}</div>`).join("");
+          .map(c => `<div class="chat-row"><b>${c.name}</b>: ${c.text}</div>`).join("");
         el.scrollTop = el.scrollHeight;
       }
 
@@ -130,14 +144,14 @@
         f.className = "float";
         f.textContent = msg.data.emoji;
         f.style.left = Math.random() * 80 + 10 + "%";
-        f.style.bottom = "20%";
+        f.style.bottom = "22%";
         document.body.appendChild(f);
         setTimeout(() => f.remove(), 3000);
       }
 
       if (msg.type === "presence") {
         document.getElementById("viewers").innerHTML = (msg.data || [])
-          .map(v => `<div>${v.name} – online</div>`).join("") || "<div>No viewers yet</div>";
+          .map(v => `<div class="viewer-row">${v.name} – online</div>`).join("") || "<div style='opacity:.6'>No viewers yet</div>";
       }
     }
 
@@ -170,6 +184,11 @@
     document.getElementById("msg").addEventListener("keydown", (e) => {
       if (e.key === "Enter") sendChat();
     });
+
+    // Register Service Worker for PWA
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
 
     connect();
   </script>
