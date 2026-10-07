@@ -11,6 +11,9 @@ class_name = "MatchDO"
 tag = "v1"
 new_sqlite_classes = ["MatchDO"]
 
+[ai]
+binding = "AI"
+
 [assets]
 directory = "./public"
 binding = "ASSETS"
