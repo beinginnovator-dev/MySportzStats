@@ -1,8 +1,9 @@
 {
+  "id": "/?app=scorer",
   "name": "My Cricket Scorer",
-  "short_name": "Cricket Scorer",
+  "short_name": "Scorer",
   "description": "Live cricket scoring, commentary and stats",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",

@@ -45,7 +45,7 @@
     window.addEventListener('load', function () {
       var sw = 'sw.js';
       try { sw = new URL('sw.js', location.href).href; } catch (e) {}
-      navigator.serviceWorker.register(new URL('/sw-live.js', location.origin).href, {scope: '/'});
+      navigator.serviceWorker.register(new URL('/sw-live.js', location.origin).href, {scope: '/live'});
     });
   }
   window.__pwaDeferredPrompt = null;

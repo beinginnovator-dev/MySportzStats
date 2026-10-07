@@ -1,12 +1,13 @@
 {
+  "id": "/live?app=viewer",
   "name": "Live Cricket Viewer",
   "short_name": "Live Score",
   "description": "Live cricket score viewer – real-time",
-  "start_url": "/live",
-  "scope": "/",
+  "start_url": "/live?source=pwa",
+  "scope": "/live",
   "display": "standalone",
   "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "theme_color": "#059669",
   "orientation": "portrait-primary",
   "icons": [
     {
