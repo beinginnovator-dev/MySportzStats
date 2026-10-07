@@ -1396,91 +1396,207 @@
         #live-batsman-runs, #live-bowler-wickets { color: #ffffff !important; }
         #live-batsman-4s, #live-batsman-6s, #live-batsman-sr { color: #e5e7eb !important; }
 
-/* ========== UNIFORM BLUE THEME (MySportzStats) ========== */
-:root {
-  --bg: #0f172a;
-  --card: #1e293b;
-  --border: #334155;
-  --text: #e2e8f0;
-  --muted: #94a3b8;
-  --accent: #38bdf8;
-  --accent-dark: #0ea5e9;
-  --success: #34d399;
-  --danger: #f87171;
-  --radius: 10px;
-  --btn-h: 44px;
+/* ============================================================
+   Fix white boxes on dark themes + keep ALL original themes
+   Tabs stay fully clickable
+   ============================================================ */
+
+/* Ensure tabs always receive taps */
+.espn-tabbar, .espn-tabbar button, [id^="tab-"] {
+  pointer-events: auto !important;
+  z-index: 60 !important;
+  position: relative !important;
 }
-body {
-  background: var(--bg) !important;
-  color: var(--text) !important;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+
+/* ---- Dark family: force light/white UI chips to dark surfaces ---- */
+body[data-theme="dark"] button,
+body[data-theme="navy"] button,
+body[data-theme="sports"] button,
+body[data-theme="league"] button,
+body[data-theme="black"] button,
+body[data-theme="copper"] button,
+body[data-theme="dark"] .bg-white,
+body[data-theme="navy"] .bg-white,
+body[data-theme="sports"] .bg-white,
+body[data-theme="league"] .bg-white,
+body[data-theme="dark"] [class*="bg-white"],
+body[data-theme="navy"] [class*="bg-white"],
+body[data-theme="sports"] [class*="bg-white"],
+body[data-theme="league"] [class*="bg-white"],
+body[data-theme="dark"] [class*="bg-slate-50"],
+body[data-theme="dark"] [class*="bg-slate-100"],
+body[data-theme="dark"] [class*="bg-gray-50"],
+body[data-theme="dark"] [class*="bg-gray-100"],
+body[data-theme="navy"] [class*="bg-slate-50"],
+body[data-theme="navy"] [class*="bg-slate-100"],
+body[data-theme="league"] [class*="bg-slate-50"],
+body[data-theme="league"] [class*="bg-slate-100"],
+body[data-theme="sports"] [class*="bg-slate-50"],
+body[data-theme="sports"] [class*="bg-slate-100"] {
+  background-color: #1e293b !important;
+  background-image: none !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
 }
-button, .pred-btn, .react-btn, .cheer-toggle, .fan-btn, .tab, .ob,
-.btn, .score-btn, .run-btn, .action-btn {
-  height: var(--btn-h) !important;
-  min-height: var(--btn-h) !important;
-  border-radius: var(--radius) !important;
-  font-weight: 700 !important;
-  font-size: 14px !important;
-  border: 1px solid var(--border) !important;
-  background: var(--card) !important;
-  color: var(--text) !important;
-  transition: all 0.15s ease !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 0 16px !important;
-}
-button:active, .pred-btn:active, .react-btn:active, .fan-btn:active {
-  transform: scale(0.97);
-}
-button.primary, .fan-btn:not(.sec), .pred-btn.on, .cheer-toggle.on, .tab.active,
-.espn-tab-active {
-  background: var(--accent) !important;
+
+/* Selected / primary chips on dark – accent, not pure white */
+body[data-theme="dark"] button.espn-tab-active,
+body[data-theme="navy"] button.espn-tab-active,
+body[data-theme="sports"] button.espn-tab-active,
+body[data-theme="league"] button.espn-tab-active,
+body[data-theme="dark"] .espn-tab-active,
+body[data-theme="navy"] .espn-tab-active,
+body[data-theme="sports"] .espn-tab-active,
+body[data-theme="league"] .espn-tab-active {
+  background-color: #0ea5e9 !important;
   color: #0f172a !important;
-  border-color: var(--accent) !important;
+  -webkit-text-fill-color: #0f172a !important;
+  border-color: #38bdf8 !important;
 }
-.fan-btn.sec, button.sec {
-  background: transparent !important;
-  border-color: var(--border) !important;
-  color: var(--text) !important;
+
+/* Heads/Tails style selected state – when background is forced white by inline */
+body[data-theme="dark"] #btn-call-heads,
+body[data-theme="dark"] #btn-call-tails,
+body[data-theme="navy"] #btn-call-heads,
+body[data-theme="navy"] #btn-call-tails,
+body[data-theme="league"] #btn-call-heads,
+body[data-theme="league"] #btn-call-tails,
+body[data-theme="sports"] #btn-call-heads,
+body[data-theme="sports"] #btn-call-tails {
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+  border: 1px solid #475569 !important;
 }
-button.danger, .pred-btn.w {
-  background: #7f1d1d !important;
-  color: #fecaca !important;
-  border-color: #ef4444 !important;
+/* Active call selection */
+body[data-theme="dark"] #btn-call-heads.bg-white,
+body[data-theme="dark"] #btn-call-tails.bg-white,
+body[data-theme="navy"] #btn-call-heads.bg-white,
+body[data-theme="navy"] #btn-call-tails.bg-white,
+body[data-theme="dark"] #btn-call-heads[style*="background"],
+body[data-theme="dark"] #btn-call-tails[style*="background"] {
+  background-color: #0ea5e9 !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
 }
-.pred-btn.b4, .pred-btn.b6, .ob.b4, .ob.b6 {
-  background: #065f46 !important;
-  color: #a7f3d0 !important;
-  border-color: #34d399 !important;
+
+/* EDIT / RENAME / REMOVE / RESET – never pure white on dark */
+body[data-theme="dark"] button,
+body[data-theme="navy"] button,
+body[data-theme="league"] button,
+body[data-theme="sports"] button {
+  min-height: 36px;
 }
-.score-card, .team-card, .pbox, .fan-team-card, .viewer-bar, .sb-wrap,
-.comm-popup-inner, .theme-card, .theme-panel {
-  background: var(--card) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 12px !important;
+body[data-theme="dark"] .theme-card button,
+body[data-theme="navy"] .theme-card button,
+body[data-theme="league"] .theme-card button,
+body[data-theme="sports"] .theme-card button,
+body[data-theme="dark"] .theme-panel button,
+body[data-theme="navy"] .theme-panel button {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+  border: 1px solid #475569 !important;
 }
-.tabs { gap: 6px !important; }
-.tab { font-size: 12px !important; letter-spacing: 0.02em !important; }
-.score, .team-card .score, .sb-table td.n {
-  color: var(--accent) !important;
-  font-weight: 800 !important;
+
+/* Light text on any remaining pale boxes */
+body[data-theme="dark"] [style*="background: white"],
+body[data-theme="dark"] [style*="background:#fff"],
+body[data-theme="dark"] [style*="background: #fff"],
+body[data-theme="dark"] [style*="background-color: white"],
+body[data-theme="dark"] [style*="background-color:#fff"],
+body[data-theme="navy"] [style*="background: white"],
+body[data-theme="navy"] [style*="background:#fff"],
+body[data-theme="league"] [style*="background:#fff"],
+body[data-theme="sports"] [style*="background:#fff"] {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
 }
-.live-dot, .crr-v, .view-inline { color: var(--success) !important; }
-.live-dot.lost, .crr-line .live-inline.lost { color: var(--danger) !important; }
-input, select, textarea {
-  background: #0f172a !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text) !important;
-  border-radius: var(--radius) !important;
-  height: var(--btn-h) !important;
-  padding: 0 14px !important;
-  font-size: 15px !important;
+
+/* Inputs on dark – readable */
+body[data-theme="dark"] input,
+body[data-theme="dark"] select,
+body[data-theme="dark"] textarea,
+body[data-theme="navy"] input,
+body[data-theme="navy"] select,
+body[data-theme="navy"] textarea,
+body[data-theme="league"] input,
+body[data-theme="league"] select,
+body[data-theme="sports"] input,
+body[data-theme="sports"] select {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+  border: 1.5px solid #475569 !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
 }
-.row, .engage-row, .fan-row, .pred-row, .react-row {
-  gap: 8px !important;
-  flex-wrap: wrap !important;
+body[data-theme="dark"] input::placeholder,
+body[data-theme="navy"] input::placeholder,
+body[data-theme="league"] input::placeholder {
+  color: #94a3b8 !important;
+  opacity: 1 !important;
+}
+
+/* Purple Add / PDF buttons keep contrast but not washed out */
+body[data-theme="dark"] .bg-indigo-600,
+body[data-theme="dark"] .bg-purple-600,
+body[data-theme="navy"] .bg-indigo-600,
+body[data-theme="league"] .bg-indigo-600 {
+  background-color: #4f46e5 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Score pad must stay tappable */
+#scoring-controls-panel, #scoring-controls-panel button {
+  pointer-events: auto !important;
+  z-index: 70 !important;
+}
+
+/* Live page: map body themes */
+body.theme-amazon { /* keep original amazon if used */ }
+
+
+/* Override light Tailwind utility chips on dark themes */
+body[data-theme="dark"] .bg-indigo-50,
+body[data-theme="navy"] .bg-indigo-50,
+body[data-theme="league"] .bg-indigo-50,
+body[data-theme="sports"] .bg-indigo-50,
+body[data-theme="dark"] .bg-sky-50,
+body[data-theme="dark"] .bg-blue-50,
+body[data-theme="dark"] .bg-emerald-50,
+body[data-theme="dark"] .bg-amber-50,
+body[data-theme="dark"] .bg-yellow-50,
+body[data-theme="dark"] .bg-orange-50,
+body[data-theme="navy"] .bg-indigo-50,
+body[data-theme="navy"] .bg-sky-50,
+body[data-theme="league"] .bg-indigo-50,
+body[data-theme="sports"] .bg-indigo-50 {
+  background-color: #0c4a6e !important;
+  color: #e0f2fe !important;
+  -webkit-text-fill-color: #e0f2fe !important;
+  border-color: #38bdf8 !important;
+}
+body[data-theme="dark"] .text-indigo-700,
+body[data-theme="navy"] .text-indigo-700,
+body[data-theme="league"] .text-indigo-700,
+body[data-theme="sports"] .text-indigo-700,
+body[data-theme="dark"] .border-indigo-300,
+body[data-theme="navy"] .border-indigo-300 {
+  color: #e0f2fe !important;
+  -webkit-text-fill-color: #e0f2fe !important;
+  border-color: #38bdf8 !important;
+}
+/* cream / pale rename buttons */
+body[data-theme="dark"] .bg-amber-100,
+body[data-theme="dark"] .bg-yellow-100,
+body[data-theme="dark"] .bg-orange-100,
+body[data-theme="navy"] .bg-amber-100,
+body[data-theme="league"] .bg-amber-100 {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
 }
 
 </style>

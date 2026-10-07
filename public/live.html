@@ -1,6 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+(function(){
+  try {
+    if (!window.API_BASE) {
+      var o = (location.origin||'').replace(/\/+$/,'');
+      if (o.indexOf('http')===0) {
+        window.API_BASE = o;
+        try { localStorage.setItem('cricket_live_server', o); } catch(e){}
+      }
+    }
+    var t = localStorage.getItem('cricket_live_theme_v1') || localStorage.getItem('theme') || 'dark';
+    if (t === 'default' || t === 'amazon' || t === 'light' || t === 'glass' || t === 'fb') t = 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+    document.addEventListener('DOMContentLoaded', function(){
+      document.body.setAttribute('data-theme', t);
+      document.body.classList.remove('theme-amazon','theme-sports');
+      if (t === 'black') document.body.classList.add('theme-black');
+      if (t === 'navy') document.body.classList.add('theme-navy');
+    });
+  } catch(e){}
+})();
+</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, user-scalable=yes" />
   <title>Live Match · Viewer</title>
@@ -1100,91 +1122,43 @@
     }
   
 
-/* ========== UNIFORM BLUE THEME (MySportzStats) ========== */
-:root {
-  --bg: #0f172a;
-  --card: #1e293b;
-  --border: #334155;
-  --text: #e2e8f0;
-  --muted: #94a3b8;
-  --accent: #38bdf8;
-  --accent-dark: #0ea5e9;
-  --success: #34d399;
-  --danger: #f87171;
-  --radius: 10px;
-  --btn-h: 44px;
+/* Live dark themes – no white chips */
+body, body[data-theme="dark"] {
+  --bg:#0f172a; --card:#1e293b; --text:#f1f5f9; --muted:#94a3b8;
+  --accent:#38bdf8; --border:#475569;
+}
+body[data-theme="black"], body.theme-black {
+  --bg:#0a0a0a; --card:#161616; --text:#e8e8e8; --muted:#a8a8a8;
+  --accent:#c0c0c0; --border:#444;
+}
+body[data-theme="navy"], body.theme-navy {
+  --bg:#0a1628; --card:#12233d; --text:#fff; --muted:#a8b8d0;
+  --accent:#5b9fd4; --border:#3a5575;
 }
 body {
-  background: var(--bg) !important;
-  color: var(--text) !important;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  background: var(--bg, #0f172a) !important;
+  color: var(--text, #f1f5f9) !important;
 }
-button, .pred-btn, .react-btn, .cheer-toggle, .fan-btn, .tab, .ob,
-.btn, .score-btn, .run-btn, .action-btn {
-  height: var(--btn-h) !important;
-  min-height: var(--btn-h) !important;
-  border-radius: var(--radius) !important;
-  font-weight: 700 !important;
-  font-size: 14px !important;
-  border: 1px solid var(--border) !important;
-  background: var(--card) !important;
-  color: var(--text) !important;
-  transition: all 0.15s ease !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 0 16px !important;
+button, .pred-btn, .react-btn, .fan-btn, .tab, .cheer-toggle {
+  background: var(--card, #1e293b) !important;
+  color: var(--text, #f1f5f9) !important;
+  border: 1px solid var(--border, #475569) !important;
+  -webkit-text-fill-color: var(--text, #f1f5f9) !important;
 }
-button:active, .pred-btn:active, .react-btn:active, .fan-btn:active {
-  transform: scale(0.97);
-}
-button.primary, .fan-btn:not(.sec), .pred-btn.on, .cheer-toggle.on, .tab.active,
-.espn-tab-active {
-  background: var(--accent) !important;
+.tab.active, .pred-btn.on, .cheer-toggle.on, .fan-btn:not(.sec) {
+  background: #0ea5e9 !important;
   color: #0f172a !important;
-  border-color: var(--accent) !important;
+  -webkit-text-fill-color: #0f172a !important;
 }
-.fan-btn.sec, button.sec {
-  background: transparent !important;
-  border-color: var(--border) !important;
-  color: var(--text) !important;
+.score-card, .team-card, .pbox, .sb-wrap, .viewer-bar, .fan-team-card {
+  background: var(--card, #1e293b) !important;
+  border: 1px solid var(--border, #475569) !important;
+  color: var(--text, #f1f5f9) !important;
 }
-button.danger, .pred-btn.w {
-  background: #7f1d1d !important;
-  color: #fecaca !important;
-  border-color: #ef4444 !important;
-}
-.pred-btn.b4, .pred-btn.b6, .ob.b4, .ob.b6 {
-  background: #065f46 !important;
-  color: #a7f3d0 !important;
-  border-color: #34d399 !important;
-}
-.score-card, .team-card, .pbox, .fan-team-card, .viewer-bar, .sb-wrap,
-.comm-popup-inner, .theme-card, .theme-panel {
-  background: var(--card) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 12px !important;
-}
-.tabs { gap: 6px !important; }
-.tab { font-size: 12px !important; letter-spacing: 0.02em !important; }
-.score, .team-card .score, .sb-table td.n {
-  color: var(--accent) !important;
-  font-weight: 800 !important;
-}
-.live-dot, .crr-v, .view-inline { color: var(--success) !important; }
-.live-dot.lost, .crr-line .live-inline.lost { color: var(--danger) !important; }
 input, select, textarea {
-  background: #0f172a !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text) !important;
-  border-radius: var(--radius) !important;
-  height: var(--btn-h) !important;
-  padding: 0 14px !important;
-  font-size: 15px !important;
-}
-.row, .engage-row, .fan-row, .pred-row, .react-row {
-  gap: 8px !important;
-  flex-wrap: wrap !important;
+  background: var(--bg, #0f172a) !important;
+  color: var(--text, #f1f5f9) !important;
+  border: 1.5px solid var(--border, #475569) !important;
 }
 
   </style>
