@@ -1,0 +1,13 @@
+{
+  "name": "cricket-live-push",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Push-only live cricket scoring with Cloudflare Workers + Durable Objects",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.78.0"
+  }
+}

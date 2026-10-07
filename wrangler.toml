@@ -1,0 +1,16 @@
+name = "cricket-live-push"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[[durable_objects.bindings]]
+name = "MATCH"
+class_name = "MatchDO"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["MatchDO"]
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
