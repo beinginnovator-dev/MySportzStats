@@ -2931,6 +2931,30 @@ input, select, textarea {
     var __stadWicketStreak=0, __stadLastWicketBall=-99;
     var STAD_BASE=0.12;
     var STAD_PEAK=0.72;
+    // Real stadium SFX (Mixkit free license) — hosted with the app
+    var STAD_SFX = {
+      cheer: '/sounds/crowd_cheer.mp3',
+      roar: '/sounds/crowd_roar.mp3',
+      applause: '/sounds/crowd_applause.mp3',
+      short: '/sounds/crowd_short.mp3',
+      whistle: '/sounds/crowd_whistle.mp3',
+      chant: '/sounds/crowd_chant.mp3'
+    };
+    var __stadSfxCache = {};
+    function stadPlaySample(key, vol, rate){
+      if(!stadiumOn) return null;
+      try{
+        stadResume();
+        var url = STAD_SFX[key];
+        if(!url) return null;
+        var a = new Audio(url);
+        a.volume = Math.max(0, Math.min(1, vol!=null?vol:0.45));
+        if(rate && a.playbackRate != null) try{ a.playbackRate = rate; }catch(e){}
+        a.play().catch(function(){});
+        return a;
+      }catch(e){ return null; }
+    }
+
 
     function stadEnsureCtx(){
       try{
@@ -3158,15 +3182,15 @@ input, select, textarea {
         if(!stadiumOn) return;
         try{ if(lastData && lastData.matchEnded){ stadScheduleRandomCheer(); return; } }catch(e){}
         var r=Math.random();
-        if(r<0.25){
-          stadClapRhythm(3+Math.floor(Math.random()*3), 150+Math.random()*40, 0.12);
-        } else if(r<0.45){
-          stadChant({ bars:1, bpm:100+Math.random()*20, vol:0.1, notes:[300,340,380,440] });
-        } else if(r<0.75){
-          stadBurst({ type:'cheer', vol:0.12+Math.random()*0.08, dur:0.6+Math.random()*0.5, freq:700+Math.random()*500 });
+        if(r<0.3){
+          stadPlaySample('short', 0.18+Math.random()*0.1, 0.95+Math.random()*0.15);
+        } else if(r<0.55){
+          stadPlaySample('cheer', 0.15+Math.random()*0.1, 1);
           stadSwell(STAD_BASE+0.04, 200, 300, 900);
+        } else if(r<0.75){
+          stadBurst({ type:'cheer', vol:0.1+Math.random()*0.06, dur:0.5, freq:800 });
         } else {
-          stadWhistle({ count:1, vol:0.12 });
+          stadPlaySample('whistle', 0.12, 1);
         }
         stadScheduleRandomCheer();
       }, delay);
@@ -3178,35 +3202,33 @@ input, select, textarea {
       var balls=(data&&(data.balls|0))||0;
       try{
         if(e==='six'||e==='6'){
-          stadWhistle({ count:1+Math.floor(Math.random()*2), vol:0.32 });
-          stadBurst({ type:'roar', vol:0.58, dur:1.5, freq:1450 });
-          setTimeout(function(){ stadBurst({ type:'cheer', vol:0.4, dur:1.1, freq:1100 }); }, 150);
-          setTimeout(function(){ stadClapRhythm(6, 140, 0.26); }, 200);
-          if(Math.random()<0.7) setTimeout(function(){ stadChant({ bars:2, bpm:120, vol:0.18 }); }, 400);
+          stadPlaySample('whistle', 0.4, 1.05);
+          stadPlaySample('roar', 0.55, 1);
+          setTimeout(function(){ stadPlaySample('cheer', 0.5, 1.05); }, 200);
+          setTimeout(function(){ stadPlaySample('applause', 0.4, 1.1); }, 400);
           stadSwell(0.55, 70, 700, 1500);
           __stadWicketStreak=0;
         } else if(e==='four'||e==='4'||e==='boundary'){
-          stadWhistle({ count:1, vol:0.26 });
-          stadBurst({ type:'roar', vol:0.48, dur:1.15, freq:1250 });
-          setTimeout(function(){ stadClapRhythm(4, 150, 0.22); }, 120);
-          if(Math.random()<0.5) setTimeout(function(){ stadChant({ bars:1, bpm:115, vol:0.14, notes:[340,380,420,500] }); }, 350);
+          stadPlaySample('whistle', 0.32, 1);
+          stadPlaySample('cheer', 0.45, 1.08);
+          setTimeout(function(){ stadPlaySample('short', 0.35, 1.1); }, 250);
           stadSwell(0.45, 90, 450, 1100);
           __stadWicketStreak=0;
         } else if(e==='hattrick'||e==='hat-trick'||e==='hat_trick'){
-          stadWhistle({ count:3, vol:0.38 });
-          stadBurst({ type:'roar', vol:0.65, dur:2.0, freq:1500 });
-          setTimeout(function(){ stadClapRhythm(8, 130, 0.3); }, 100);
-          setTimeout(function(){ stadChant({ bars:3, bpm:125, vol:0.22, notes:[360,400,440,520,360,400,480,560] }); }, 300);
+          stadPlaySample('whistle', 0.5, 1.1);
+          setTimeout(function(){ stadPlaySample('whistle', 0.45, 1.15); }, 180);
+          stadPlaySample('roar', 0.6, 1);
+          setTimeout(function(){ stadPlaySample('chant', 0.45, 1); }, 300);
+          setTimeout(function(){ stadPlaySample('applause', 0.5, 1); }, 500);
           stadSwell(0.65, 60, 1200, 2200);
         } else if(e==='wicket'||e==='w'||e==='out'){
           if(balls>0 && balls-__stadLastWicketBall<=1) __stadWicketStreak++;
           else __stadWicketStreak=1;
           __stadLastWicketBall=balls;
-          stadBurst({ type:'gasp', vol:0.32, dur:0.35 });
+          stadPlaySample('short', 0.35, 0.95);
           setTimeout(function(){
-            stadWhistle({ count:1, vol:0.3 });
-            stadBurst({ type:'roar', vol:0.55, dur:1.6, freq:1050 });
-            stadClapRhythm(5, 145, 0.24);
+            stadPlaySample('whistle', 0.38, 1);
+            stadPlaySample('cheer', 0.5, 1);
             stadSwell(0.5, 50, 800, 1700);
           }, 180);
           if(__stadWicketStreak>=3){
@@ -3214,29 +3236,25 @@ input, select, textarea {
             __stadWicketStreak=0;
           }
         } else if(e==='fifty'||e==='50'){
-          stadWhistle({ count:2, vol:0.3 });
-          stadBurst({ type:'cheer', vol:0.5, dur:1.4, freq:1300 });
-          setTimeout(function(){ stadClapRhythm(6, 140, 0.25); }, 150);
-          setTimeout(function(){ stadChant({ bars:2, bpm:118, vol:0.17, notes:[320,360,400,480,320,380,440,520] }); }, 350);
+          stadPlaySample('whistle', 0.35, 1);
+          stadPlaySample('cheer', 0.48, 1.05);
+          setTimeout(function(){ stadPlaySample('applause', 0.42, 1); }, 300);
+          setTimeout(function(){ stadPlaySample('chant', 0.35, 1); }, 500);
           stadSwell(0.5, 90, 900, 1600);
           __stadWicketStreak=0;
         } else if(e==='100'||e==='hundred'||e==='century'){
-          stadWhistle({ count:3, vol:0.36 });
-          stadBurst({ type:'roar', vol:0.62, dur:1.8, freq:1400 });
-          setTimeout(function(){ stadClapRhythm(8, 135, 0.28); }, 120);
-          setTimeout(function(){ stadChant({ bars:3, bpm:122, vol:0.2 }); }, 300);
+          stadPlaySample('whistle', 0.42, 1.05);
+          stadPlaySample('roar', 0.55, 1);
+          setTimeout(function(){ stadPlaySample('applause', 0.5, 1); }, 250);
+          setTimeout(function(){ stadPlaySample('chant', 0.45, 1); }, 450);
           stadSwell(0.6, 80, 1100, 2000);
           __stadWicketStreak=0;
         } else if(e==='milestone'){
-          stadWhistle({ count:2, vol:0.28 });
-          stadBurst({ type:'cheer', vol:0.45, dur:1.3, freq:1250 });
-          stadClapRhythm(5, 150, 0.22);
+          stadPlaySample('cheer', 0.4, 1);
+          stadPlaySample('applause', 0.35, 1);
           stadSwell(0.42, 100, 700, 1400);
         } else if(e==='three'||e==='two'||e==='2'||e==='3'){
-          if(Math.random()<0.45){
-            stadClapRhythm(2, 160, 0.14);
-            stadBurst({ type:'cheer', vol:0.14, dur:0.45, freq:800 });
-          }
+          if(Math.random()<0.4) stadPlaySample('short', 0.2, 1.1);
           __stadWicketStreak=0;
         } else {
           if(e && e!=='dot' && e!=='0' && e!=='zero') __stadWicketStreak=0;
@@ -3247,11 +3265,11 @@ input, select, textarea {
     function stadiumMatchEnd(data){
       if(!stadiumOn) return;
       stadStartAmbient();
-      stadWhistle({ count:3, vol:0.35 });
-      stadBurst({ type:'roar', vol:0.6, dur:2.0, freq:1500 });
-      setTimeout(function(){ stadClapRhythm(10, 130, 0.28); }, 150);
-      setTimeout(function(){ stadChant({ bars:3, bpm:120, vol:0.2 }); }, 300);
-      setTimeout(function(){ stadBurst({ type:'cheer', vol:0.45, dur:1.8, freq:1200 }); }, 500);
+      stadPlaySample('whistle', 0.45, 1.05);
+      stadPlaySample('roar', 0.55, 1);
+      setTimeout(function(){ stadPlaySample('cheer', 0.5, 1); }, 200);
+      setTimeout(function(){ stadPlaySample('applause', 0.48, 1); }, 400);
+      setTimeout(function(){ stadPlaySample('chant', 0.4, 1); }, 600);
       stadSwell(0.62, 100, 2200, 3800);
       setTimeout(function(){
         try{
@@ -3264,6 +3282,7 @@ input, select, textarea {
         }catch(e){}
       }, 5000);
     }
+
 
     // ---------- Text-to-speech (Commentary): Device + AI, language + voice gender ----------
     var ttsOn=(function(){try{var v=localStorage.getItem('cricket_tts_on'); if(v===null||v===undefined||v==='') return true; return v!=='0'&&v!=='false'}catch(e){return true}})();
@@ -3415,19 +3434,25 @@ input, select, textarea {
       }
     }
 
-    /** Device TTS (Web Speech) — instant, no network */
+    /** Device TTS (Web Speech) — instant, sports-style delivery */
     function speakDevice(text, excited){
       try{
         if(!('speechSynthesis' in window))return;
-        // Cancel only synthesis, not AI audio mid-handoff carefully
         try{ speechSynthesis.cancel(); }catch(e0){}
-        var u=new SpeechSynthesisUtterance(String(text).replace(/\*/g,''));
+        var raw=String(text).replace(/\*/g,'').replace(/\s+/g,' ').trim();
+        if(!raw)return;
+        var u=new SpeechSynthesisUtterance(raw);
         var v=getVoiceFor(ttsLang);
         if(v)u.voice=v;
         u.lang=ttsLang==='hi'?'hi-IN':(v&&v.lang)||'en-IN';
-        u.rate=excited?1.08:0.98;
-        u.pitch=excited?1.18:1.03;
-        u.volume=1;
+        // Sports commentary: punchy rate/pitch on big moments
+        if(excited===2){ // maximum (six / wicket / century)
+          u.rate=1.18; u.pitch=1.28; u.volume=1;
+        } else if(excited){
+          u.rate=1.12; u.pitch=1.2; u.volume=1;
+        } else {
+          u.rate=1.02; u.pitch=1.05; u.volume=1;
+        }
         speechSynthesis.speak(u);
       }catch(e){}
     }
@@ -3498,7 +3523,7 @@ input, select, textarea {
         stopAllSpeech();
         __ttsGen++;
         speakDevice(clean, excited);
-      }, 2800);
+      }, 1200);
 
       // 1) Worker AI (real multi-voice) via fetch → blob URL (handles binary mp3)
       function tryWorker(thenFail){
@@ -3583,6 +3608,59 @@ input, select, textarea {
       setTimeout(attach, 800);
     })();
 
+    function sportsCallLine(data, rawLine, excitedLevel){
+      try{
+        var name=(data&&data.strikerName)||'';
+        var bowl=(data&&data.bowlerName)||'';
+        var runs=data?(data.runs|0):0;
+        var need=null;
+        if(data&&(data.targetScore!=null||data.target!=null)){
+          need=Math.max(0,((data.targetScore!=null?data.targetScore:data.target)|0)-runs);
+        }
+        var hi=(ttsLang==='hi');
+        if(excitedLevel>=2){
+          if(/six|\\b6\\b|छक्का/i.test(rawLine)){
+            return hi
+              ? ('छक्का! '+(name?name+' ने ':'')+'जबरदस्त छक्का मारा!')
+              : ('SIX! '+(name?name+' smashes it ':'')+'out of the ground! What a hit!');
+          }
+          if(/wicket|\\bout\\b|विकेट|आउट/i.test(rawLine)){
+            return hi
+              ? ('विकेट! '+(bowl?bowl+' की गेंद पर ':'')+(name?name+' आउट!':'आउट!'))
+              : ('WICKET! '+(bowl?bowl+' strikes — ':'')+(name?name+' is gone!':'He is gone!'));
+          }
+          if(/hundred|century|100/i.test(rawLine)){
+            return hi ? ('शतक! '+(name||'बल्लेबाज')+' का शानदार शतक!')
+              : ('A HUNDRED! '+(name||'The batter')+' brings up a magnificent century!');
+          }
+          if(/hat\\s*-?trick/i.test(rawLine)){
+            return hi ? 'हैट्रिक! कमाल का गेंदबाजी!'
+              : 'HAT-TRICK! Unbelievable bowling!';
+          }
+        }
+        if(excitedLevel>=1){
+          if(/four|\\b4\\b|चौका/i.test(rawLine)){
+            return hi
+              ? ('चौका! '+(name?name+' ने ':'')+'सुंदर चौका लगाया!')
+              : ('FOUR! '+(name?name+' finds the gap — ':'')+'beautifully timed!');
+          }
+          if(/fifty|\\b50\\b/i.test(rawLine)){
+            return hi ? ((name||'बल्लेबाज')+' का अर्धशतक!')
+              : ((name||'The batter')+' brings up a well-made fifty!');
+          }
+        }
+        // Chase tension one-liner
+        if(need!=null && need>0 && need<=20 && (data.balls|0)>0){
+          var left=Math.max(0,((data.maxOvers|0)*6)-(data.balls|0));
+          if(left>0 && left<=18){
+            if(hi) return (rawLine||'') + ' · ' + need + ' रन ' + left + ' गेंदों में चाहिए';
+            return (rawLine||'') + '. ' + need + ' needed off ' + left + ' balls!';
+          }
+        }
+        return rawLine;
+      }catch(e){ return rawLine; }
+    }
+
     function speakNewCommentary(data){
       try{
         var arr=(ttsLang==='hi')?(data.commentaryHi||data.commentary):data.commentary;
@@ -3594,9 +3672,21 @@ input, select, textarea {
         var parts=formatCommentaryLine(last);
         var toSay=(parts.title||'')+(parts.body?('. '+parts.body):'')||last;
         var srcForExcited=String((data.commentary||[]).slice(-1)[0]||last);
-        var excited=/\b(four|six|wicket|out)\b/i.test(srcForExcited)||/चौका|छक्का|आउट|विकेट/.test(last);
-        // Only speak the latest line — never queue older balls (keeps live lag-free)
-        speak(toSay,excited);
+        var ev=String(data.lastEvent||'');
+        var lvl=0;
+        if(/\\b(six|wicket|out|hundred|century|hat\\s*-?trick)\\b/i.test(srcForExcited+ev)||/छक्का|आउट|विकेट|शतक|हैट्रिक/.test(last))
+          lvl=2;
+        else if(/\\b(four|fifty|boundary)\\b/i.test(srcForExcited+ev)||/चौका|अर्धशतक/.test(last))
+          lvl=1;
+        toSay=sportsCallLine(data, toSay, lvl);
+        // Exciting moments: Device TTS immediately (no AI lag). Normal balls may use AI.
+        if(lvl>=1){
+          __ttsGen++;
+          stopAllSpeech();
+          speakDevice(toSay, lvl);
+        } else {
+          speak(toSay, false);
+        }
       }catch(e){}
     }
 
@@ -3883,14 +3973,24 @@ input, select, textarea {
       }
       var line='';
       try{ if($('v-match-line')) $('v-match-line').textContent=''; }catch(e){}
-      if($('v-crr')) $('v-crr').textContent=(data.crr!=null?Number(data.crr).toFixed(2):'0.00');
+      (function(){
+        // CRR: use payload or compute from runs/balls
+        var crrVal = data.crr;
+        if(crrVal==null || crrVal==='' || Number(crrVal)===0){
+          var bb=data.balls|0, rr=data.runs|0;
+          if(bb>0) crrVal = Math.round((rr/(bb/6))*100)/100;
+          else crrVal = 0;
+        }
+        if($('v-crr')) $('v-crr').textContent=Number(crrVal).toFixed(2);
+      })();
       (function(){
         var nrrEl=$('v-nrr');
         if(!nrrEl) return;
         var nrr=data.nrr!=null?data.nrr:(data.rrr!=null?data.rrr:null);
-        if(nrr!=null && nrr!=='') nrrEl.textContent=Number(nrr).toFixed(2);
-        else if((data.innings|0)>=2 && data.targetScore!=null){
-          var need=Math.max(0,(data.targetScore|0)-(data.runs|0));
+        if(nrr!=null && nrr!=='' && !isNaN(Number(nrr))) nrrEl.textContent=Number(nrr).toFixed(2);
+        else if((data.innings|0)>=2 && (data.targetScore!=null||data.target!=null)){
+          var tgt=(data.targetScore!=null?data.targetScore:data.target)|0;
+          var need=Math.max(0,tgt-(data.runs|0));
           var maxBalls=(data.maxOvers|0)*6;
           var left=maxBalls>0?Math.max(0,maxBalls-(data.balls|0)):0;
           if(left>0) nrrEl.textContent=((need*6)/left).toFixed(2);
@@ -3901,27 +4001,80 @@ input, select, textarea {
       function scoreHtml(runs, wkts, overs){
         return '<span class="sc-main">'+(runs|0)+' / '+(wkts|0)+'</span><span class="sc-ov">('+esc(String(overs!=null?overs:'—'))+')</span>';
       }
-      if(data.battingSide==='A'){
-        $('v-score-a').innerHTML=scoreHtml(data.runs, data.wickets, oversFromBalls(data.balls));
-        $('v-role-a').textContent='Batting';
-        if(data.innings>=2&&data.firstInningsScore!=null){
-          $('v-score-b').innerHTML=scoreHtml(data.firstInningsScore, data.firstInningsWickets, data.firstInningsOvers||'—');
-          $('v-role-b').textContent='Bowling';
-        } else {
-          $('v-score-b').textContent='Yet to bat';
-          $('v-role-b').textContent='Bowling';
-        }
-      } else {
-        $('v-score-b').innerHTML=scoreHtml(data.runs, data.wickets, oversFromBalls(data.balls));
-        $('v-role-b').textContent='Batting';
-        if(data.firstInningsScore!=null){
-          $('v-score-a').innerHTML=scoreHtml(data.firstInningsScore, data.firstInningsWickets, data.firstInningsOvers||'—');
-          $('v-role-a').textContent='Bowling';
-        } else {
-          $('v-score-a').textContent='Yet to bat';
-          $('v-role-a').textContent='Bowling';
-        }
+      function teamDetail(side){
+        var det = side==='A' ? (data.teamADetail||{}) : (data.teamBDetail||{});
+        return det && typeof det==='object' ? det : {};
       }
+      function resolveTeamScore(side){
+        // Returns {runs, wkts, overs, role, yet}
+        var bat = String(data.battingSide||data.battingTeam||'').toUpperCase();
+        if(bat!=='A' && bat!=='B'){
+          // infer from firstBattingSide + innings
+          var fb = String(data.firstBattingSide||data.firstBattingTeam||'').toUpperCase();
+          if((data.innings|0)<=1 && fb) bat = fb;
+          else if(fb==='A') bat='B';
+          else if(fb==='B') bat='A';
+        }
+        var isBat = (bat===side);
+        var det = teamDetail(side);
+        var fiScore = data.firstInningsScore;
+        var fiWk = data.firstInningsWickets;
+        var fiOv = data.firstInningsOvers;
+        // Prefer explicit detail blocks from scorer
+        if(det.runs!=null && (isBat || (det.balls|0)>0 || det.runs>0 || (data.innings|0)>=2)){
+          return {
+            runs: det.runs|0,
+            wkts: det.wickets|0,
+            overs: det.overs || (det.balls!=null?oversFromBalls(det.balls):'—'),
+            role: isBat ? 'Batting' : ((data.innings|0)>=2 || fiScore!=null || (det.runs|0)>0 ? (isBat?'Batting':'Bowling') : 'Yet to bat'),
+            yet: false
+          };
+        }
+        if(isBat){
+          return {
+            runs: data.runs|0,
+            wkts: data.wickets|0,
+            overs: oversFromBalls(data.balls),
+            role: 'Batting',
+            yet: false
+          };
+        }
+        // Non-striking side
+        if(fiScore!=null){
+          return {
+            runs: fiScore|0,
+            wkts: fiWk|0,
+            overs: fiOv!=null?fiOv:'—',
+            role: 'Bowling',
+            yet: false
+          };
+        }
+        // first batting side finished? check opposite detail
+        if((data.innings|0)>=2){
+          // still missing first innings — show 0 rather than Yet to bat if target exists
+          if(data.targetScore!=null||data.target!=null){
+            return { runs: Math.max(0,((data.targetScore||data.target)|0)-1), wkts: fiWk|0, overs: fiOv||'—', role:'Bowling', yet:false };
+          }
+        }
+        return { runs:0, wkts:0, overs:'—', role:'Yet to bat', yet:true };
+      }
+      (function(){
+        var a = resolveTeamScore('A');
+        var b = resolveTeamScore('B');
+        if(a.yet){ $('v-score-a').textContent='Yet to bat'; }
+        else { $('v-score-a').innerHTML=scoreHtml(a.runs, a.wkts, a.overs); }
+        $('v-role-a').textContent = a.role==='Yet to bat' ? '—' : a.role;
+        if(b.yet){ $('v-score-b').textContent='Yet to bat'; }
+        else { $('v-score-b').innerHTML=scoreHtml(b.runs, b.wkts, b.overs); }
+        $('v-role-b').textContent = b.role==='Yet to bat' ? '—' : b.role;
+        // Highlight batting side card
+        try{
+          var ca=document.querySelector('.team-card[onclick*="A"]');
+          var cb=document.querySelector('.team-card[onclick*="B"]');
+          if(ca) ca.classList.toggle('bat-glow', a.role==='Batting');
+          if(cb) cb.classList.toggle('bat-glow', b.role==='Batting');
+        }catch(eG){}
+      })();
       $('v-inns').innerHTML='Innings <b>'+(data.innings||1)+'</b> · '+esc(data.inningsLabel||'');
       (function(){
         var r=data.strikerRuns|0,b=data.strikerBalls|0;

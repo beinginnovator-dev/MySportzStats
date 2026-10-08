@@ -1,5 +1,5 @@
 /* Live viewer SW – register with scope /live only */
-const CACHE_NAME = "mysportzstats-live-v3";
+const CACHE_NAME = "mysportzstats-live-v5";
 const ASSETS = [
   "/live",
   "/live.html",
@@ -38,6 +38,22 @@ self.addEventListener("fetch", (e) => {
     url.pathname.startsWith("/floats") ||
     url.pathname.startsWith("/predictions")
   ) {
+    return;
+  }
+
+  // Always prefer network for HTML so viewers never stick on old live.html
+  if (e.request.mode === "navigate" || url.pathname.endsWith(".html") || url.pathname === "/live") {
+    e.respondWith(
+      fetch(e.request).then((res) => {
+        try {
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then((c) => c.put(e.request, copy)).catch(() => {});
+          }
+        } catch (_) {}
+        return res;
+      }).catch(() => caches.match(e.request).then((c) => c || caches.match("/live.html")))
+    );
     return;
   }
 

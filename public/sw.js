@@ -1,5 +1,5 @@
 /* Scorer PWA – navigation to / always opens scorer */
-const CACHE_NAME = "mysportzstats-scorer-v3";
+const CACHE_NAME = "mysportzstats-scorer-v5";
 const ASSETS = [
   "/",
   "/index.html",
