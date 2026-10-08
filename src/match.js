@@ -214,40 +214,29 @@ export class MatchDO {
   }
 
   publicPayload() {
-    const L = this.live;
-    return {
-      ts: L.ts || Date.now(),
-      runs: L.runs ?? L.score?.runs ?? 0,
-      wickets: L.wickets ?? L.score?.wickets ?? 0,
-      balls: L.balls ?? 0,
-      overs: L.overs || L.score?.overs || "0.0",
-      innings: L.innings ?? L.score?.innings ?? 1,
-      score: L.score || {
-        runs: L.runs || 0,
-        wickets: L.wickets || 0,
-        overs: L.overs || "0.0",
-        innings: L.innings || 1,
-      },
-      target: L.target,
-      maxOvers: L.maxOvers || 8,
-      lastEvent: L.lastEvent,
-      thisOver: L.thisOver || { balls: [] },
-      chase: L.chase,
-      matchEnded: !!L.matchEnded,
-      teamA: L.teamA,
-      teamB: L.teamB,
-      strikerName: L.strikerName || "",
-      nonStrikerName: L.nonStrikerName || "",
-      bowlerName: L.bowlerName || "",
-      strikerRuns: L.strikerRuns | 0,
-      strikerBalls: L.strikerBalls | 0,
-      bowlerRuns: L.bowlerRuns | 0,
-      bowlerBalls: L.bowlerBalls | 0,
-      commentary: L.commentary || [],
-      statusText: L.statusText || "",
-      matchDesc: L.matchDesc || "",
-      floats: (L.floats || []).slice(-10),
-    };
+    const L = this.live || {};
+    // Return full scorer payload so viewer gets BOTH team scores, CRR, target, etc.
+    // (Previously stripped firstInningsScore / battingSide / crr → "Yet to bat" + CRR 0.00)
+    const out = Object.assign({}, L);
+    out.ts = L.ts || Date.now();
+    out.runs = L.runs != null ? L.runs : (L.score && L.score.runs) || 0;
+    out.wickets = L.wickets != null ? L.wickets : (L.score && L.score.wickets) || 0;
+    out.balls = L.balls != null ? L.balls : 0;
+    out.overs = L.overs || (L.score && L.score.overs) || "0.0";
+    out.innings = L.innings != null ? L.innings : (L.score && L.score.innings) || 1;
+    out.matchEnded = !!L.matchEnded;
+    out.commentary = Array.isArray(L.commentary) ? L.commentary.slice(-30) : [];
+    out.floats = Array.isArray(L.floats) ? L.floats.slice(-10) : [];
+    // Aliases
+    if (out.targetScore == null && L.target != null) out.targetScore = L.target;
+    if (out.target == null && L.targetScore != null) out.target = L.targetScore;
+    if (out.maxOvers == null) out.maxOvers = L.maxOvers || 8;
+    if (!out.thisOver) out.thisOver = { balls: [] };
+    // Client-side CRR if missing
+    if (out.crr == null && out.balls > 0) {
+      out.crr = Math.round((out.runs / (out.balls / 6)) * 100) / 100;
+    }
+    return out;
   }
 
   handleMessage(ws, msg) {
