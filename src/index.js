@@ -147,6 +147,7 @@ export default {
     }
 
     const doPaths = [
+      "/fans",
       "/presence",
       "/chat",
       "/floats",

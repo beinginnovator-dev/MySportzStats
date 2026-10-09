@@ -3,6 +3,7 @@ export class MatchDO {
     this.state = state;
     this.env = env;
     this.sessions = new Map();
+    this.httpViewers = new Map(); // id -> {name, joinedAt, lastSeen, coins}
     this.live = {
       ts: 0,
       runs: 0,
@@ -103,9 +104,25 @@ export class MatchDO {
 
     if (url.pathname === "/presence" && request.method === "POST") {
       try {
-        const viewers = [...this.sessions.values()]
-          .filter((s) => s.role === "viewer")
-          .map((s) => ({ name: s.name, joinedAt: s.joinedAt, online: true }));
+        const body = await request.json().catch(() => ({}));
+        const id = String((body && (body.id || body.uid)) || "").slice(0, 64);
+        const name = String((body && body.name) || "Fan").slice(0, 40);
+        const now = Date.now();
+        if (id) {
+          const prev = this.httpViewers.get(id) || {};
+          this.httpViewers.set(id, {
+            id,
+            name: name || prev.name || "Fan",
+            joinedAt: prev.joinedAt || now,
+            lastSeen: now,
+            coins: prev.coins != null ? prev.coins : 10,
+            online: true,
+          });
+        }
+        for (const [k, v] of [...this.httpViewers.entries()]) {
+          if (now - (v.lastSeen || 0) > 45000) this.httpViewers.delete(k);
+        }
+        const viewers = this.collectViewers();
         return new Response(
           JSON.stringify({
             ok: true,
@@ -121,6 +138,19 @@ export class MatchDO {
           headers: cors,
         });
       }
+    }
+
+    if (url.pathname === "/fans" && request.method === "GET") {
+      const viewers = this.collectViewers();
+      const fans = viewers.map((v) => ({
+        id: v.id || v.name,
+        name: v.name || "Fan",
+        points: v.coins != null ? v.coins : 10,
+        correct: 0,
+      }));
+      return new Response(JSON.stringify({ ok: true, fans, list: fans }), {
+        headers: cors,
+      });
     }
 
     if (url.pathname === "/chat") {
@@ -211,6 +241,35 @@ export class MatchDO {
     }
 
     return new Response("Not found", { status: 404 });
+  }
+
+  collectViewers() {
+    const now = Date.now();
+    const map = new Map();
+    // WebSocket viewers
+    for (const s of this.sessions.values()) {
+      if (s.role !== "viewer") continue;
+      const id = "ws:" + (s.name || "Fan") + ":" + (s.joinedAt || 0);
+      map.set(id, {
+        id,
+        name: s.name || "Fan",
+        joinedAt: s.joinedAt || now,
+        online: true,
+        coins: 10,
+      });
+    }
+    // HTTP heartbeat viewers
+    for (const [k, v] of this.httpViewers) {
+      if (now - (v.lastSeen || 0) > 45000) continue;
+      map.set(v.id || k, {
+        id: v.id || k,
+        name: v.name || "Fan",
+        joinedAt: v.joinedAt || now,
+        online: true,
+        coins: v.coins != null ? v.coins : 10,
+      });
+    }
+    return [...map.values()];
   }
 
   publicPayload() {
@@ -345,13 +404,7 @@ export class MatchDO {
   }
 
   broadcastPresence() {
-    const viewers = [...this.sessions.values()]
-      .filter((s) => s.role === "viewer")
-      .map((s) => ({
-        name: s.name,
-        joinedAt: s.joinedAt,
-        online: true,
-      }));
+    const viewers = this.collectViewers();
     this.live.viewers = viewers;
     this.broadcast({ type: "presence", data: viewers });
   }
