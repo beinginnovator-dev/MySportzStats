@@ -12,13 +12,17 @@
       }
     }
     var t = localStorage.getItem('cricket_live_theme_v1') || localStorage.getItem('theme') || 'dark';
-    if (t === 'default' || t === 'amazon' || t === 'light' || t === 'glass' || t === 'fb') t = 'dark';
+    // Map legacy aliases; default stays dark
+    if (t === 'default' || t === 'glass' || !t) t = 'dark';
+    if (t === 'light' || t === 'fb' || t === 'white') t = 'sports';
     document.documentElement.setAttribute('data-theme', t);
     document.addEventListener('DOMContentLoaded', function(){
       document.body.setAttribute('data-theme', t);
-      document.body.classList.remove('theme-amazon','theme-sports');
-      if (t === 'black') document.body.classList.add('theme-black');
-      if (t === 'navy') document.body.classList.add('theme-navy');
+      document.body.classList.remove('theme-amazon','theme-sports','theme-black','theme-navy');
+      if (t === 'amazon') document.body.classList.add('theme-amazon');
+      else if (t === 'sports') document.body.classList.add('theme-sports');
+      else if (t === 'black') document.body.classList.add('theme-black');
+      else if (t === 'navy') document.body.classList.add('theme-navy');
     });
   } catch(e){}
 })();
@@ -66,23 +70,6 @@
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0b1412;color:#e8f5f0;min-height:100dvh}
 
-    .v-swipe-shell{position:relative;overflow:hidden;border-radius:1rem;touch-action:pan-y;overscroll-behavior-x:contain}
-    .v-swipe-track{display:flex;width:200%;transition:transform .42s cubic-bezier(.22,.61,.36,1);will-change:transform}
-    .v-swipe-track>.score-card,.v-swipe-track>.v-innings-stats{width:50%;flex:0 0 50%;min-width:50%;border-radius:1rem}
-    .v-innings-stats{background:linear-gradient(165deg,#0f172a,#1e293b 55%,#0f172a);border:1px solid rgba(148,163,184,.2);padding:10px 8px;overflow:auto;max-height:540px}
-    .v-swipe-title{text-align:center;color:#fbbf24;font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;padding:3px 0 9px}
-    .v-innings-stats .sec-title{padding:10px 8px 6px;font-size:11px}
-    .v-innings-stats table.stats{font-size:12px;line-height:1.4}
-    table.stats th,table.stats td{vertical-align:middle;line-height:1.35;padding:8px 6px}
-    .v-innings-stats table.stats th{font-size:9px;padding:7px 4px}
-    .v-innings-stats table.stats td{font-size:11px;padding:7px 4px}
-    .v-swipe-hint{text-align:center;font-size:9px;color:#64748b;margin:5px 0 8px;letter-spacing:.04em}
-    .viewer-result{margin-top:10px;padding:14px 12px;border-radius:1rem;background:linear-gradient(135deg,#3b0764,#7c2d12 55%,#92400e);border:1px solid rgba(251,191,36,.45);box-shadow:0 12px 32px rgba(0,0,0,.3);text-align:center}
-    .viewer-result .vr-title{font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:#fde68a}
-    .viewer-result .vr-result{font-size:20px;font-weight:950;color:#fff;margin-top:5px}
-    .viewer-result .vr-score{font-size:12px;color:#e2e8f0;margin-top:7px;line-height:1.55}
-    .viewer-result .vr-mom{margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.15);font-size:13px;color:#fef3c7}
-    .viewer-result .vr-reason{font-size:12px;color:#e2e8f0;margin-top:4px}
     .wrap{max-width:28rem;margin:0 auto;padding:12px 12px 28px}
     .hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
     .hdr h1{font-size:13px;margin:0;letter-spacing:.12em;text-transform:uppercase;color:#7da89d}
@@ -436,16 +423,16 @@
     }
 
   
-    /* v13 float full scoreboard height */
+    /* Float banners — compact side pills only (no full-width giant text) */
     .float-banner{
-      position:fixed!important;left:50%!important;z-index:9500!important;pointer-events:none!important;
-      transform:translateX(-50%);
-      background:linear-gradient(90deg,rgba(16,185,129,.96),rgba(59,130,246,.96))!important;
-      color:#fff!important;font-weight:900!important;font-size:17px!important;
-      padding:12px 20px!important;border-radius:999px!important;
-      white-space:nowrap;max-width:92vw;overflow:visible;text-overflow:clip;
-      box-shadow:0 12px 32px rgba(0,0,0,.5)!important;
-      animation:none!important; /* JS-driven full path */
+      position:fixed!important;left:auto!important;right:8px!important;z-index:9500!important;pointer-events:none!important;
+      transform:none!important;
+      background:linear-gradient(90deg,rgba(16,185,129,.95),rgba(59,130,246,.95))!important;
+      color:#fff!important;font-weight:800!important;font-size:13px!important;
+      padding:8px 12px!important;border-radius:999px!important;
+      white-space:nowrap;max-width:min(42vw,200px)!important;overflow:hidden!important;text-overflow:ellipsis!important;
+      box-shadow:0 6px 18px rgba(0,0,0,.35)!important;
+      animation:none!important;
       opacity:1!important;
     }
     .float-banner.gold{background:linear-gradient(90deg,rgba(251,191,36,.96),rgba(245,158,11,.96))!important;color:#1c1917!important}
@@ -460,7 +447,7 @@
     #anim-overlay{position:fixed;inset:0;z-index:9600;pointer-events:none;display:flex;align-items:center;justify-content:center}
     #anim-overlay:not(.show){opacity:0;visibility:hidden}
     #anim-overlay.show{opacity:1;visibility:visible}
-    #anim-text.burst{font-size:42px;font-weight:900;text-shadow:0 0 24px rgba(251,191,36,.8);animation:burstPop 1.1s ease-out}
+    #anim-text.burst{font-size:36px;font-weight:900;text-shadow:0 0 24px rgba(251,191,36,.8);animation:burstPop 1.1s ease-out;max-width:90vw;text-align:center}
     #anim-text.burst.four{color:#38bdf8}
     #anim-text.burst.six{color:#fbbf24}
     #anim-text.burst.wicket{color:#f87171}
@@ -1122,6 +1109,126 @@
     }
   
 
+
+/* Light scorecard theme — white cards, dark text, blue headers (scoreboard style) */
+body.theme-sports, body[data-theme="sports"] {
+  --bg:#eef2f7;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#475569;
+  --accent:#1565c0;
+  --border:#d0d7e2;
+  background:#eef2f7 !important;
+  color:#0f172a !important;
+}
+body.theme-amazon, body[data-theme="amazon"] {
+  --bg:#f5f0e8;
+  --card:#ffffff;
+  --text:#1c1917;
+  --muted:#57534e;
+  --accent:#c2410c;
+  --border:#e7e0d5;
+  background:#f5f0e8 !important;
+  color:#1c1917 !important;
+}
+body.theme-sports .score-card,
+body.theme-sports .team-card,
+body.theme-sports .pbox,
+body.theme-sports .sb-wrap,
+body.theme-sports .viewer-bar,
+body.theme-sports .panel,
+body.theme-sports .fan-team-card,
+body.theme-amazon .score-card,
+body.theme-amazon .team-card,
+body.theme-amazon .pbox,
+body.theme-amazon .sb-wrap,
+body.theme-amazon .viewer-bar,
+body.theme-amazon .panel,
+body.theme-amazon .fan-team-card {
+  background:#fff !important;
+  color:#0f172a !important;
+  border:1px solid var(--border,#d0d7e2) !important;
+  box-shadow:0 2px 10px rgba(15,23,42,.06) !important;
+}
+body.theme-sports .match-head .type { color:#1565c0 !important; }
+body.theme-amazon .match-head .type { color:#c2410c !important; }
+body.theme-sports .crr-nrr-line .crr-v,
+body.theme-sports .team-card .score,
+body.theme-sports .sb-table td.n,
+body.theme-amazon .crr-nrr-line .crr-v,
+body.theme-amazon .team-card .score,
+body.theme-amazon .sb-table td.n { color:#0d9488 !important; text-shadow:none !important; }
+body.theme-sports .team-card .name,
+body.theme-sports .sb-table td.nm,
+body.theme-amazon .team-card .name,
+body.theme-amazon .sb-table td.nm { color:#0f172a !important; text-shadow:none !important; }
+body.theme-sports .tab,
+body.theme-amazon .tab {
+  background:#fff !important;
+  color:#334155 !important;
+  border:1px solid var(--border) !important;
+  -webkit-text-fill-color:#334155 !important;
+}
+body.theme-sports .tab.on, body.theme-sports .tab.active,
+body.theme-amazon .tab.on, body.theme-amazon .tab.active {
+  background:#1565c0 !important;
+  color:#fff !important;
+  border-color:#1565c0 !important;
+  -webkit-text-fill-color:#fff !important;
+}
+body.theme-sports button, body.theme-sports .pred-btn, body.theme-sports .react-btn,
+body.theme-sports .cheer-toggle, body.theme-sports .fan-btn.sec, body.theme-sports .icon-btn,
+body.theme-amazon button, body.theme-amazon .pred-btn, body.theme-amazon .react-btn,
+body.theme-amazon .cheer-toggle, body.theme-amazon .fan-btn.sec, body.theme-amazon .icon-btn {
+  background:#fff !important;
+  color:#0f172a !important;
+  border:1px solid var(--border) !important;
+  -webkit-text-fill-color:#0f172a !important;
+}
+body.theme-sports .fan-btn:not(.sec), body.theme-amazon .fan-btn:not(.sec) {
+  background:#0d9488 !important;
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  border-color:#0d9488 !important;
+}
+body.theme-sports input, body.theme-sports textarea, body.theme-sports select,
+body.theme-amazon input, body.theme-amazon textarea, body.theme-amazon select {
+  background:#fff !important;
+  color:#0f172a !important;
+  border:1px solid var(--border) !important;
+}
+body.theme-sports .match-head .line,
+body.theme-sports .crr-nrr-line,
+body.theme-sports .status,
+body.theme-sports .empty,
+body.theme-amazon .match-head .line,
+body.theme-amazon .crr-nrr-line,
+body.theme-amazon .status,
+body.theme-amazon .empty { color:#475569 !important; }
+body.theme-sports .hdr h1, body.theme-sports .live-dot,
+body.theme-amazon .hdr h1, body.theme-amazon .live-dot { color:#0f766e !important; }
+body.theme-sports .theme-menu, body.theme-amazon .theme-menu {
+  background:#fff !important;
+  border:1px solid var(--border) !important;
+}
+body.theme-sports .theme-opt, body.theme-amazon .theme-opt {
+  background:#f8fafc !important;
+  color:#0f172a !important;
+  border:1px solid var(--border) !important;
+}
+body.theme-sports .theme-opt.on, body.theme-amazon .theme-opt.on {
+  border-color:#1565c0 !important;
+  background:#e3f2fd !important;
+  color:#0d47a1 !important;
+}
+body.theme-sports .ob, body.theme-amazon .ob {
+  background:#e2e8f0 !important;
+  color:#0f172a !important;
+  border:1px solid #cbd5e1 !important;
+}
+body.theme-sports .pbox .lbl, body.theme-sports .sb-table th,
+body.theme-amazon .pbox .lbl, body.theme-amazon .sb-table th { color:#64748b !important; }
+
 /* Live dark themes – no white chips */
 body, body[data-theme="dark"] {
   --bg:#0f172a; --card:#1e293b; --text:#f1f5f9; --muted:#94a3b8;
@@ -1184,9 +1291,9 @@ input, select, textarea {
     </div>
     <div id="theme-menu" class="theme-menu hidden" role="dialog" aria-label="Themes">
       <div class="theme-menu-title">Page theme</div>
-      <button type="button" class="theme-opt" data-theme="default" onclick="setLiveTheme('default')">Default · Dark</button>
-      <button type="button" class="theme-opt" data-theme="amazon" onclick="setLiveTheme('amazon')">Amazon · Light</button>
-      <button type="button" class="theme-opt" data-theme="sports" onclick="setLiveTheme('sports')">Sports · Light</button>
+      <button type="button" class="theme-opt" data-theme="default" onclick="setLiveTheme('default')">Dark (default)</button>
+      <button type="button" class="theme-opt" data-theme="sports" onclick="setLiveTheme('sports')">Light · Scorecard</button>
+      <button type="button" class="theme-opt" data-theme="amazon" onclick="setLiveTheme('amazon')">Light · Warm</button>
     </div>
     <div id="no-data" class="wait-only">Waiting for score updates…</div>
     <div id="live-root" class="hidden">
@@ -1523,11 +1630,18 @@ input, select, textarea {
     function __fbEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
     function __fbBanner(name, text){
       try{
+        // Max 2 on screen; drop oldest
+        try{
+          var existing=document.querySelectorAll('[data-float-bus="1"]');
+          if(existing.length>=2){
+            try{ existing[0].remove(); }catch(eR){}
+          }
+        }catch(eC){}
         var el=document.createElement('div');
         el.setAttribute('data-float-bus','1');
         // Keep banner in upper band, slightly off-center so score stays readable
         var side = Math.random() < 0.5 ? 'left' : 'right';
-        el.style.cssText='position:fixed;z-index:99990;pointer-events:none;background:linear-gradient(90deg,rgba(16,185,129,.92),rgba(59,130,246,.92));color:#fff;font-weight:900;font-size:14px;padding:8px 14px;border-radius:999px;white-space:nowrap;max-width:46vw;overflow:visible;text-overflow:clip;box-shadow:0 8px 24px rgba(0,0,0,.4)';
+        el.style.cssText='position:fixed;z-index:99990;pointer-events:none;background:linear-gradient(90deg,rgba(16,185,129,.95),rgba(59,130,246,.95));color:#fff;font-weight:800;font-size:13px;line-height:1.25;padding:8px 12px;border-radius:999px;white-space:nowrap;max-width:min(42vw,200px);overflow:hidden;text-overflow:ellipsis;box-shadow:0 6px 18px rgba(0,0,0,.35)';
         el.innerHTML='<span style="opacity:.9;font-size:10px;margin-right:6px;text-transform:uppercase">'+__fbEsc(name||'Fan')+'</span> '+__fbEsc(text||'');
         var startY=window.innerHeight*0.52, endY=20;
         try{
@@ -2759,8 +2873,23 @@ input, select, textarea {
       }
       if(!API_BASE){ paint([]); return; }
       fetch(API_BASE+'/fans').then(function(r){return r.json()}).then(function(d){
-        paint(d.fans||d.list||[]);
-      }).catch(function(){ paint([]); });
+        var rows=d.fans||d.list||[];
+        if(rows.length){ paint(rows); return; }
+        // Fallback: build from last presence list
+        try{
+          var list=(window.__lastPresenceList||[]);
+          paint(list.map(function(v){
+            return {id:v.id||v.name, name:v.name||'Fan', points:v.coins!=null?v.coins:10, correct:0};
+          }));
+        }catch(e){ paint([]); }
+      }).catch(function(){
+        try{
+          var list=(window.__lastPresenceList||[]);
+          paint(list.map(function(v){
+            return {id:v.id||v.name, name:v.name||'Fan', points:10, correct:0};
+          }));
+        }catch(e2){ paint([]); }
+      });
     }
     function shareExpertView(){
       var d=lastData||{};
@@ -2926,6 +3055,7 @@ input, select, textarea {
     // ---------- Stadium atmosphere (procedural Web Audio — no downloads) ----------
     // Default ON. Toggle via Audio menu → Stadium FX.
     var stadiumOn=(function(){try{return localStorage.getItem('cricket_stadium_on')!=='0'}catch(e){return true}})();
+    var __lastOverKeyWhistle='';
     var __stadCtx=null, __stadMaster=null, __stadAmbientGain=null, __stadNoiseSrc=null;
     var __stadAmbientStarted=false, __stadRandTimer=null, __stadUnlocked=false;
     var __stadWicketStreak=0, __stadLastWicketBall=-99;
@@ -3287,15 +3417,15 @@ input, select, textarea {
     // ---------- Text-to-speech (Commentary): Device + AI, language + voice gender ----------
     var ttsOn=(function(){try{var v=localStorage.getItem('cricket_tts_on'); if(v===null||v===undefined||v==='') return true; return v!=='0'&&v!=='false'}catch(e){return true}})();
     var ttsLang=(function(){try{return localStorage.getItem('cricket_tts_lang')||'en'}catch(e){return 'en'}})();
-    var ttsGender=(function(){try{return localStorage.getItem('cricket_tts_gender')||'auto'}catch(e){return 'auto'}})();
+    var ttsGender=(function(){try{return localStorage.getItem('cricket_tts_gender')||'male'}catch(e){return 'male'}})();
     // 'device' = Web Speech API (instant). 'ai' = neural/online audio with device fallback.
-    var ttsEngine=(function(){try{var e=localStorage.getItem('cricket_tts_engine');return (e==='ai'||e==='device')?e:'ai'}catch(e){return 'ai'}})();
+    var ttsEngine=(function(){try{var e=localStorage.getItem('cricket_tts_engine');return (e==='ai'||e==='device')?e:'device'}catch(e){return 'device'}})();
     var TTS_AI_VOICES=['asteria','luna','athena','stella','hera','angus','orion','zeus','orpheus','arcas','helios','perseus'];
     var ttsAiVoice=(function(){try{var v=(localStorage.getItem('cricket_tts_ai_voice')||'asteria').toLowerCase();return TTS_AI_VOICES.indexOf(v)>=0?v:'asteria'}catch(e){return 'asteria'}})();
     var ttsVoiceCache={};
     try{
       if(localStorage.getItem('cricket_tts_on')===null) localStorage.setItem('cricket_tts_on','1');
-      if(localStorage.getItem('cricket_tts_engine')===null) localStorage.setItem('cricket_tts_engine','ai');
+      if(localStorage.getItem('cricket_tts_engine')===null) localStorage.setItem('cricket_tts_engine','device');
       if(localStorage.getItem('cricket_stadium_on')===null) localStorage.setItem('cricket_stadium_on','1');
     }catch(eDef){}
     var __ttsAudio=null;          // current HTMLAudioElement (AI)
@@ -3303,7 +3433,7 @@ input, select, textarea {
     var __ttsGen=0;               // generation token — stale responses ignored
     var __ttsFallbackTimer=null;
     var FEMALE_HINTS=/female|woman|zira|samantha|susan|karen|moira|tessa|veena|fiona|kate|salli|joanna|ivy|kendra|amy|emma|aditi|swara|priya|neerja|heera/i;
-    var MALE_HINTS=/male|man\b|david|alex\b|daniel|fred|george|james|mark|ryan|guy|ravi|arjun|hemant|rishi|matthew|justin|brian/i;
+    var MALE_HINTS=/male|\bman\b|david|daniel|fred|george|james|mark|ryan|guy|ravi|arjun|hemant|rishi|matthew|justin|brian|tom|google uk english male|google us english|microsoft david|microsoft mark|microsoft ravi|microsoft hemant|google हिन्दी|hindi male|en-in-x-ene|en-gb-x-rjs|en-us-x-iog|en-us-x-tpd|en-au-x-afh|en-gb-x-gbd|en-gb-x-gbg/i;
     function voiceGender(v){var n=v.name||'';if(FEMALE_HINTS.test(n))return'female';if(MALE_HINTS.test(n))return'male';return'unknown'}
     function pickBestVoice(lang,gender){
       try{
@@ -3311,14 +3441,34 @@ input, select, textarea {
         if(!voices.length)return null;
         var langPrefix=(lang==='hi')?'hi':'en';
         var pool=voices.filter(function(v){return v.lang&&v.lang.toLowerCase().indexOf(langPrefix)===0});
-        if(!pool.length)pool=voices;
+        if(!pool.length)pool=voices.slice();
         var wantGender=gender&&gender!=='auto'?gender:null;
+        // Prefer gender match strictly when user picked male/female
+        if(wantGender){
+          var gendered=pool.filter(function(v){return voiceGender(v)===wantGender});
+          if(gendered.length) pool=gendered;
+          else {
+            // Heuristic: for male, drop obvious female names
+            if(wantGender==='male'){
+              var filtered=pool.filter(function(v){return voiceGender(v)!=='female'});
+              if(filtered.length) pool=filtered;
+            }
+            if(wantGender==='female'){
+              var filtered2=pool.filter(function(v){return voiceGender(v)!=='male'});
+              if(filtered2.length) pool=filtered2;
+            }
+          }
+        }
         function rank(v){
           var score=0;
-          if(/natural|neural|online|google|premium|enhanced/i.test(v.name))score+=4;
-          if(langPrefix==='en'&&/en-in|en_IN/i.test(v.lang))score+=2;
-          if(wantGender&&voiceGender(v)===wantGender)score+=5;
-          else if(wantGender&&voiceGender(v)!=='unknown'&&voiceGender(v)!==wantGender)score-=4;
+          var n=(v.name||'')+' '+(v.lang||'');
+          if(/natural|neural|premium|enhanced/i.test(n))score+=3;
+          if(langPrefix==='en'&&/en-IN|en_IN|en-in/i.test(n))score+=4; // cricket / India accent
+          if(langPrefix==='en'&&/en-GB|en_GB/i.test(n))score+=2;
+          if(wantGender&&voiceGender(v)===wantGender)score+=8;
+          if(wantGender==='male'&&voiceGender(v)==='female')score-=10;
+          if(wantGender==='female'&&voiceGender(v)==='male')score-=10;
+          if(v.localService)score+=2; // offline, low lag
           return score;
         }
         pool=pool.slice().sort(function(a,b){return rank(b)-rank(a)});
@@ -3608,53 +3758,67 @@ input, select, textarea {
       setTimeout(attach, 800);
     })();
 
+    function spokenScoreBits(data){
+      try{
+        var runs=data.runs|0, wk=data.wickets|0, balls=data.balls|0;
+        var ov=Math.floor(balls/6), b=balls%6;
+        var oversTxt = ov + (b ? (' point ' + b) : '') + (ov===1 && !b ? ' over' : ' overs');
+        // "27 runs for 2 wickets in 3 overs"
+        return runs + ' run' + (runs===1?'':'s') + ' for ' + wk + ' wicket' + (wk===1?'':'s') + ' in ' + oversTxt;
+      }catch(e){ return ''; }
+    }
     function sportsCallLine(data, rawLine, excitedLevel){
       try{
         var name=(data&&data.strikerName)||'';
         var bowl=(data&&data.bowlerName)||'';
         var runs=data?(data.runs|0):0;
+        var scoreBits=spokenScoreBits(data||{});
         var need=null;
         if(data&&(data.targetScore!=null||data.target!=null)){
           need=Math.max(0,((data.targetScore!=null?data.targetScore:data.target)|0)-runs);
         }
         var hi=(ttsLang==='hi');
         if(excitedLevel>=2){
-          if(/six|\\b6\\b|छक्का/i.test(rawLine)){
+          if(/six|\b6\b|छक्का/i.test(rawLine)){
             return hi
-              ? ('छक्का! '+(name?name+' ने ':'')+'जबरदस्त छक्का मारा!')
-              : ('SIX! '+(name?name+' smashes it ':'')+'out of the ground! What a hit!');
+              ? ('छक्का! '+(name?name+' ने ':'')+'जबरदस्त छक्का! स्कोर '+scoreBits)
+              : ('SIX! '+(name?name+' deposits that into the stands! ':'What a strike! ')+'The score moves to '+scoreBits+'.');
           }
-          if(/wicket|\\bout\\b|विकेट|आउट/i.test(rawLine)){
+          if(/wicket|\bout\b|विकेट|आउट/i.test(rawLine)){
             return hi
-              ? ('विकेट! '+(bowl?bowl+' की गेंद पर ':'')+(name?name+' आउट!':'आउट!'))
-              : ('WICKET! '+(bowl?bowl+' strikes — ':'')+(name?name+' is gone!':'He is gone!'));
+              ? ('विकेट! '+(bowl?bowl+' की गेंद पर ':'')+(name?name+' आउट! ':'')+'स्कोर '+scoreBits)
+              : ('WICKET! '+(bowl?bowl+' strikes — ':'')+(name?name+' has to go! ':'He is gone! ')+scoreBits+'.');
           }
           if(/hundred|century|100/i.test(rawLine)){
             return hi ? ('शतक! '+(name||'बल्लेबाज')+' का शानदार शतक!')
-              : ('A HUNDRED! '+(name||'The batter')+' brings up a magnificent century!');
+              : ('A magnificent hundred for '+(name||'the batter')+'! The crowd is on its feet!');
           }
-          if(/hat\\s*-?trick/i.test(rawLine)){
+          if(/hat\s*-?trick/i.test(rawLine)){
             return hi ? 'हैट्रिक! कमाल का गेंदबाजी!'
-              : 'HAT-TRICK! Unbelievable bowling!';
+              : 'HAT-TRICK! Sensational bowling — three in three!';
           }
         }
         if(excitedLevel>=1){
-          if(/four|\\b4\\b|चौका/i.test(rawLine)){
+          if(/four|\b4\b|चौका/i.test(rawLine)){
             return hi
-              ? ('चौका! '+(name?name+' ने ':'')+'सुंदर चौका लगाया!')
-              : ('FOUR! '+(name?name+' finds the gap — ':'')+'beautifully timed!');
+              ? ('चौका! '+(name?name+' ने ':'')+'सुंदर चौका! '+scoreBits)
+              : ('FOUR! '+(name?name+' caresses it through the covers — ':'Played away to the boundary — ')+'scoreline reads '+scoreBits+'.');
           }
-          if(/fifty|\\b50\\b/i.test(rawLine)){
+          if(/fifty|\b50\b/i.test(rawLine)){
             return hi ? ((name||'बल्लेबाज')+' का अर्धशतक!')
-              : ((name||'The batter')+' brings up a well-made fifty!');
+              : ('Fifty up for '+(name||'the batter')+' — a well-constructed innings!');
           }
         }
-        // Chase tension one-liner
-        if(need!=null && need>0 && need<=20 && (data.balls|0)>0){
+        // Professional scoreboard read for quieter balls
+        if(scoreBits && Math.random()<0.35){
+          if(hi) return (rawLine||'गेंद') + '. स्कोर ' + scoreBits;
+          return (rawLine||'Dot ball') + '. ' + scoreBits + '.';
+        }
+        if(need!=null && need>0 && need<=24 && (data.balls|0)>0){
           var left=Math.max(0,((data.maxOvers|0)*6)-(data.balls|0));
-          if(left>0 && left<=18){
-            if(hi) return (rawLine||'') + ' · ' + need + ' रन ' + left + ' गेंदों में चाहिए';
-            return (rawLine||'') + '. ' + need + ' needed off ' + left + ' balls!';
+          if(left>0 && left<=24){
+            if(hi) return (rawLine||'') + ' · ' + need + ' रन ' + left + ' गेंदों में';
+            return (rawLine||'') + '. ' + need + ' needed off ' + left + ' deliveries.';
           }
         }
         return rawLine;
@@ -4280,6 +4444,29 @@ input, select, textarea {
       var purple=data.cumulativePurpleCap&&data.cumulativePurpleCap.length?data.cumulativePurpleCap:(data.purpleCap||[]);
       $('sum-purple').innerHTML='<div class="sec-title">🟣 Purple cap · all matches</div><table class="stats"><thead><tr><th>#</th><th>Bowler</th><th class="num">W</th><th class="num">R</th><th class="num">O</th><th class="num">Dots</th><th class="num">Econ</th></tr></thead><tbody>'+
         (purple.length?purple.map(function(p,i){return'<tr><td class="num">'+(i+1)+'</td><td class="nm">'+esc(p.name)+'</td><td class="num">'+(p.wickets|0)+'</td><td class="num">'+(p.bowlRuns|0)+'</td><td class="num">'+oversFromBalls(p.bowlBalls)+'</td><td class="num">'+(p.dots|0)+'</td><td class="num">'+(p.Econ!=null?p.Econ:econ(p.bowlRuns,p.bowlBalls))+'</td></tr>'}).join(''):'<tr><td colspan="7" class="empty">No bowling data</td></tr>')+'</tbody></table>';
+      
+      // Random crowd whistle at start of a new over
+      try{
+        if(stadiumOn && data && !data.matchEnded){
+          var ballsN = data.balls|0;
+          var innsN = data.innings|0;
+          var overKey = innsN + '-' + Math.floor(ballsN/6);
+          // New over just began: legal balls in over == 0 (or balls % 6 == 0 and balls > 0 after completing previous)
+          var legalInOver = ballsN % 6;
+          if(overKey !== __lastOverKeyWhistle){
+            var prev = __lastOverKeyWhistle;
+            __lastOverKeyWhistle = overKey;
+            // Play when moving to a new over (not first ball of match) — random ~70%
+            if(prev && ballsN > 0 && legalInOver === 0 && Math.random() < 0.72){
+              setTimeout(function(){ try{ stadPlaySample('whistle', 0.28 + Math.random()*0.12, 0.95 + Math.random()*0.1); }catch(eW){} }, 120);
+            } else if(prev && ballsN > 0 && legalInOver === 1 && Math.random() < 0.55){
+              // first ball of new over sometimes
+              setTimeout(function(){ try{ stadPlaySample('whistle', 0.22 + Math.random()*0.1, 1); }catch(eW2){} }, 80);
+            }
+          }
+        }
+      }catch(eOW){}
+
       try{paintTeamsWithCheers(data)}catch(eT){
         var squadA=data.squadA||data.teamAPlayers||[],squadB=data.squadB||data.teamBPlayers||[];
         function squadHtml(teamName,squad){
@@ -4292,50 +4479,14 @@ input, select, textarea {
 
     
     var lastFloatTs=0;
+    var __fbLiveCount = 0;
     function floatCheerBanner(name,text,kind){
+      // Single path only — no second large overlay (was causing duplicate + off-UI giant text)
       try{
-        var el=document.createElement('div');
-        el.className='float-banner'+(kind==='gold'?' gold':'');
-        var show=String(text||'').replace(/^__FLOAT__/,'');
-        el.innerHTML='<span class="who">'+esc(name||'Fan')+'</span> '+esc(show);
-        document.body.appendChild(el);
-        // Start at This Over, end above CRR / top of scoreboard
-        var startY, endY;
-        try{
-          var over=document.querySelector('.over-box');
-          var crr=document.querySelector('.crr-big')||document.querySelector('.match-head')||$('live-root');
-          if(over) startY=over.getBoundingClientRect().top;
-          else startY=window.innerHeight*0.55;
-          if(crr) endY=Math.max(8, crr.getBoundingClientRect().top - 36);
-          else endY=24;
-        }catch(e){ startY=window.innerHeight*0.55; endY=24; }
-        el.style.top=startY+'px';
-        el.style.bottom='auto';
-        el.style.opacity='1';
-        // Animate independently of CSS keyframes duration
-        var t0=null, dur=3200;
-        function step(ts){
-          if(!t0)t0=ts;
-          var p=Math.min(1,(ts-t0)/dur);
-          // ease-out
-          var e=1-Math.pow(1-p,2);
-          var y=startY+(endY-startY)*e;
-          el.style.top=y+'px';
-          el.style.opacity=String(p<0.85?1:1-((p-0.85)/0.15));
-          if(p<1) requestAnimationFrame(step);
-          else { try{el.parentNode&&el.parentNode.removeChild(el)}catch(e){} }
-        }
-        requestAnimationFrame(step);
+        if(typeof __fbBanner==='function') __fbBanner(name, text);
       }catch(e){}
     }
-    
-    var emojiRailCounts=(function(){
-      try{
-        var r=localStorage.getItem('emoji_rail_v2_'+(typeof LIVE_MATCH!=='undefined'?LIVE_MATCH:'current'));
-        if(r) return JSON.parse(r);
-      }catch(e){}
-      return {thumbs:0,fire:0,target:0,wow:0,party:0,star:0,heart:0,clap:0};
-    })();
+
     function emojiKey(emoji){
       if(!emoji) return 'thumbs';
       if(emoji.indexOf('👍')>=0) return 'thumbs';
@@ -4570,39 +4721,8 @@ input, select, textarea {
     }, 25000);
 
     function applyFloats(floats){
-      try{
-        if(!window.__seenFloatMids) window.__seenFloatMids={};
-        if(!window.__myFloatMids) window.__myFloatMids={};
-        var list=floats||[];
-        var me=uid();
-        var now=Date.now();
-        list.forEach(function(m){
-          if(!m) return;
-          var mid=String(m.mid||((m.id||'')+'-'+(m.ts||'')+'-'+(m.text||'')+'-'+(m.emoji||'')));
-          if(window.__seenFloatMids[mid]) return;
-          var ts=Number(m.ts)||0;
-          var age=ts?(now-ts):0; if(age<0) age=0;
-          if(age>90000){ window.__seenFloatMids[mid]=1; return; }
-          if(window.__seedFloatSkip && age>8000){ window.__seenFloatMids[mid]=1; return; }
-          window.__seenFloatMids[mid]=1;
-          if(window.__myFloatMids[mid]) return;
-          if(m.id && m.id===me && age<5000 && window.__myFloatMids['recent']) return;
-          var t=String(m.text||'');
-          var em=String(m.emoji||'');
-          var isFloat=t.indexOf('__FLOAT__')===0;
-          var payload=isFloat?(em||t.replace('__FLOAT__','')):((em?em+' ':'')+t);
-          payload=String(payload||'').trim();
-          if(!payload) return;
-          try{ floatCheerBanner(m.name||'Fan', payload); }catch(e1){}
-          if(isFloat || em){
-            var em2=em||(isFloat?t.replace('__FLOAT__',''):'');
-            if(em2){
-              try{ bumpEmojiRail(em2,1); }catch(e2){}
-              try{ spawnEmojiBubbles(em2, 5+Math.floor(Math.random()*2)); }catch(e3){}
-            }
-          }
-        });
-      }catch(e){ console.log('applyFloats', e); }
+      // Route everything through float-bus (__fbApply) — one bubble only
+      try{ __fbApply(floats||[]); }catch(e){ console.log('applyFloats', e); }
     }
     async function pollFloats(){
       if(!API_BASE) return;
@@ -4616,7 +4736,8 @@ input, select, textarea {
 
     function renderChat(messages, floats){
       try{paintEmojiRailFromChat(messages)}catch(e){}
-      try{ applyFloats(floats || messages || []); }catch(e){}
+      // Floats handled only by float-bus poll / applyFloats — avoid double with chat messages
+      if(floats && floats.length){ try{ applyFloats(floats); }catch(e){} }
     }
 
     async function pollChat(){
@@ -4702,9 +4823,17 @@ input, select, textarea {
         } else {
           __knownViewers = nowMap;
         }
+        try{ window.__lastPresenceList = list || []; }catch(eLP){}
         var names = $('viewer-names');
         if(names) names.textContent = list.map(function(v){return v.name||'Fan'}).slice(0,8).join(', ');
         try{ if($('sum-viewers') && !$('sum-viewers').classList.contains('hidden')) paintViewersSummary(); }catch(ePV){}
+        // Keep Viewers Coins board in sync when presence updates
+        try{
+          var board=$('coins-board');
+          if(board && list && list.length && /No viewers yet/i.test(board.textContent||'')){
+            loadFansRank();
+          }
+        }catch(eLR){}
       }catch(e){ console.log('renderViewers', e); }
     }
 
@@ -5076,10 +5205,16 @@ try{mountDashboards()}catch(e){}
     }
     function setLiveTheme(name){
       name = name || 'default';
+      if(name==='light'||name==='fb'||name==='white') name='sports';
+      if(name==='glass') name='default';
       try{ localStorage.setItem(LIVE_THEME_KEY, name); }catch(e){}
-      document.body.classList.remove('theme-amazon','theme-sports');
+      document.body.classList.remove('theme-amazon','theme-sports','theme-black','theme-navy');
+      var dt = (name==='default') ? 'dark' : name;
+      try{ document.documentElement.setAttribute('data-theme', dt); document.body.setAttribute('data-theme', dt); }catch(e0){}
       if(name==='amazon') document.body.classList.add('theme-amazon');
       else if(name==='sports') document.body.classList.add('theme-sports');
+      else if(name==='black') document.body.classList.add('theme-black');
+      else if(name==='navy') document.body.classList.add('theme-navy');
       try{
         document.querySelectorAll('.theme-opt').forEach(function(b){
           b.classList.toggle('on', b.getAttribute('data-theme')===name);
@@ -5118,6 +5253,23 @@ try{mountDashboards()}catch(e){}
     });
 
 try{setViewerTab('live')}catch(e){}
+    // Boot: device commentary + stadium ON when Live tab is open
+    (function bootLiveAudio(){
+      try{
+        if(ttsOn) updateTtsBtn();
+        updateCommToolsLabel();
+        // Unlock + ambient on first interaction OR after short delay if already interacting
+        var start=function(){
+          try{ if(stadiumOn) stadStartAmbient(); }catch(e){}
+          try{ if(ttsOn && typeof speechSynthesis!=='undefined') speechSynthesis.getVoices(); }catch(e2){}
+        };
+        document.addEventListener('visibilitychange', function(){
+          if(!document.hidden) start();
+        });
+        setTimeout(start, 1500);
+      }catch(e){}
+    })();
+
 try{mountDashboards()}catch(e){}
 // PUSH-FIRST boot: WebSocket for score + floats, light polling as backup only
     poll();
