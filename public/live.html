@@ -139,6 +139,36 @@
     #btn-comm-popup.on{background:#10b981;color:#042f2e;border-color:#34d399}
 
     #players-or-result .viewer-result{margin:0}
+
+    /* Match end banner — gradient card (not plain text) */
+    .viewer-result, #match-result-slot.viewer-result {
+      display:block;
+      margin:10px 0 12px;
+      padding:14px 16px 16px;
+      border-radius:16px;
+      background:linear-gradient(135deg,#7c2d12 0%,#c2410c 40%,#ea580c 70%,#b45309 100%);
+      border:1px solid rgba(253,186,116,.45);
+      box-shadow:0 12px 32px rgba(194,65,12,.35), inset 0 1px 0 rgba(255,255,255,.15);
+      text-align:center;
+      color:#fff;
+    }
+    .viewer-result .vr-title, #match-result-slot .vr-title {
+      font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;
+      color:#fde68a;margin:0 0 6px;
+    }
+    .viewer-result .vr-result, #match-result-slot .vr-result {
+      font-size:20px;font-weight:950;color:#fff;margin:0;line-height:1.25;
+      text-shadow:0 2px 12px rgba(0,0,0,.35);
+    }
+    .viewer-result .vr-score, #match-result-slot .vr-score {
+      font-size:13px;color:#ffedd5;margin-top:8px;line-height:1.45;font-weight:700;
+    }
+    .viewer-result .vr-mom, #match-result-slot .vr-mom {
+      margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.2);
+      font-size:13px;color:#fef3c7;font-weight:800;
+    }
+    #viewer-result{display:none!important} /* legacy node — use #match-result-slot */
+
     .teams{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
     .team-card{background:rgba(15,23,42,.7);border:1px solid rgba(148,163,184,.15);border-radius:.9rem;padding:12px 10px;text-align:center;min-height:88px;cursor:pointer}
     .team-card:active{border-color:#34d399}
@@ -211,7 +241,7 @@
     .pts-bar b{color:#fbbf24}
     .pts-flash{color:#34d399;font-weight:900}
     .pts-bad{color:#f87171;font-weight:900}
-    .react-float{position:fixed;left:50%;top:28%;transform:translateX(-50%);z-index:9500;font-size:28px;pointer-events:none;animation:floatUp 1.2s ease-out forwards}
+    .react-float{display:none!important} /* plain giant text floats disabled — use float-bus pills only */
     .pts-burst{position:fixed;left:50%;top:32%;transform:translateX(-50%);z-index:9600;font-size:42px;font-weight:900;pointer-events:none;animation:ptsBurst 1.6s ease-out forwards;text-align:center;text-shadow:0 4px 20px rgba(0,0,0,.6)}
     .pts-burst.up{color:#34d399}
     .pts-burst.down{color:#f87171}
@@ -439,7 +469,7 @@
     .float-banner .who{opacity:.9;font-size:12px;margin-right:8px;text-transform:uppercase}
     .emoji-bubble{
       position:fixed!important;z-index:9400!important;pointer-events:none!important;
-      font-size:32px!important;animation:none!important;
+      font-size:13px!important;animation:none!important;
       filter:drop-shadow(0 4px 12px rgba(0,0,0,.45));
     }
     #cheer-more,#pred-more{display:none}
@@ -1630,12 +1660,11 @@ input, select, textarea {
     function __fbEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
     function __fbBanner(name, text){
       try{
-        // Max 2 on screen; drop oldest
+        // Strip any leftover plain-text / giant floats from older code paths
         try{
+          document.querySelectorAll('.react-float, .float-banner:not([data-float-bus]), [data-plain-cheer]').forEach(function(n){ try{n.remove()}catch(e){} });
           var existing=document.querySelectorAll('[data-float-bus="1"]');
-          if(existing.length>=2){
-            try{ existing[0].remove(); }catch(eR){}
-          }
+          while(existing.length>=2){ try{ existing[0].remove(); }catch(eR){} existing=document.querySelectorAll('[data-float-bus="1"]'); }
         }catch(eC){}
         var el=document.createElement('div');
         el.setAttribute('data-float-bus','1');
@@ -3068,7 +3097,10 @@ input, select, textarea {
       applause: '/sounds/crowd_applause.mp3',
       short: '/sounds/crowd_short.mp3',
       whistle: '/sounds/crowd_whistle.mp3',
-      chant: '/sounds/crowd_chant.mp3'
+      chant: '/sounds/crowd_chant.mp3',
+      clap: '/sounds/crowd_clap.mp3',
+      big: '/sounds/crowd_big.mp3',
+      oh: '/sounds/crowd_oh.mp3'
     };
     var __stadSfxCache = {};
     function stadPlaySample(key, vol, rate){
@@ -3334,14 +3366,16 @@ input, select, textarea {
         if(e==='six'||e==='6'){
           stadPlaySample('whistle', 0.4, 1.05);
           stadPlaySample('roar', 0.55, 1);
-          setTimeout(function(){ stadPlaySample('cheer', 0.5, 1.05); }, 200);
-          setTimeout(function(){ stadPlaySample('applause', 0.4, 1.1); }, 400);
+          setTimeout(function(){ stadPlaySample('big', 0.5, 1); }, 150);
+          setTimeout(function(){ stadPlaySample('cheer', 0.48, 1.05); }, 350);
+          setTimeout(function(){ stadPlaySample('applause', 0.4, 1.1); }, 550);
           stadSwell(0.55, 70, 700, 1500);
           __stadWicketStreak=0;
         } else if(e==='four'||e==='4'||e==='boundary'){
           stadPlaySample('whistle', 0.32, 1);
           stadPlaySample('cheer', 0.45, 1.08);
-          setTimeout(function(){ stadPlaySample('short', 0.35, 1.1); }, 250);
+          setTimeout(function(){ stadPlaySample('clap', 0.35, 1.05); }, 200);
+          setTimeout(function(){ stadPlaySample('short', 0.3, 1.1); }, 400);
           stadSwell(0.45, 90, 450, 1100);
           __stadWicketStreak=0;
         } else if(e==='hattrick'||e==='hat-trick'||e==='hat_trick'){
@@ -3355,7 +3389,7 @@ input, select, textarea {
           if(balls>0 && balls-__stadLastWicketBall<=1) __stadWicketStreak++;
           else __stadWicketStreak=1;
           __stadLastWicketBall=balls;
-          stadPlaySample('short', 0.35, 0.95);
+          stadPlaySample('oh', 0.32, 1);
           setTimeout(function(){
             stadPlaySample('whistle', 0.38, 1);
             stadPlaySample('cheer', 0.5, 1);
@@ -4314,16 +4348,28 @@ input, select, textarea {
         if(data.matchEnded){
           if(players) players.style.display='none';
           slot.style.display='block';
-          var res=data.resultText||data.result||data.matchWinner||'Match over';
-          var scA=(data.teamA||'A')+' '+(data.scoreAText||'');
-          var scB=(data.teamB||'B')+' '+(data.scoreBText||'');
-          if(!data.scoreAText && data.firstInningsScore!=null){
-            /* best effort */
+          slot.classList.add('viewer-result');
+          var res=data.resultText||data.matchResult||data.result||data.statusText||'Match over';
+          // Prefer explicit team details for final scores
+          function finScore(side){
+            var det = side==='A' ? (data.teamADetail||{}) : (data.teamBDetail||{});
+            if(det && det.runs!=null) return (det.runs|0)+'/'+(det.wickets|0)+(det.overs?(' ('+det.overs+')'):'');
+            var bat=String(data.battingSide||'').toUpperCase();
+            if(bat===side) return (data.runs|0)+'/'+(data.wickets|0)+' ('+oversFromBalls(data.balls)+')';
+            if(data.firstInningsScore!=null){
+              // first batting side is the one that is not currently batting if innings finished awkwardly
+              var fb=String(data.firstBattingSide||data.firstBattingTeam||'').toUpperCase();
+              if(fb===side || (!fb && side!==bat))
+                return (data.firstInningsScore|0)+'/'+(data.firstInningsWickets|0)+(data.firstInningsOvers?(' ('+data.firstInningsOvers+')'):'');
+            }
+            return '—';
           }
-          slot.innerHTML='<div class="vr-title">Match result</div><div class="vr-result">'+esc(String(res))+'</div>'
-            +'<div class="vr-score">'+esc(data.teamA||'Team A')+': '+(data.battingSide==='A'?(data.runs|0)+'/'+(data.wickets|0):((data.firstInningsScore!=null?data.firstInningsScore:'—')+'/'+(data.firstInningsWickets!=null?data.firstInningsWickets:'—')))
-            +' · '+esc(data.teamB||'Team B')+': '+(data.battingSide==='B'?(data.runs|0)+'/'+(data.wickets|0):((data.firstInningsScore!=null && data.battingSide==='A')?data.firstInningsScore:'—'))+'</div>'
-            +(data.mom?('<div class="vr-mom">Player of the match: '+esc(data.mom)+'</div>'):'');
+          var scA=finScore('A'), scB=finScore('B');
+          var mom=data.mom||data.manOfTheMatch||data.playerOfTheMatch||'';
+          slot.innerHTML='<div class="vr-title">Match result</div>'
+            +'<div class="vr-result">'+esc(String(res))+'</div>'
+            +'<div class="vr-score">'+esc(data.teamA||'Team A')+': '+esc(scA)+' · '+esc(data.teamB||'Team B')+': '+esc(scB)+'</div>'
+            +(mom?('<div class="vr-mom">⭐ Player of the match: '+esc(mom)+'</div>'):'');
         } else {
           if(players) players.style.display='';
           slot.style.display='none';
@@ -4633,9 +4679,20 @@ input, select, textarea {
       try{pendingEmoji=''}catch(e){}
       if(!text&&!emoji)return;
       try{ if(!window.__myFloatMids) window.__myFloatMids={}; window.__myFloatMids['recent']=1; setTimeout(function(){try{delete window.__myFloatMids['recent']}catch(e){}},6000);}catch(eR){}
+      var localMid = 'local-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
+      try{
+        if(!window.__seenFloatMids) window.__seenFloatMids={};
+        if(!window.__myFloatMids) window.__myFloatMids={};
+        window.__seenFloatMids[localMid]=1;
+        window.__myFloatMids[localMid]=1;
+        try{ __fbSeen[localMid]=1; }catch(eS){}
+        // content fingerprint so server echo of same text is dropped
+        var fp = uid()+'|'+((emoji||'')+(text||''))+'|'+String(Math.floor(Date.now()/2500));
+        try{ __fbSeen[fp]=1; }catch(eFp){}
+      }catch(eMid){}
       try{ floatCheerBanner(name, (emoji?emoji+' ':'')+text); }catch(eF){}
       try{ __recordActivity(uid(), name, text, emoji, Date.now()); }catch(eAct){}
-      var body={id:uid(),name:name,text:text,emoji:emoji,match:LIVE_MATCH||'current'};
+      var body={id:uid(),name:name,text:text,emoji:emoji,match:LIVE_MATCH||'current',mid:localMid};
       try{ sendFloatOverWs(Object.assign({type:'float'}, body)); }catch(eW){}
       try{
         var r=await fetch(API_BASE+'/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),cache:'no-store'});
@@ -4689,7 +4746,7 @@ input, select, textarea {
             if(!msg) return;
             if(msg.type==='pong' || msg.type==='hello') return;
             if(msg.type==='float' || msg.text || msg.emoji){
-              applyFloats([msg]);
+              try{ __fbApply([msg]); }catch(eA){ try{ applyFloats([msg]); }catch(eB){} }
             }
           }catch(e){ console.log('ws msg', e); }
         };
