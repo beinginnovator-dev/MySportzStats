@@ -3143,12 +3143,13 @@ input, select, textarea {
       if(!stadiumOn) return;
       try{
         if(__stadAmbientAudio){
+          try{ __stadAmbientAudio.volume = 0.028; }catch(eV){}
           try{ __stadAmbientAudio.play().catch(function(){}); }catch(e){}
           return;
         }
         var a = new Audio(STAD_SFX.short);
         a.loop = true;
-        a.volume = 0.08; // low background
+        a.volume = 0.028; // very low — far / distant crowd
         a.play().catch(function(){});
         __stadAmbientAudio = a;
       }catch(e){}
