@@ -1356,7 +1356,8 @@ input, select, textarea {
         <div id="panel-live" class="panel panel-live">
         <div class="inns-row action-row" style="display:flex;flex-wrap:nowrap;align-items:center;gap:8px;width:100%">
           <button type="button" class="cheer-toggle sm hdr-action-btn" id="btn-cheers" onclick="toggleCheerPad()"><span>😊</span><span>Cheers</span></button>
-          <button type="button" class="cheer-toggle sm hdr-action-btn hdr-sound-btn" id="btn-sound-tts" onclick="toggleTts()" title="Commentary sound" aria-label="Sound on off">🔈</button>
+          <button type="button" class="cheer-toggle sm hdr-action-btn hdr-sound-btn" id="btn-sound-tts" onclick="toggleTts()" title="Commentary on/off" aria-label="Commentary sound">🔈</button>
+          <button type="button" class="cheer-toggle sm hdr-action-btn hdr-sound-btn" id="btn-sound-stad" onclick="toggleStadium()" title="Stadium crowd on/off" aria-label="Stadium crowd">🏟️</button>
           <button type="button" class="cheer-toggle pred-toggle sm hdr-action-btn" id="btn-predict" onclick="togglePredPad()"><span>🎯</span><span>Predict</span></button>
         </div>
         <!-- keep v-inns hidden for any JS that still writes to it -->
@@ -3081,372 +3082,165 @@ input, select, textarea {
     }
     function closeModal(){try{$('modal-ov').classList.add('hidden')}catch(e){}}
 
-    // ---------- Stadium atmosphere (procedural Web Audio — no downloads) ----------
-    // Default ON. Toggle via Audio menu → Stadium FX.
+    // ---------- Stadium crowd (strict event map) ----------
+    // Background: crowd_short low volume only
+    // Boundaries + match end: crowd_cheer normal
+    // Wickets: crowd_chant normal
+    // Over start (1st/2nd ball): crowd_whistle
+    // Wide / no-ball / 1 / 2 / dots: no event SFX (ambient short only)
+    // No applause / roar
     var stadiumOn=(function(){try{return localStorage.getItem('cricket_stadium_on')!=='0'}catch(e){return true}})();
     var __lastOverKeyWhistle='';
-    var __stadCtx=null, __stadMaster=null, __stadAmbientGain=null, __stadNoiseSrc=null;
-    var __stadAmbientStarted=false, __stadRandTimer=null, __stadUnlocked=false;
-    var __stadWicketStreak=0, __stadLastWicketBall=-99;
-    var STAD_BASE=0.12;
-    var STAD_PEAK=0.72;
-    // Real stadium SFX (Mixkit free license) — hosted with the app
+    var __stadAmbientAudio=null;
+    var __stadUnlocked=false;
     var STAD_SFX = {
-      cheer: '/sounds/crowd_cheer.mp3',
-      roar: '/sounds/crowd_roar.mp3',
-      applause: '/sounds/crowd_applause.mp3',
       short: '/sounds/crowd_short.mp3',
-      whistle: '/sounds/crowd_whistle.mp3',
+      cheer: '/sounds/crowd_cheer.mp3',
       chant: '/sounds/crowd_chant.mp3',
-      clap: '/sounds/crowd_clap.mp3',
-      big: '/sounds/crowd_big.mp3',
-      oh: '/sounds/crowd_oh.mp3'
+      whistle: '/sounds/crowd_whistle.mp3'
     };
-    var __stadSfxCache = {};
+    var __stadActive = [];
     function stadPlaySample(key, vol, rate){
       if(!stadiumOn) return null;
       try{
-        stadResume();
         var url = STAD_SFX[key];
         if(!url) return null;
         var a = new Audio(url);
         a.volume = Math.max(0, Math.min(1, vol!=null?vol:0.45));
         if(rate && a.playbackRate != null) try{ a.playbackRate = rate; }catch(e){}
         a.play().catch(function(){});
+        __stadActive.push(a);
+        a.addEventListener('ended', function(){
+          try{ __stadActive = __stadActive.filter(function(x){ return x!==a; }); }catch(e){}
+        });
         return a;
       }catch(e){ return null; }
     }
-
-
-    function stadEnsureCtx(){
+    function stadStopAllSamples(){
       try{
-        if(__stadCtx) return __stadCtx;
-        var AC=window.AudioContext||window.webkitAudioContext;
-        if(!AC) return null;
-        __stadCtx=new AC();
-        __stadMaster=__stadCtx.createGain();
-        __stadMaster.gain.value=stadiumOn?1:0;
-        __stadMaster.connect(__stadCtx.destination);
-        __stadAmbientGain=__stadCtx.createGain();
-        __stadAmbientGain.gain.value=STAD_BASE;
-        __stadAmbientGain.connect(__stadMaster);
-        return __stadCtx;
-      }catch(e){ return null; }
-    }
-    function stadResume(){
-      try{
-        var c=stadEnsureCtx();
-        if(c && c.state==='suspended') c.resume();
-        __stadUnlocked=true;
+        __stadActive.forEach(function(a){ try{ a.pause(); a.currentTime=0; }catch(e){} });
+        __stadActive=[];
       }catch(e){}
+      try{
+        if(__stadAmbientAudio){ __stadAmbientAudio.pause(); }
+      }catch(e2){}
     }
-    (function stadUnlockBind(){
-      var once=function(){ stadResume(); if(stadiumOn) stadStartAmbient(); };
-      ['touchstart','pointerdown','click'].forEach(function(ev){
-        document.addEventListener(ev, once, {passive:true, once:true});
+    function stadUnlock(){
+      if(__stadUnlocked) return;
+      __stadUnlocked=true;
+      try{ if(stadiumOn && typeof stadStartAmbient==='function') stadStartAmbient(); }catch(e){}
+    }
+    function stadBindUnlock(){
+      var once=function(){ stadUnlock(); };
+      ['pointerdown','touchstart','click','keydown'].forEach(function(ev){
+        document.addEventListener(ev, once, {once:true, passive:true});
       });
-    })();
-
-    function stadMakeNoiseBuffer(seconds){
-      var c=stadEnsureCtx(); if(!c) return null;
-      var len=Math.floor(c.sampleRate*(seconds||2));
-      var buf=c.createBuffer(1, len, c.sampleRate);
-      var d=buf.getChannelData(0);
-      for(var i=0;i<len;i++) d[i]=(Math.random()*2-1);
-      return buf;
     }
+    try{ stadBindUnlock(); }catch(eU){}
+
+    /** Low-volume looping background — crowd_short only */
     function stadStartAmbient(){
       if(!stadiumOn) return;
-      var c=stadEnsureCtx(); if(!c) return;
-      stadResume();
-      if(__stadAmbientStarted) return;
       try{
-        var buf=stadMakeNoiseBuffer(3);
-        if(!buf) return;
-        var src=c.createBufferSource();
-        src.buffer=buf; src.loop=true;
-        var lp=c.createBiquadFilter();
-        lp.type='lowpass'; lp.frequency.value=1100; lp.Q.value=0.55;
-        var bp=c.createBiquadFilter();
-        bp.type='bandpass'; bp.frequency.value=520; bp.Q.value=0.35;
-        src.connect(lp); lp.connect(bp); bp.connect(__stadAmbientGain);
-        src.start(0);
-        __stadNoiseSrc=src;
-        __stadAmbientStarted=true;
-        stadScheduleRandomCheer();
+        if(__stadAmbientAudio){
+          try{ __stadAmbientAudio.play().catch(function(){}); }catch(e){}
+          return;
+        }
+        var a = new Audio(STAD_SFX.short);
+        a.loop = true;
+        a.volume = 0.08; // low background
+        a.play().catch(function(){});
+        __stadAmbientAudio = a;
       }catch(e){}
     }
     function stadStopAmbient(){
-      try{ if(__stadRandTimer){ clearTimeout(__stadRandTimer); __stadRandTimer=null; } }catch(e){}
-      try{ if(__stadNoiseSrc){ __stadNoiseSrc.stop(); __stadNoiseSrc.disconnect(); __stadNoiseSrc=null; } }catch(e){}
-      __stadAmbientStarted=false;
-      try{ if(__stadAmbientGain) __stadAmbientGain.gain.value=0; }catch(e){}
+      try{
+        if(__stadAmbientAudio){
+          __stadAmbientAudio.pause();
+          try{ __stadAmbientAudio.currentTime=0; }catch(e){}
+        }
+      }catch(e){}
     }
     function stadSetEnabled(on){
       stadiumOn=!!on;
       try{ localStorage.setItem('cricket_stadium_on', stadiumOn?'1':'0'); }catch(e){}
-      try{
-        if(__stadMaster){
-          var c=stadEnsureCtx();
-          var now=c?c.currentTime:0;
-          __stadMaster.gain.cancelScheduledValues(now);
-          __stadMaster.gain.linearRampToValueAtTime(stadiumOn?1:0, now+0.15);
-        }
-      }catch(e2){}
-      if(stadiumOn){ stadStartAmbient(); }
-      else { stadStopAmbient(); }
+      if(stadiumOn){
+        stadStartAmbient();
+      } else {
+        stadStopAmbient();
+        stadStopAllSamples();
+      }
+      try{ updateStadBtn(); }catch(e2){}
       try{ updateCommToolsLabel(); }catch(e3){}
     }
-    function toggleStadium(){ stadSetEnabled(!stadiumOn); }
-
-    function stadSwell(peak, riseMs, holdMs, fallMs){
-      if(!stadiumOn) return;
-      var c=stadEnsureCtx(); if(!c||!__stadAmbientGain) return;
-      stadStartAmbient();
+    function toggleStadium(){
+      stadSetEnabled(!stadiumOn);
+    }
+    function updateStadBtn(){
       try{
-        var g=__stadAmbientGain.gain;
-        var now=c.currentTime;
-        var pk=Math.min(STAD_PEAK, Math.max(STAD_BASE, peak));
-        g.cancelScheduledValues(now);
-        g.setValueAtTime(Math.max(g.value, STAD_BASE), now);
-        g.linearRampToValueAtTime(pk, now+riseMs/1000);
-        g.linearRampToValueAtTime(pk*0.88, now+(riseMs+holdMs)/1000);
-        g.linearRampToValueAtTime(STAD_BASE, now+(riseMs+holdMs+fallMs)/1000);
+        var b=$('btn-sound-stad');
+        if(!b) return;
+        b.textContent = stadiumOn ? '🏟️' : '🚫🏟️';
+        b.style.opacity = stadiumOn ? '1' : '0.45';
+        b.title = stadiumOn ? 'Stadium crowd on (tap off)' : 'Stadium crowd off (tap on)';
       }catch(e){}
     }
 
-    function stadBurst(opts){
-      if(!stadiumOn) return;
-      var c=stadEnsureCtx(); if(!c||!__stadMaster) return;
-      stadResume();
-      opts=opts||{};
-      var dur=opts.dur||0.7;
-      var vol=opts.vol||0.4;
-      var freq=opts.freq||1200;
-      var type=opts.type||'roar';
-      try{
-        var buf=stadMakeNoiseBuffer(Math.max(0.4, dur+0.2));
-        var src=c.createBufferSource();
-        src.buffer=buf;
-        var filter=c.createBiquadFilter();
-        if(type==='gasp'){
-          filter.type='highpass'; filter.frequency.value=1800; filter.Q.value=0.7;
-        } else if(type==='cheer'){
-          filter.type='bandpass'; filter.frequency.value=freq; filter.Q.value=0.5;
-        } else if(type==='clap'){
-          filter.type='highpass'; filter.frequency.value=2200; filter.Q.value=0.9;
-        } else {
-          filter.type='lowpass'; filter.frequency.value=freq; filter.Q.value=0.8;
-        }
-        var gain=c.createGain();
-        var now=c.currentTime;
-        gain.gain.setValueAtTime(0.001, now);
-        gain.gain.exponentialRampToValueAtTime(Math.max(0.01, vol), now+0.04);
-        if(type==='gasp'||type==='clap'){
-          gain.gain.exponentialRampToValueAtTime(0.001, now+Math.min(0.28, dur));
-        } else {
-          gain.gain.linearRampToValueAtTime(vol*0.75, now+dur*0.35);
-          gain.gain.exponentialRampToValueAtTime(0.001, now+dur);
-        }
-        src.connect(filter); filter.connect(gain); gain.connect(__stadMaster);
-        src.start(now); src.stop(now+dur+0.05);
-      }catch(e){}
-    }
-
-    function stadWhistle(opts){
-      if(!stadiumOn) return;
-      var c=stadEnsureCtx(); if(!c||!__stadMaster) return;
-      stadResume();
-      opts=opts||{};
-      var vol=opts.vol!=null?opts.vol:0.28;
-      var count=opts.count||1;
-      try{
-        for(var i=0;i<count;i++){
-          (function(i){
-            var t0=c.currentTime + i*0.18;
-            var osc=c.createOscillator();
-            osc.type='sine';
-            osc.frequency.setValueAtTime(2100+i*80, t0);
-            osc.frequency.linearRampToValueAtTime(2600+i*60, t0+0.08);
-            var g=c.createGain();
-            g.gain.setValueAtTime(0.001, t0);
-            g.gain.exponentialRampToValueAtTime(vol, t0+0.02);
-            g.gain.exponentialRampToValueAtTime(0.001, t0+0.14);
-            osc.connect(g); g.connect(__stadMaster);
-            osc.start(t0); osc.stop(t0+0.16);
-          })(i);
-        }
-      }catch(e){}
-    }
-
-    function stadClapRhythm(n, gapMs, vol){
-      if(!stadiumOn) return;
-      n=n||4; gapMs=gapMs||160; vol=vol||0.22;
-      for(var i=0;i<n;i++){
-        (function(i){
-          setTimeout(function(){
-            stadBurst({ type:'clap', vol:vol*(0.85+Math.random()*0.2), dur:0.12, freq:2500 });
-          }, i*gapMs);
-        })(i);
-      }
-    }
-
-    function stadChant(opts){
-      if(!stadiumOn) return;
-      var c=stadEnsureCtx(); if(!c||!__stadMaster) return;
-      stadResume();
-      opts=opts||{};
-      var bars=opts.bars||2;
-      var bpm=opts.bpm||110;
-      var beat=60/bpm;
-      var vol=opts.vol||0.2;
-      var notes=opts.notes||[320, 360, 400, 480, 320, 360, 400, 520];
-      try{
-        var now=c.currentTime+0.02;
-        for(var i=0;i<notes.length*bars;i++){
-          var note=notes[i%notes.length];
-          var t0=now + i*(beat*0.5);
-          var osc=c.createOscillator();
-          osc.type='triangle';
-          osc.frequency.setValueAtTime(note, t0);
-          var vib=c.createOscillator();
-          vib.frequency.value=5;
-          var vibG=c.createGain(); vibG.gain.value=6;
-          vib.connect(vibG); vibG.connect(osc.frequency);
-          var g=c.createGain();
-          var accent=((i%4)===3)?1.35:1;
-          g.gain.setValueAtTime(0.001, t0);
-          g.gain.exponentialRampToValueAtTime(vol*accent, t0+0.03);
-          g.gain.exponentialRampToValueAtTime(0.001, t0+beat*0.42);
-          var nBuf=stadMakeNoiseBuffer(0.3);
-          if(nBuf){
-            var ns=c.createBufferSource(); ns.buffer=nBuf;
-            var nf=c.createBiquadFilter(); nf.type='bandpass'; nf.frequency.value=note*2; nf.Q.value=0.8;
-            var ng=c.createGain();
-            ng.gain.setValueAtTime(0.001, t0);
-            ng.gain.exponentialRampToValueAtTime(vol*0.35*accent, t0+0.02);
-            ng.gain.exponentialRampToValueAtTime(0.001, t0+beat*0.35);
-            ns.connect(nf); nf.connect(ng); ng.connect(__stadMaster);
-            ns.start(t0); ns.stop(t0+0.35);
-          }
-          osc.connect(g); g.connect(__stadMaster);
-          osc.start(t0); osc.stop(t0+beat*0.5);
-          vib.start(t0); vib.stop(t0+beat*0.5);
-        }
-      }catch(e){}
-    }
-
-    function stadScheduleRandomCheer(){
-      try{ if(__stadRandTimer) clearTimeout(__stadRandTimer); }catch(e){}
-      if(!stadiumOn||!__stadAmbientStarted) return;
-      var delay=7000+Math.random()*12000;
-      __stadRandTimer=setTimeout(function(){
-        if(!stadiumOn) return;
-        try{ if(lastData && lastData.matchEnded){ stadScheduleRandomCheer(); return; } }catch(e){}
-        var r=Math.random();
-        if(r<0.3){
-          stadPlaySample('short', 0.18+Math.random()*0.1, 0.95+Math.random()*0.15);
-        } else if(r<0.55){
-          stadPlaySample('cheer', 0.15+Math.random()*0.1, 1);
-          stadSwell(STAD_BASE+0.04, 200, 300, 900);
-        } else if(r<0.75){
-          stadBurst({ type:'cheer', vol:0.1+Math.random()*0.06, dur:0.5, freq:800 });
-        } else {
-          stadPlaySample('whistle', 0.12, 1);
-        }
-        stadScheduleRandomCheer();
-      }, delay);
-    }
-
+    /**
+     * Event SFX only:
+     * - four / six / boundary → crowd_cheer
+     * - wicket → crowd_chant
+     * - match end → crowd_cheer
+     * - 1, 2, 3, wide, noball, dot → silent
+     */
     function stadiumReact(ev, data){
       if(!stadiumOn||!ev) return;
       var e=String(ev).toLowerCase();
-      var balls=(data&&(data.balls|0))||0;
       try{
-        if(e==='six'||e==='6'){
-          stadPlaySample('whistle', 0.4, 1.05);
-          stadPlaySample('roar', 0.55, 1);
-          setTimeout(function(){ stadPlaySample('big', 0.5, 1); }, 150);
-          setTimeout(function(){ stadPlaySample('cheer', 0.48, 1.05); }, 350);
-          setTimeout(function(){ stadPlaySample('applause', 0.4, 1.1); }, 550);
-          stadSwell(0.55, 70, 700, 1500);
-          __stadWicketStreak=0;
-        } else if(e==='four'||e==='4'||e==='boundary'){
-          stadPlaySample('whistle', 0.32, 1);
-          stadPlaySample('cheer', 0.45, 1.08);
-          setTimeout(function(){ stadPlaySample('clap', 0.35, 1.05); }, 200);
-          setTimeout(function(){ stadPlaySample('short', 0.3, 1.1); }, 400);
-          stadSwell(0.45, 90, 450, 1100);
-          __stadWicketStreak=0;
-        } else if(e==='hattrick'||e==='hat-trick'||e==='hat_trick'){
-          stadPlaySample('whistle', 0.5, 1.1);
-          setTimeout(function(){ stadPlaySample('whistle', 0.45, 1.15); }, 180);
-          stadPlaySample('roar', 0.6, 1);
-          setTimeout(function(){ stadPlaySample('chant', 0.45, 1); }, 300);
-          setTimeout(function(){ stadPlaySample('applause', 0.5, 1); }, 500);
-          stadSwell(0.65, 60, 1200, 2200);
-        } else if(e==='wicket'||e==='w'||e==='out'){
-          if(balls>0 && balls-__stadLastWicketBall<=1) __stadWicketStreak++;
-          else __stadWicketStreak=1;
-          __stadLastWicketBall=balls;
-          stadPlaySample('oh', 0.32, 1);
-          setTimeout(function(){
-            stadPlaySample('whistle', 0.38, 1);
-            stadPlaySample('cheer', 0.5, 1);
-            stadSwell(0.5, 50, 800, 1700);
-          }, 180);
-          if(__stadWicketStreak>=3){
-            setTimeout(function(){ stadiumReact('hattrick', data); }, 400);
-            __stadWicketStreak=0;
-          }
-        } else if(e==='fifty'||e==='50'){
-          stadPlaySample('whistle', 0.35, 1);
-          stadPlaySample('cheer', 0.48, 1.05);
-          setTimeout(function(){ stadPlaySample('applause', 0.42, 1); }, 300);
-          setTimeout(function(){ stadPlaySample('chant', 0.35, 1); }, 500);
-          stadSwell(0.5, 90, 900, 1600);
-          __stadWicketStreak=0;
-        } else if(e==='100'||e==='hundred'||e==='century'){
-          stadPlaySample('whistle', 0.42, 1.05);
-          stadPlaySample('roar', 0.55, 1);
-          setTimeout(function(){ stadPlaySample('applause', 0.5, 1); }, 250);
-          setTimeout(function(){ stadPlaySample('chant', 0.45, 1); }, 450);
-          stadSwell(0.6, 80, 1100, 2000);
-          __stadWicketStreak=0;
-        } else if(e==='milestone'){
-          stadPlaySample('cheer', 0.4, 1);
-          stadPlaySample('applause', 0.35, 1);
-          stadSwell(0.42, 100, 700, 1400);
-        } else if(e==='three'||e==='two'||e==='2'||e==='3'){
-          if(Math.random()<0.4) stadPlaySample('short', 0.2, 1.1);
-          __stadWicketStreak=0;
-        } else {
-          if(e && e!=='dot' && e!=='0' && e!=='zero') __stadWicketStreak=0;
+        if(e==='six'||e==='6'||e==='four'||e==='4'||e==='boundary'){
+          stadPlaySample('cheer', 0.55, 1);
+        } else if(e==='wicket'||e==='w'||e==='out'||e==='hattrick'||e==='hat-trick'||e==='hat_trick'){
+          stadPlaySample('chant', 0.55, 1);
+        } else if(e==='fifty'||e==='50'||e==='100'||e==='hundred'||e==='century'||e==='milestone'){
+          // treat milestones like boundaries — cheer
+          stadPlaySample('cheer', 0.5, 1);
         }
+        // wide / noball / 1 / 2 / 3 / dot → no event sound
       }catch(err){}
     }
 
     function stadiumMatchEnd(data){
       if(!stadiumOn) return;
       stadStartAmbient();
-      stadPlaySample('whistle', 0.45, 1.05);
-      stadPlaySample('roar', 0.55, 1);
-      setTimeout(function(){ stadPlaySample('cheer', 0.5, 1); }, 200);
-      setTimeout(function(){ stadPlaySample('applause', 0.48, 1); }, 400);
-      setTimeout(function(){ stadPlaySample('chant', 0.4, 1); }, 600);
-      stadSwell(0.62, 100, 2200, 3800);
-      setTimeout(function(){
-        try{
-          var c=stadEnsureCtx();
-          if(c&&__stadAmbientGain){
-            var now=c.currentTime;
-            __stadAmbientGain.gain.cancelScheduledValues(now);
-            __stadAmbientGain.gain.linearRampToValueAtTime(STAD_BASE*0.7, now+2);
-          }
-        }catch(e){}
-      }, 5000);
+      // Match end: cheer only (normal volume)
+      stadPlaySample('cheer', 0.6, 1);
+      setTimeout(function(){ try{ stadPlaySample('cheer', 0.5, 1); }catch(e){} }, 900);
     }
 
+    /** Whistle only on 1st or 2nd ball of a new over */
+    function stadiumMaybeOverWhistle(data){
+      if(!stadiumOn || !data || data.matchEnded) return;
+      try{
+        var ballsN = data.balls|0;
+        var innsN = data.innings|0;
+        var overNum = Math.floor(ballsN/6);
+        var ballInOver = ballsN % 6; // 0 just completed over; 1 = first ball of new over after increment
+        // After a legal ball is scored, balls increases. First ball of over => balls%6 === 1
+        // Second ball of over => balls%6 === 2
+        var overKey = innsN + '-' + overNum;
+        if(ballInOver === 1 || ballInOver === 2){
+          if(__lastOverKeyWhistle !== overKey + '-' + ballInOver){
+            // Only once per over total (prefer 1st ball; if we miss it, 2nd ball)
+            var overOnlyKey = innsN + '-' + overNum;
+            if(__lastOverKeyWhistle.indexOf(overOnlyKey) === 0) return; // already whistled this over
+            __lastOverKeyWhistle = overOnlyKey + '-' + ballInOver;
+            if(ballsN > 0){
+              stadPlaySample('whistle', 0.4, 1);
+            }
+          }
+        }
+      }catch(e){}
+    }
 
     // ---------- Text-to-speech (Commentary): Device + AI, language + voice gender ----------
     var ttsOn=(function(){try{var v=localStorage.getItem('cricket_tts_on'); if(v===null||v===undefined||v==='') return true; return v!=='0'&&v!=='false'}catch(e){return true}})();
@@ -3571,13 +3365,15 @@ input, select, textarea {
 
     function updateTtsBtn(){
       var b=$('tts-btn');
-      if(b){ b.textContent=ttsOn?'🔊 Sound on':'🔈 Sound off'; b.classList.toggle('on',ttsOn); }
+      if(b){ b.textContent=ttsOn?'🔈 Commentary on':'🔇 Commentary off'; b.classList.toggle('on',ttsOn); }
       var s=$('btn-sound-tts');
       if(s){
-        s.textContent=ttsOn?'🔊':'🔈';
+        s.textContent=ttsOn?'🔈':'🔇';
         s.classList.toggle('on',!!ttsOn);
-        s.title=ttsOn?('Sound on · '+(ttsEngine==='ai'?('AI '+ttsAiVoice):'Device')):'Sound off';
+        s.style.opacity=ttsOn?'1':'0.45';
+        s.title=ttsOn?('Commentary on · '+(ttsEngine==='ai'?('AI '+ttsAiVoice):'Device')):'Commentary off';
       }
+      try{ updateStadBtn(); }catch(eS){}
       updateCommToolsLabel();
     }
     function updateLangBtn(){var b=$('lang-btn');if(b)b.textContent=(ttsLang==='hi')?'हिं':'EN';var sel=$('voice-gender');if(sel)sel.value=ttsGender}
@@ -4491,27 +4287,7 @@ input, select, textarea {
       $('sum-purple').innerHTML='<div class="sec-title">🟣 Purple cap · all matches</div><table class="stats"><thead><tr><th>#</th><th>Bowler</th><th class="num">W</th><th class="num">R</th><th class="num">O</th><th class="num">Dots</th><th class="num">Econ</th></tr></thead><tbody>'+
         (purple.length?purple.map(function(p,i){return'<tr><td class="num">'+(i+1)+'</td><td class="nm">'+esc(p.name)+'</td><td class="num">'+(p.wickets|0)+'</td><td class="num">'+(p.bowlRuns|0)+'</td><td class="num">'+oversFromBalls(p.bowlBalls)+'</td><td class="num">'+(p.dots|0)+'</td><td class="num">'+(p.Econ!=null?p.Econ:econ(p.bowlRuns,p.bowlBalls))+'</td></tr>'}).join(''):'<tr><td colspan="7" class="empty">No bowling data</td></tr>')+'</tbody></table>';
       
-      // Random crowd whistle at start of a new over
-      try{
-        if(stadiumOn && data && !data.matchEnded){
-          var ballsN = data.balls|0;
-          var innsN = data.innings|0;
-          var overKey = innsN + '-' + Math.floor(ballsN/6);
-          // New over just began: legal balls in over == 0 (or balls % 6 == 0 and balls > 0 after completing previous)
-          var legalInOver = ballsN % 6;
-          if(overKey !== __lastOverKeyWhistle){
-            var prev = __lastOverKeyWhistle;
-            __lastOverKeyWhistle = overKey;
-            // Play when moving to a new over (not first ball of match) — random ~70%
-            if(prev && ballsN > 0 && legalInOver === 0 && Math.random() < 0.72){
-              setTimeout(function(){ try{ stadPlaySample('whistle', 0.28 + Math.random()*0.12, 0.95 + Math.random()*0.1); }catch(eW){} }, 120);
-            } else if(prev && ballsN > 0 && legalInOver === 1 && Math.random() < 0.55){
-              // first ball of new over sometimes
-              setTimeout(function(){ try{ stadPlaySample('whistle', 0.22 + Math.random()*0.1, 1); }catch(eW2){} }, 80);
-            }
-          }
-        }
-      }catch(eOW){}
+      try{ stadiumMaybeOverWhistle(data); }catch(eOW){}
 
       try{paintTeamsWithCheers(data)}catch(eT){
         var squadA=data.squadA||data.teamAPlayers||[],squadB=data.squadB||data.teamBPlayers||[];
@@ -5310,6 +5086,8 @@ try{mountDashboards()}catch(e){}
     });
 
 try{setViewerTab('live')}catch(e){}
+try{updateStadBtn()}catch(eStad){}
+try{updateTtsBtn()}catch(eTts){}
     // Boot: device commentary + stadium ON when Live tab is open
     (function bootLiveAudio(){
       try{
@@ -5317,7 +5095,7 @@ try{setViewerTab('live')}catch(e){}
         updateCommToolsLabel();
         // Unlock + ambient on first interaction OR after short delay if already interacting
         var start=function(){
-          try{ if(stadiumOn) stadStartAmbient(); }catch(e){}
+          try{ if(stadiumOn && typeof stadStartAmbient==='function') stadStartAmbient(); }catch(e){}
           try{ if(ttsOn && typeof speechSynthesis!=='undefined') speechSynthesis.getVoices(); }catch(e2){}
         };
         document.addEventListener('visibilitychange', function(){
