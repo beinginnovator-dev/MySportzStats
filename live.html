@@ -1561,7 +1561,7 @@ input, select, textarea {
             <option value="sound">Toggle sound on/off</option>
           </select>
           <button type="button" class="icon-btn" id="lang-btn" onclick="toggleLang()" style="display:none">EN</button>
-          <select id="voice-gender" class="icon-btn" style="display:none" onchange="onGenderChange()">
+          <select id="voice-gender" data-default="female" class="icon-btn" style="display:none" onchange="onGenderChange()">
             <option value="auto">Voice: Auto</option>
             <option value="female">Voice: Female</option>
             <option value="male">Voice: Male</option>
@@ -1858,6 +1858,8 @@ input, select, textarea {
       heartbeat();try{pushFanScore()}catch(e2){}
     }
     function saveGateName(){
+      try{ if(window.__startLiveAudio) window.__startLiveAudio(); }catch(eAud){}
+
       var n=($('gate-name').value||'').trim().slice(0,24);
       if(!n){alert('Enter your name');return}
       try{localStorage.setItem('cricket_viewer_name',n)}catch(e){}
@@ -3501,9 +3503,9 @@ input, select, textarea {
     // ---------- Text-to-speech (Commentary): Device + AI, language + voice gender ----------
     var ttsOn=(function(){try{var v=localStorage.getItem('cricket_tts_on'); if(v===null||v===undefined||v==='') return true; return v!=='0'&&v!=='false'}catch(e){return true}})();
     var ttsLang=(function(){try{return localStorage.getItem('cricket_tts_lang')||'en'}catch(e){return 'en'}})();
-    var ttsGender=(function(){try{return localStorage.getItem('cricket_tts_gender')||'male'}catch(e){return 'male'}})();
+    var ttsGender=(function(){try{var g=localStorage.getItem('cricket_tts_gender'); if(g==='male'||g==='female'||g==='auto') return g; return 'female'}catch(e){return 'female'}})();
     // 'device' = Web Speech API (instant). 'ai' = neural/online audio with device fallback.
-    var ttsEngine=(function(){try{var e=localStorage.getItem('cricket_tts_engine');return (e==='ai'||e==='device')?e:'device'}catch(e){return 'device'}})();
+    var ttsEngine=(function(){try{var e=localStorage.getItem('cricket_tts_engine');return (e==='ai')?'ai':'device'}catch(e){return 'device'}})();
     var TTS_AI_VOICES=['asteria','luna','athena','stella','hera','angus','orion','zeus','orpheus','arcas','helios','perseus'];
     var ttsAiVoice=(function(){try{var v=(localStorage.getItem('cricket_tts_ai_voice')||'asteria').toLowerCase();return TTS_AI_VOICES.indexOf(v)>=0?v:'asteria'}catch(e){return 'asteria'}})();
     var ttsVoiceCache={};
@@ -3749,8 +3751,9 @@ input, select, textarea {
         u.volume = 0.01;
         u.rate = 1;
         u.pitch = 1;
+        // Silent warm-up without cancel (cancel right after speak breaks some Android engines)
+        u.onend = function(){ __ttsUnlocked = true; };
         speechSynthesis.speak(u);
-        speechSynthesis.cancel();
         __ttsUnlocked = true;
       }catch(e){}
     }
@@ -3784,98 +3787,56 @@ input, select, textarea {
     function speakDevice(text, excited){
       try{
         if(!ttsOn) return;
-        // Idle should already be cleared by speak()/noteLiveActivity
-        if(!('speechSynthesis' in window)){
-          try{ console.warn('speechSynthesis not available'); }catch(e){}
-          return;
-        }
-        try{ unlockDeviceTts(); }catch(eU){}
-        var raw = String(text||'').replace(/\*/g,'').replace(/\s+/g,' ').trim();
+        if(!('speechSynthesis' in window)) return;
+        var raw = String(text || '').replace(/\*/g, '').replace(/\s+/g, ' ').trim();
         if(!raw) return;
 
-        // Cancel previous, then speak after a short delay (Chrome/Safari bug: cancel+speak same tick fails)
-        try{ if(__ttsSpeakTimer){ clearTimeout(__ttsSpeakTimer); __ttsSpeakTimer=null; } }catch(eT){}
+        try{ unlockDeviceTts(); }catch(eU){}
+
+        // One-at-a-time: bump gen, cancel everything, only this gen may speak
+        __ttsGen = (__ttsGen|0) + 1;
+        var myGen = __ttsGen;
+        try{ if(__ttsSpeakTimer){ clearTimeout(__ttsSpeakTimer); __ttsSpeakTimer = null; } }catch(eT){}
         try{ speechSynthesis.cancel(); }catch(e0){}
 
-        var genSnap = __ttsGen;
         __ttsSpeakTimer = setTimeout(function(){
           try{
-            if(genSnap !== __ttsGen && __ttsGen > 0) {
-              // allow if only our own bump — still speak latest
-            }
+            if(myGen !== __ttsGen) return; // superseded by newer ball
             try{ if(speechSynthesis.paused) speechSynthesis.resume(); }catch(eR){}
 
             var u = new SpeechSynthesisUtterance(raw);
             var v = null;
             try{ v = getVoiceFor(ttsLang); }catch(eV){}
-            if(v) u.voice = v;
-            u.lang = ttsLang==='hi' ? 'hi-IN' : ((v && v.lang) || 'en-IN');
+            if(v){ try{ u.voice = v; }catch(eVoice){} }
+            u.lang = (ttsLang === 'hi') ? 'hi-IN' : ((v && v.lang) || 'en-IN');
             u.volume = 1;
 
             var style = ttsStyle || 'sports';
-            var baseRate = style==='calm' ? 0.95 : (style==='excited' ? 1.12 : 1.05);
-            var basePitch = 1.0;
+            var baseRate = style === 'calm' ? 0.95 : (style === 'excited' ? 1.12 : 1.05);
+            var basePitch = 1.05;
             var g = 'unknown';
             try{ g = v ? voiceGender(v) : 'unknown'; }catch(eG){}
-            if(ttsGender==='male' && g!=='male') basePitch = 0.85;
-            else if(ttsGender==='female' && g!=='female') basePitch = 1.1;
-            else if(g==='male') basePitch = 0.95;
-            else if(g==='female') basePitch = 1.05;
+            if(ttsGender === 'male') basePitch = (g === 'male') ? 0.95 : 0.85;
+            else if(ttsGender === 'female') basePitch = (g === 'female') ? 1.08 : 1.12;
 
-            var rate = baseRate;
-            var pitch = basePitch;
-            if(excited===2){ rate = Math.min(1.2, baseRate + 0.1); pitch = basePitch + 0.05; }
-            else if(excited){ rate = Math.min(1.15, baseRate + 0.05); pitch = basePitch + 0.03; }
-            // Clamp to safe Web Speech ranges
-            u.rate = Math.max(0.5, Math.min(1.5, rate));
-            u.pitch = Math.max(0.5, Math.min(1.8, pitch));
+            var rate = baseRate, pitch = basePitch;
+            if(excited === 2){ rate = Math.min(1.18, baseRate + 0.08); pitch = basePitch + 0.04; }
+            else if(excited){ rate = Math.min(1.12, baseRate + 0.04); pitch = basePitch + 0.02; }
+            u.rate = Math.max(0.8, Math.min(1.35, rate));
+            u.pitch = Math.max(0.7, Math.min(1.5, pitch));
 
+            // Do NOT retry with a different voice — that caused "second female voice" repeats
             u.onerror = function(ev){
-              try{ console.warn('TTS error', ev && ev.error); }catch(e){}
-              // Retry once without custom voice
-              try{
-                if(u.__retried) return;
-                u.__retried = true;
-                var u2 = new SpeechSynthesisUtterance(raw);
-                u2.lang = ttsLang==='hi'?'hi-IN':'en-IN';
-                u2.rate = 1; u2.pitch = 1; u2.volume = 1;
-                speechSynthesis.speak(u2);
-              }catch(e2){}
+              try{ if(myGen !== __ttsGen) return; }catch(e){}
             };
+
+            if(myGen !== __ttsGen) return;
             speechSynthesis.speak(u);
-          }catch(eSpeak){
-            try{ console.warn('speakDevice failed', eSpeak); }catch(e){}
-          }
-        }, 60);
-      }catch(e){
-        try{ console.warn('speakDevice outer', e); }catch(e2){}
-      }
+          }catch(eSpeak){}
+        }, 50);
+      }catch(e){}
     }
 
-    /** Build AI TTS URL (Google Translate TTS — no API key). Split long text. */
-    function aiTtsUrl(text, lang){
-      var tl = (lang==='hi') ? 'hi' : 'en';
-      var q = String(text||'').replace(/\s+/g,' ').trim().slice(0, 180);
-      if(!q) return null;
-      return 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl='+
-        encodeURIComponent(tl)+'&q='+encodeURIComponent(q);
-    }
-
-    /** Same-origin Worker AI TTS (Aura multi-voice / Melo) */
-    function workerTtsUrl(text, lang, voice){
-      try{
-        if(!API_BASE) return null;
-        return API_BASE.replace(/\/+$/,'')+'/api/tts?lang='+encodeURIComponent(lang==='hi'?'hi':'en')+
-          '&voice='+encodeURIComponent(voice||ttsAiVoice||'asteria')+
-          '&q='+encodeURIComponent(String(text||'').slice(0,200));
-      }catch(e){ return null; }
-    }
-
-    /**
-     * AI path: try audio URL, play via <audio>.
-     * - Aborts previous request (no backlog lag)
-     * - Falls back to Device TTS on error / 2.2s timeout
-     */
     function speakAi(text, excited, gen){
       var clean = String(text||'').replace(/\*/g,'').replace(/\s+/g,' ').trim();
       if(!clean) return;
@@ -3964,19 +3925,21 @@ input, select, textarea {
     function speak(text, excited){
       try{
         if(!ttsOn || !text) return;
-        // Score-driven speech always clears idle first so commentary is not swallowed
         try{
-          if(__idleMuted){ __idleMuted = false; forceStadResume(); }
+          if(typeof __idleMuted !== 'undefined' && __idleMuted){
+            __idleMuted = false;
+            if(typeof forceStadResume === 'function') forceStadResume();
+          }
         }catch(eIdle){}
-        __ttsGen++;
-        var gen = __ttsGen;
-        try{ stopAllSpeech(); }catch(eS){}
 
         var clean = String(text).replace(/\*/g,'').replace(/\s+/g,' ').trim();
         if(!clean) return;
 
-        // Device first for reliability
+        // Always Device for live balls (stable single voice). AI only if user forced and not overlapping.
         if(ttsEngine === 'ai'){
+          __ttsGen = (__ttsGen|0) + 1;
+          var gen = __ttsGen;
+          try{ stopAllSpeech(); }catch(eS){}
           try{ speakAi(clean, !!excited, gen); }catch(eA){ speakDevice(clean, !!excited); }
         } else {
           speakDevice(clean, !!excited);
@@ -4080,28 +4043,45 @@ input, select, textarea {
 
     function speakNewCommentary(data){
       try{
-        var arr=(ttsLang==='hi')?(data.commentaryHi||data.commentary):data.commentary;
-        var lines=(arr||[]).filter(Boolean);
-        if(!lines.length)return;
-        var last=String(lines[lines.length-1]);
-        if(last===lastSpokenLine)return;
-        lastSpokenLine=last;
-        var parts=formatCommentaryLine(last);
-        var toSay=(parts.title||'')+(parts.body?('. '+parts.body):'')||last;
-        var srcForExcited=String((data.commentary||[]).slice(-1)[0]||last);
-        var ev=String(data.lastEvent||'');
-        var lvl=0;
-        if(/\\b(six|wicket|out|hundred|century|hat\\s*-?trick)\\b/i.test(srcForExcited+ev)||/छक्का|आउट|विकेट|शतक|हैट्रिक/.test(last))
-          lvl=2;
-        else if(/\\b(four|fifty|boundary)\\b/i.test(srcForExcited+ev)||/चौका|अर्धशतक/.test(last))
-          lvl=1;
-        toSay=sportsCallLine(data, toSay, lvl);
-        // Always go through speak() so unlock + delay + stop are consistent
-        if(lvl>=1){
-          speak(toSay, lvl);
-        } else {
-          speak(toSay, false);
+        if(!data || !ttsOn) return;
+        // Key off SCORE change so every ball speaks even if commentary line is slow/duplicate
+        var ev = String(data.lastEvent || '').toLowerCase();
+        var scoreKey = (data.balls|0) + ':' + (data.runs|0) + ':' + (data.wickets|0) + ':' + ev + ':' + (data.strikerRuns|0);
+        if(scoreKey === window.__lastSpokenScoreKey) return;
+        // Also skip pure clock-only publishes (no ball movement vs previous spoken)
+        window.__lastSpokenScoreKey = scoreKey;
+
+        var arr = (ttsLang === 'hi') ? (data.commentaryHi || data.commentary) : data.commentary;
+        var lines = (arr || []).filter(Boolean);
+        var last = lines.length ? String(lines[lines.length - 1]) : '';
+        lastSpokenLine = last || scoreKey;
+
+        var parts = last ? formatCommentaryLine(last) : { title: '', body: '' };
+        var toSay = (parts.title || '') + (parts.body ? ('. ' + parts.body) : '');
+        if(!toSay) toSay = last;
+
+        // If still empty, build a short sports line from the event / score
+        if(!toSay || toSay.length < 3){
+          var bits = '';
+          try{ bits = spokenScoreBits(data); }catch(eB){}
+          if(/six|6/.test(ev)) toSay = 'Six! ' + bits;
+          else if(/four|4|boundary/.test(ev)) toSay = 'Four! ' + bits;
+          else if(/wicket|out|\bw\b/.test(ev)) toSay = 'Wicket! ' + bits;
+          else if(ev) toSay = (data.strikerName || 'Batter') + ', ' + ev + '. ' + bits;
+          else toSay = bits || ('Score is ' + (data.runs|0) + ' for ' + (data.wickets|0));
         }
+
+        var srcForExcited = (last || '') + ' ' + ev;
+        var lvl = 0;
+        if(/\b(six|wicket|out|hundred|century|hat\s*-?trick)\b/i.test(srcForExcited) || /छक्का|आउट|विकेट|शतक|हैट्रिक/.test(srcForExcited))
+          lvl = 2;
+        else if(/\b(four|fifty|boundary)\b/i.test(srcForExcited) || /चौका|अर्धशतक/.test(srcForExcited))
+          lvl = 1;
+
+        try{ toSay = sportsCallLine(data, toSay, lvl) || toSay; }catch(eS){}
+
+        // Single speak only — never queue AI + device
+        speak(toSay, lvl || false);
       }catch(e){}
     }
 
@@ -4391,11 +4371,30 @@ input, select, textarea {
       }catch(eHT){}
       // Key by balls+runs+event — NOT ts (ts updates every publish and was replaying the same FOUR/TWO forever)
       var ek=(data.balls|0)+':'+(data.runs|0)+':'+(data.wickets|0)+':'+(ev||'')+':'+(data.strikerRuns|0);
-      if(ev && ek!==lastEventKey){
+      // Fire on ANY score change (not only when lastEvent is set) so stadium+anim follow balls
+      if(ek!==lastEventKey){
+        var prevEk = lastEventKey;
         lastEventKey=ek;
-        // Never replay event bursts after match ends, or while points overlay is showing
+        // Infer event from score delta when lastEvent missing
+        if(!ev && prevEk){
+          try{
+            var pr = prevEk.split(':');
+            var pBalls = pr[0]|0, pRuns = pr[1]|0, pWk = pr[2]|0;
+            var dBalls = (data.balls|0) - pBalls;
+            var dRuns = (data.runs|0) - pRuns;
+            var dWk = (data.wickets|0) - pWk;
+            if(dWk > 0) ev = 'wicket';
+            else if(dRuns >= 6) ev = 'six';
+            else if(dRuns >= 4) ev = 'four';
+            else if(dRuns > 0) ev = String(dRuns);
+            else if(dBalls > 0) ev = 'dot';
+          }catch(eInf){}
+        }
         if(!data.matchEnded && Date.now()>=skipEventAnimUntil){
-          try{ playAnim(ev,data); try{stadiumReact(ev,data)}catch(eSt){} }catch(eA){}
+          try{ if(ev) playAnim(ev,data); }catch(eA){}
+          try{ if(ev) stadiumReact(ev,data); }catch(eSt){}
+          try{ noteLiveActivity('score-event'); }catch(eN){}
+          try{ if(stadiumOn && typeof forceStadResume==='function') forceStadResume(); }catch(eR){}
         }
       }
       try{refreshPtsUI()}catch(eUp){}
@@ -5614,45 +5613,44 @@ try{mountDashboards()}catch(e){}
     });
 
 try{setViewerTab('live')}catch(e){}
-    // Play commentary welcome when live opens (after name / first paint)
-    (function bootCommentaryOnOpen(){
-      try{
-        var tried=false;
-        function go(){
-          if(tried) return;
-          if(!ttsOn) return;
-          tried=true;
-          try{ stadUnlock(); }catch(e0){}
-          try{
-            if(lastData && typeof speakNewCommentary==='function'){
-              speakNewCommentary(lastData);
-            } else if(typeof speak==='function'){
-              speak(ttsLang==='hi'?'लाइव मैच शुरू':'Live match is on. Enjoy the action!', false);
-            }
-          }catch(e1){}
-        }
-        document.addEventListener('pointerdown', function once(){ go(); }, {once:true, passive:true});
-        setTimeout(function(){ if(getChatName()) go(); }, 2500);
-      }catch(e){}
-    })();
 
 try{updateStadBtn()}catch(eStad){}
 try{updateTtsBtn()}catch(eTts){}
-    // Boot: device commentary + stadium ON when Live tab is open
+    // Boot: stadium + female device commentary on first open (user gesture required)
     (function bootLiveAudio(){
-      try{
-        if(ttsOn) updateTtsBtn();
-        updateCommToolsLabel();
-        // Unlock + ambient on first interaction OR after short delay if already interacting
-        var start=function(){
-          try{ if(stadiumOn && typeof stadStartAmbient==='function') stadStartAmbient(); }catch(e){}
-          try{ if(ttsOn && typeof speechSynthesis!=='undefined') speechSynthesis.getVoices(); }catch(e2){}
-        };
-        document.addEventListener('visibilitychange', function(){
-          if(!document.hidden) start();
-        });
-        setTimeout(start, 1500);
-      }catch(e){}
+      var started = false;
+      function startAudio(){
+        if(started) return;
+        started = true;
+        try{
+          ttsEngine = 'device';
+          try{ localStorage.setItem('cricket_tts_engine', 'device'); }catch(e0){}
+          try{
+            var sg = localStorage.getItem('cricket_tts_gender');
+            if(sg === 'male' || sg === 'female') ttsGender = sg;
+            else { ttsGender = 'female'; localStorage.setItem('cricket_tts_gender', 'female'); }
+          }catch(e1){ ttsGender = 'female'; }
+          ttsOn = true;
+          try{ localStorage.setItem('cricket_tts_on', '1'); }catch(e2){}
+          stadiumOn = true;
+          try{ localStorage.setItem('cricket_stadium_on', '1'); }catch(e3){}
+          try{ __idleMuted = false; __pendingStadResume = false; }catch(e4){}
+          try{ ttsVoiceCache = {}; }catch(e5){}
+          try{ unlockDeviceTts(); }catch(e6){}
+          try{ updateTtsBtn(); updateStadBtn(); updateCommToolsLabel(); }catch(e7){}
+          try{ stadStartAmbient(); }catch(e8){}
+          try{ if(typeof forceStadResume === 'function') forceStadResume(); }catch(e9){}
+          try{
+            if(typeof speak === 'function'){
+              speak('Live commentary is on. Enjoy the match!', false);
+            }
+          }catch(e10){}
+        }catch(e){}
+      }
+      window.__startLiveAudio = startAudio;
+      ['pointerdown','touchstart','click'].forEach(function(ev){
+        document.addEventListener(ev, startAudio, { once: true, passive: true });
+      });
     })();
 
 try{mountDashboards()}catch(e){}
