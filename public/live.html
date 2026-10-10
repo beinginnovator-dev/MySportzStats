@@ -5731,8 +5731,6 @@ try{updateTtsBtn()}catch(eTts){}
       function placeUnlockBanner(){
         try{
           if(bannerShown && $('audio-unlock-banner')) return;
-          // Prefer sitting just above Cheers / Predict row
-          var engage = document.querySelector('.engage-row') || $('btn-cheers') || $('btn-predict');
           var ban = $('audio-unlock-banner');
           if(!ban){
             ban = document.createElement('div');
@@ -5745,21 +5743,8 @@ try{updateTtsBtn()}catch(eTts){}
               hideUnlockBanner();
             }, true);
           }
-          if(engage && engage.parentNode){
-            ban.style.position = 'relative';
-            ban.style.left = 'auto';
-            ban.style.right = 'auto';
-            ban.style.bottom = 'auto';
-            ban.style.transform = 'none';
-            ban.style.width = '100%';
-            ban.style.margin = '8px 0 4px';
-            ban.style.borderRadius = '12px';
-            if(engage.parentNode && engage.previousSibling !== ban){
-              engage.parentNode.insertBefore(ban, engage);
-            }
-          } else {
-            document.body.appendChild(ban);
-          }
+          // Keep original fixed bottom position — CSS handles flash
+          if(!ban.parentNode) document.body.appendChild(ban);
           bannerShown = true;
         }catch(e){}
       }
