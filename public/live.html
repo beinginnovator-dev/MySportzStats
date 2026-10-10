@@ -432,7 +432,7 @@
       top:auto;bottom:38%;
       background:linear-gradient(90deg,rgba(16,185,129,.96),rgba(59,130,246,.96));
       color:#fff;font-weight:900;font-size:16px;padding:10px 18px;border-radius:999px;
-      white-space:nowrap;max-width:92vw;overflow:visible;text-overflow:clip;
+      white-space:normal;max-width:min(88vw,340px);overflow:visible;text-overflow:clip;word-break:break-word;
       box-shadow:0 10px 28px rgba(0,0,0,.45);
       animation:bannerFlyUp 4.5s linear forwards;
     }
@@ -464,7 +464,7 @@
       background:linear-gradient(90deg,rgba(16,185,129,.95),rgba(59,130,246,.95))!important;
       color:#fff!important;font-weight:800!important;font-size:13px!important;
       padding:8px 12px!important;border-radius:999px!important;
-      white-space:nowrap;max-width:min(42vw,200px)!important;overflow:hidden!important;text-overflow:ellipsis!important;
+      white-space:normal!important;max-width:min(88vw,340px)!important;overflow:visible!important;text-overflow:clip!important;word-break:break-word!important;
       box-shadow:0 6px 18px rgba(0,0,0,.35)!important;
       animation:none!important;
       opacity:1!important;
@@ -1693,8 +1693,8 @@ input, select, textarea {
         el.setAttribute('data-float-bus','1');
         // Keep banner in upper band, slightly off-center so score stays readable
         var side = Math.random() < 0.5 ? 'left' : 'right';
-        el.style.cssText='position:fixed;z-index:99990;pointer-events:none;background:linear-gradient(90deg,rgba(16,185,129,.95),rgba(59,130,246,.95));color:#fff;font-weight:800;font-size:13px;line-height:1.25;padding:8px 12px;border-radius:999px;white-space:nowrap;max-width:min(42vw,200px);overflow:hidden;text-overflow:ellipsis;box-shadow:0 6px 18px rgba(0,0,0,.35)';
-        el.innerHTML='<span style="opacity:.9;font-size:10px;margin-right:6px;text-transform:uppercase">'+__fbEsc(name||'Fan')+'</span> '+__fbEsc(text||'');
+        el.style.cssText='position:fixed;z-index:99990;pointer-events:none;background:linear-gradient(90deg,rgba(16,185,129,.95),rgba(59,130,246,.95));color:#fff;font-weight:800;font-size:13px;line-height:1.35;padding:10px 14px;border-radius:16px;white-space:normal;max-width:min(88vw,340px);overflow:visible;text-overflow:clip;word-break:break-word;box-shadow:0 6px 18px rgba(0,0,0,.35)';
+        el.innerHTML='<span style="opacity:.9;font-size:10px;margin-right:6px;text-transform:uppercase;display:inline">'+__fbEsc(name||'Fan')+'</span> <span style="font-weight:800">'+__fbEsc(text||'')+'</span>';
         var startY=window.innerHeight*0.52, endY=20;
         try{
           var over=document.querySelector('.over-box');
