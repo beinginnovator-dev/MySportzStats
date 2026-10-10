@@ -1,5 +1,5 @@
-/* Live viewer SW – register with scope /live only */
-const CACHE_NAME = "mysportzstats-live-v19";
+/* Live viewer SW – scope /live */
+const CACHE_NAME = "mysportzstats-live-v20";
 const ASSETS = [
   "/live",
   "/live.html",
@@ -36,9 +36,10 @@ self.addEventListener("fetch", (e) => {
     url.pathname.startsWith("/presence") ||
     url.pathname.startsWith("/chat") ||
     url.pathname.startsWith("/floats") ||
-    url.pathname.startsWith("/predictions")
+    url.pathname.startsWith("/predictions") ||
+    url.pathname.startsWith("/sounds/")
   ) {
-    return;
+    return; // network only for API + sounds (always fresh)
   }
 
   // Always prefer network for HTML so viewers never stick on old live.html

@@ -1302,6 +1302,24 @@ input, select, textarea {
   border: 1.5px solid var(--border, #475569) !important;
 }
 
+  
+    /* Soft audio unlock — only if browser blocks autoplay */
+    #audio-unlock-banner{
+      position:fixed;left:50%;transform:translateX(-50%);
+      bottom:calc(12px + env(safe-area-inset-bottom,0px));
+      z-index:10040;max-width:min(92vw,28rem);width:auto;
+      padding:10px 14px;border-radius:999px;
+      background:linear-gradient(90deg,#059669,#2563eb);
+      color:#fff;font-weight:900;font-size:12px;text-align:center;
+      box-shadow:0 8px 24px rgba(0,0,0,.4);cursor:pointer;
+      animation:unlockFlash 1.1s ease-in-out infinite;
+      border:1px solid rgba(255,255,255,.25);
+    }
+    @keyframes unlockFlash{
+      0%,100%{opacity:1;transform:translateX(-50%) scale(1)}
+      50%{opacity:.82;transform:translateX(-50%) scale(1.04);box-shadow:0 0 20px rgba(52,211,153,.55)}
+    }
+
   </style>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
@@ -3262,7 +3280,9 @@ input, select, textarea {
     function stadUnlock(){
       if(__stadUnlocked) return;
       __stadUnlocked=true;
-      try{ if(stadiumOn && typeof stadStartAmbient==='function') stadStartAmbient(); }catch(e){}
+      try{
+        if(stadiumOn && !__idleMuted && typeof stadStartAmbient==='function') stadStartAmbient();
+      }catch(e){}
     }
     function stadBindUnlock(){
       var once=function(){ stadUnlock(); };
@@ -3451,12 +3471,21 @@ input, select, textarea {
     // Reliable checker every 10s (not only a single setTimeout that UI keeps resetting)
     setInterval(function(){
       try{
-        if(__idleMuted) return;
         if(Date.now() - __lastScoreActivityAt >= IDLE_MS){
-          enterIdleMute();
+          if(!__idleMuted) enterIdleMute();
+          // Extra safety: if ambient still playing after idle, force kill
+          try{
+            if(__stadAmbientAudio && !__stadAmbientAudio.paused){
+              stadStopAmbient();
+              try{ __stadAmbientAudio.pause(); }catch(e1){}
+              try{ __stadAmbientAudio.src = ''; }catch(e2){}
+              __stadAmbientAudio = null;
+            }
+            stadStopAllSamples();
+          }catch(eK){}
         }
       }catch(e){}
-    }, 10000);
+    }, 5000);
 
     /**
      * Event SFX only:
@@ -3484,7 +3513,7 @@ input, select, textarea {
     }
 
     function stadiumMatchEnd(data){
-      if(!stadiumOn) return;
+      if(!stadiumOn || __idleMuted) return;
       stadStartAmbient();
       // Match end: cheer only (normal volume)
       stadPlaySample('cheer', 0.6, 1);
@@ -5686,29 +5715,60 @@ try{setViewerTab('live')}catch(e){}
 
 try{updateStadBtn()}catch(eStad){}
 try{updateTtsBtn()}catch(eTts){}
-    // Boot: start stadium + commentary when live page opens
+    // Boot: auto-start stadium + commentary when live opens (banner only if browser blocks)
     (function bootLiveAudio(){
       var welcomeDone = false;
+      var bannerShown = false;
 
-      function ensureUnlockBanner(){
+      function hideUnlockBanner(){
         try{
-          if($('audio-unlock-banner')) return;
-          var ban = document.createElement('div');
-          ban.id = 'audio-unlock-banner';
-          ban.setAttribute('role','button');
-          ban.style.cssText = 'position:fixed;left:12px;right:12px;bottom:18px;z-index:10050;padding:14px 16px;border-radius:14px;background:linear-gradient(90deg,#059669,#2563eb);color:#fff;font-weight:900;font-size:14px;text-align:center;box-shadow:0 8px 28px rgba(0,0,0,.45);cursor:pointer';
-          ban.innerHTML = '🔊 Tap here for live commentary & stadium sound';
-          ban.addEventListener('click', function(ev){
-            try{ ev.preventDefault(); ev.stopPropagation(); }catch(e){}
-            startAudio('banner');
-            try{ ban.remove(); }catch(e2){}
-          }, true);
-          document.body.appendChild(ban);
-          // Auto-hide after audio starts
-          setTimeout(function(){
-            try{ if(__audioStarted && ban.parentNode) ban.remove(); }catch(e){}
-          }, 12000);
+          var ban = $('audio-unlock-banner');
+          if(ban) ban.remove();
         }catch(e){}
+        bannerShown = false;
+      }
+
+      function placeUnlockBanner(){
+        try{
+          if(bannerShown && $('audio-unlock-banner')) return;
+          // Prefer sitting just above Cheers / Predict row
+          var engage = document.querySelector('.engage-row') || $('btn-cheers') || $('btn-predict');
+          var ban = $('audio-unlock-banner');
+          if(!ban){
+            ban = document.createElement('div');
+            ban.id = 'audio-unlock-banner';
+            ban.setAttribute('role','button');
+            ban.innerHTML = '🔊 Tap for live commentary & stadium';
+            ban.addEventListener('click', function(ev){
+              try{ ev.preventDefault(); ev.stopPropagation(); }catch(e){}
+              startAudio('banner');
+              hideUnlockBanner();
+            }, true);
+          }
+          if(engage && engage.parentNode){
+            ban.style.position = 'relative';
+            ban.style.left = 'auto';
+            ban.style.right = 'auto';
+            ban.style.bottom = 'auto';
+            ban.style.transform = 'none';
+            ban.style.width = '100%';
+            ban.style.margin = '8px 0 4px';
+            ban.style.borderRadius = '12px';
+            if(engage.parentNode && engage.previousSibling !== ban){
+              engage.parentNode.insertBefore(ban, engage);
+            }
+          } else {
+            document.body.appendChild(ban);
+          }
+          bannerShown = true;
+        }catch(e){}
+      }
+
+      function audioLooksAlive(){
+        try{
+          if(__stadAmbientAudio && !__stadAmbientAudio.paused) return true;
+        }catch(e){}
+        return !!__audioStarted;
       }
 
       function startAudio(from){
@@ -5724,24 +5784,20 @@ try{updateTtsBtn()}catch(eTts){}
           try{ localStorage.setItem('cricket_tts_on', '1'); }catch(e2){}
           stadiumOn = true;
           try{ localStorage.setItem('cricket_stadium_on', '1'); }catch(e3){}
-          try{ __idleMuted = false; __pendingStadResume = false; }catch(e4){}
+          // Opening the page is activity, but do not clear a true 5-min score idle unless user/score
+          if(from === 'score' || from === 'banner' || from === 'ui' || from === 'gate'){
+            try{ __idleMuted = false; }catch(e4){}
+          }
+          try{ __pendingStadResume = false; }catch(e5){}
           try{ unlockDeviceTts(); }catch(e6){}
           try{ recoverSpeechEngine(); }catch(eRec){}
           try{ getPinnedVoice(); }catch(ePin){}
           try{ updateTtsBtn(); updateStadBtn(); updateCommToolsLabel(); }catch(e7){}
 
-          // Stadium ambient
-          try{ stadStartAmbient(); }catch(e8){}
-          try{ forceStadResume(); }catch(e9){}
-
-          // Detect if ambient actually playing
-          setTimeout(function(){
-            try{
-              var ok = __stadAmbientAudio && !__stadAmbientAudio.paused;
-              if(ok) __audioStarted = true;
-              if(!ok) ensureUnlockBanner();
-            }catch(e){ ensureUnlockBanner(); }
-          }, 500);
+          if(!__idleMuted){
+            try{ stadStartAmbient(); }catch(e8){}
+            try{ forceStadResume(); }catch(e9){}
+          }
 
           if(!welcomeDone){
             welcomeDone = true;
@@ -5751,29 +5807,48 @@ try{updateTtsBtn()}catch(eTts){}
               speak('Live commentary is on. Enjoy the match!', false);
             }catch(e10){}
           }
-          __audioStarted = true;
-          try{
-            var ban = $('audio-unlock-banner');
-            if(ban) ban.remove();
-          }catch(eB){}
+
+          // If ambient is actually playing, hide banner
+          setTimeout(function(){
+            try{
+              if(audioLooksAlive()){
+                __audioStarted = true;
+                hideUnlockBanner();
+              }
+            }catch(e){}
+          }, 400);
         }catch(e){}
       }
 
       window.__startLiveAudio = startAudio;
 
-      // Attempt as soon as page is open
-      try{ startAudio('load-immediate'); }catch(e0){}
+      // Auto-start on open (same idea as older build — no banner first)
+      try{ startAudio('load'); }catch(e0){}
       try{ setTimeout(function(){ startAudio('load-300'); }, 300); }catch(e1){}
-      try{ setTimeout(function(){ startAudio('load-1000'); }, 1000); }catch(e2){}
-      try{ setTimeout(function(){ if(!__audioStarted) ensureUnlockBanner(); }, 1500); }catch(e3){}
+      try{ setTimeout(function(){ startAudio('load-1200'); }, 1200); }catch(e2){}
 
-      ['pointerdown','touchstart','click','keydown'].forEach(function(ev){
-        document.addEventListener(ev, function(){ startAudio(ev); }, { passive: true });
+      // Only if browser blocked autoplay after ~2s, show flashing chip over Cheers/Predict
+      try{
+        setTimeout(function(){
+          try{
+            if(!audioLooksAlive()){
+              placeUnlockBanner();
+            } else {
+              hideUnlockBanner();
+            }
+          }catch(e){}
+        }, 2000);
+      }catch(e3){}
+
+      ['pointerdown','touchstart','click'].forEach(function(ev){
+        document.addEventListener(ev, function(){
+          startAudio('ui');
+          try{ noteUiActivity('ui'); }catch(e){}
+        }, { passive: true });
       });
       document.addEventListener('visibilitychange', function(){
         if(!document.hidden) try{ startAudio('visible'); }catch(e){}
       });
-      window.addEventListener('pageshow', function(){ try{ startAudio('pageshow'); }catch(e){} });
     })();
 
 try{mountDashboards()}catch(e){}
