@@ -1,5 +1,5 @@
 /* Live viewer SW – register with scope /live only */
-const CACHE_NAME = "mysportzstats-live-v16";
+const CACHE_NAME = "mysportzstats-live-v18";
 const ASSETS = [
   "/live",
   "/live.html",

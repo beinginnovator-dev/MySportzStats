@@ -3649,6 +3649,8 @@ input, select, textarea {
       ttsVoiceUri = uri || '';
       try{ localStorage.setItem('cricket_tts_voice_uri', ttsVoiceUri); }catch(e){}
       ttsVoiceCache = {};
+      __pinnedVoiceURI = '';
+      __pinnedVoiceName = '';
       setTtsEngine('device');
       try{
         var v = getVoiceFor(ttsLang);
@@ -3751,8 +3753,9 @@ input, select, textarea {
         u.volume = 0.01;
         u.rate = 1;
         u.pitch = 1;
+        // Silent warm-up without cancel (cancel right after speak breaks some Android engines)
+        u.onend = function(){ __ttsUnlocked = true; };
         speechSynthesis.speak(u);
-        speechSynthesis.cancel();
         __ttsUnlocked = true;
       }catch(e){}
     }
@@ -3783,6 +3786,43 @@ input, select, textarea {
     }
 
     /** Device TTS (Web Speech) — sports commentary delivery */
+    // Pinned device voice (same voice for whole session — no fallback voice swap)
+    var __pinnedVoiceURI = '';
+    var __pinnedVoiceName = '';
+    function getPinnedVoice(){
+      try{
+        var voices = listDeviceVoices();
+        if(!voices.length) return null;
+        // Prefer previously pinned
+        if(__pinnedVoiceURI){
+          for(var i=0;i<voices.length;i++){
+            if(voices[i].voiceURI === __pinnedVoiceURI || voices[i].name === __pinnedVoiceURI) return voices[i];
+          }
+        }
+        var v = getVoiceFor(ttsLang);
+        if(v){
+          __pinnedVoiceURI = v.voiceURI || v.name || '';
+          __pinnedVoiceName = v.name || '';
+        }
+        return v;
+      }catch(e){ return null; }
+    }
+
+    function recoverSpeechEngine(){
+      try{
+        if(!('speechSynthesis' in window)) return;
+        speechSynthesis.cancel();
+        try{ speechSynthesis.resume(); }catch(e1){}
+        // Chrome "TTS dies after many cancels" workaround
+        try{
+          var u = new SpeechSynthesisUtterance('');
+          u.volume = 0;
+          speechSynthesis.speak(u);
+          speechSynthesis.cancel();
+        }catch(e2){}
+      }catch(e){}
+    }
+
     function speakDevice(text, excited){
       try{
         if(!ttsOn) return;
@@ -3790,87 +3830,73 @@ input, select, textarea {
         var raw = String(text || '').replace(/\*/g, '').replace(/\s+/g, ' ').trim();
         if(!raw) return;
 
-        try{ unlockDeviceTts(); }catch(eU){}
-
-        // Chrome/Safari: cancel then speak on next tick
+        // Latest-ball wins: invalidate older timers/utterances
+        __ttsGen = (__ttsGen|0) + 1;
+        var myGen = __ttsGen;
+        window.__currentSpeakKey = window.__pendingSpeakKey || '';
         try{ if(__ttsSpeakTimer){ clearTimeout(__ttsSpeakTimer); __ttsSpeakTimer = null; } }catch(eT){}
         try{ speechSynthesis.cancel(); }catch(e0){}
 
         __ttsSpeakTimer = setTimeout(function(){
           try{
+            if(myGen !== __ttsGen) return; // newer ball already queued
+
             try{ if(speechSynthesis.paused) speechSynthesis.resume(); }catch(eR){}
 
             var u = new SpeechSynthesisUtterance(raw);
-            var v = null;
-            try{ v = getVoiceFor(ttsLang); }catch(eV){}
-            if(v){
-              try{ u.voice = v; }catch(eVoice){}
-            }
+            var v = getPinnedVoice();
+            if(v){ try{ u.voice = v; }catch(eV){} }
             u.lang = (ttsLang === 'hi') ? 'hi-IN' : ((v && v.lang) || 'en-IN');
             u.volume = 1;
 
             var style = ttsStyle || 'sports';
             var baseRate = style === 'calm' ? 0.95 : (style === 'excited' ? 1.12 : 1.05);
-            var basePitch = 1.05; // female default pitch
-            var g = 'unknown';
-            try{ g = v ? voiceGender(v) : 'unknown'; }catch(eG){}
-            if(ttsGender === 'male'){
-              basePitch = (g === 'male') ? 0.95 : 0.85;
-            } else if(ttsGender === 'female'){
-              basePitch = (g === 'female') ? 1.08 : 1.12;
-            }
+            var basePitch = 1.05;
+            if(ttsGender === 'male') basePitch = 0.9;
+            else if(ttsGender === 'female') basePitch = 1.08;
 
-            var rate = baseRate;
-            var pitch = basePitch;
-            if(excited === 2){ rate = Math.min(1.2, baseRate + 0.1); pitch = basePitch + 0.05; }
-            else if(excited){ rate = Math.min(1.15, baseRate + 0.05); pitch = basePitch + 0.03; }
+            var rate = baseRate, pitch = basePitch;
+            if(excited === 2){ rate = Math.min(1.18, baseRate + 0.08); pitch = basePitch + 0.03; }
+            else if(excited){ rate = Math.min(1.12, baseRate + 0.04); pitch = basePitch + 0.02; }
+            u.rate = Math.max(0.85, Math.min(1.3, rate));
+            u.pitch = Math.max(0.75, Math.min(1.45, pitch));
 
-            u.rate = Math.max(0.7, Math.min(1.4, rate));
-            u.pitch = Math.max(0.6, Math.min(1.6, pitch));
-
+            // Same default voice only — never swap voice on error
             u.onerror = function(){
-              try{
-                var u2 = new SpeechSynthesisUtterance(raw);
-                u2.lang = ttsLang === 'hi' ? 'hi-IN' : 'en-IN';
-                u2.rate = 1; u2.pitch = 1; u2.volume = 1;
-                speechSynthesis.speak(u2);
-              }catch(e2){}
+              if(myGen !== __ttsGen) return;
+              try{ recoverSpeechEngine(); }catch(e){}
+            };
+            u.onend = function(){
+              if(myGen !== __ttsGen) return;
             };
 
+            if(myGen !== __ttsGen) return;
             speechSynthesis.speak(u);
+
+            // If engine silently failed (Chrome stuck), recover once and retry SAME text + SAME voice
+            setTimeout(function(){
+              try{
+                if(myGen !== __ttsGen) return;
+                if(speechSynthesis.speaking || speechSynthesis.pending) return;
+                recoverSpeechEngine();
+                if(myGen !== __ttsGen) return;
+                var u2 = new SpeechSynthesisUtterance(raw);
+                var v2 = getPinnedVoice();
+                if(v2) try{ u2.voice = v2; }catch(e){}
+                u2.lang = u.lang;
+                u2.rate = u.rate;
+                u2.pitch = u.pitch;
+                u2.volume = 1;
+                speechSynthesis.speak(u2);
+              }catch(eR){}
+            }, 400);
           }catch(eSpeak){
-            try{ console.warn('speakDevice', eSpeak); }catch(e){}
+            try{ recoverSpeechEngine(); }catch(e){}
           }
-        }, 80);
-      }catch(e){
-        try{ console.warn('speakDevice outer', e); }catch(e2){}
-      }
+        }, 40);
+      }catch(e){}
     }
 
-    /** Build AI TTS URL (Google Translate TTS — no API key). Split long text. */
-    function aiTtsUrl(text, lang){
-      var tl = (lang==='hi') ? 'hi' : 'en';
-      var q = String(text||'').replace(/\s+/g,' ').trim().slice(0, 180);
-      if(!q) return null;
-      return 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl='+
-        encodeURIComponent(tl)+'&q='+encodeURIComponent(q);
-    }
-
-    /** Same-origin Worker AI TTS (Aura multi-voice / Melo) */
-    function workerTtsUrl(text, lang, voice){
-      try{
-        if(!API_BASE) return null;
-        return API_BASE.replace(/\/+$/,'')+'/api/tts?lang='+encodeURIComponent(lang==='hi'?'hi':'en')+
-          '&voice='+encodeURIComponent(voice||ttsAiVoice||'asteria')+
-          '&q='+encodeURIComponent(String(text||'').slice(0,200));
-      }catch(e){ return null; }
-    }
-
-    /**
-     * AI path: try audio URL, play via <audio>.
-     * - Aborts previous request (no backlog lag)
-     * - Falls back to Device TTS on error / 2.2s timeout
-     */
     function speakAi(text, excited, gen){
       var clean = String(text||'').replace(/\*/g,'').replace(/\s+/g,' ').trim();
       if(!clean) return;
@@ -3959,23 +3985,17 @@ input, select, textarea {
     function speak(text, excited){
       try{
         if(!ttsOn || !text) return;
-        // Score-driven speech always clears idle first so commentary is not swallowed
         try{
-          if(__idleMuted){ __idleMuted = false; forceStadResume(); }
+          if(typeof __idleMuted !== 'undefined' && __idleMuted){
+            __idleMuted = false;
+            if(typeof forceStadResume === 'function') forceStadResume();
+          }
         }catch(eIdle){}
-        __ttsGen++;
-        var gen = __ttsGen;
-        try{ stopAllSpeech(); }catch(eS){}
-
         var clean = String(text).replace(/\*/g,'').replace(/\s+/g,' ').trim();
         if(!clean) return;
-
-        // Device first for reliability
-        if(ttsEngine === 'ai'){
-          try{ speakAi(clean, !!excited, gen); }catch(eA){ speakDevice(clean, !!excited); }
-        } else {
-          speakDevice(clean, !!excited);
-        }
+        // Live page: always device TTS (stable default voice, no AI double-speak)
+        ttsEngine = 'device';
+        speakDevice(clean, !!excited);
       }catch(e){
         try{ speakDevice(String(text||''), !!excited); }catch(e2){}
       }
@@ -4075,28 +4095,47 @@ input, select, textarea {
 
     function speakNewCommentary(data){
       try{
-        var arr=(ttsLang==='hi')?(data.commentaryHi||data.commentary):data.commentary;
-        var lines=(arr||[]).filter(Boolean);
-        if(!lines.length)return;
-        var last=String(lines[lines.length-1]);
-        if(last===lastSpokenLine)return;
-        lastSpokenLine=last;
-        var parts=formatCommentaryLine(last);
-        var toSay=(parts.title||'')+(parts.body?('. '+parts.body):'')||last;
-        var srcForExcited=String((data.commentary||[]).slice(-1)[0]||last);
-        var ev=String(data.lastEvent||'');
-        var lvl=0;
-        if(/\\b(six|wicket|out|hundred|century|hat\\s*-?trick)\\b/i.test(srcForExcited+ev)||/छक्का|आउट|विकेट|शतक|हैट्रिक/.test(last))
-          lvl=2;
-        else if(/\\b(four|fifty|boundary)\\b/i.test(srcForExcited+ev)||/चौका|अर्धशतक/.test(last))
-          lvl=1;
-        toSay=sportsCallLine(data, toSay, lvl);
-        // Always go through speak() so unlock + delay + stop are consistent
-        if(lvl>=1){
-          speak(toSay, lvl);
-        } else {
-          speak(toSay, false);
+        if(!data || !ttsOn) return;
+        var ev = String(data.lastEvent || '').toLowerCase();
+        var scoreKey = (data.balls|0) + ':' + (data.runs|0) + ':' + (data.wickets|0) + ':' + ev + ':' + (data.strikerRuns|0);
+
+        // Only skip if we already successfully started this exact ball
+        if(scoreKey && scoreKey === window.__lastSpokenScoreKey) return;
+
+        var arr = (ttsLang === 'hi') ? (data.commentaryHi || data.commentary) : data.commentary;
+        var lines = (arr || []).filter(Boolean);
+        var last = lines.length ? String(lines[lines.length - 1]) : '';
+
+        var parts = last ? formatCommentaryLine(last) : { title: '', body: '' };
+        var toSay = (parts.title || '') + (parts.body ? ('. ' + parts.body) : '');
+        if(!toSay) toSay = last;
+
+        if(!toSay || toSay.length < 3){
+          var bits = '';
+          try{ bits = spokenScoreBits(data); }catch(eB){}
+          if(/six|\b6\b/.test(ev)) toSay = 'Six! ' + bits;
+          else if(/four|\b4\b|boundary/.test(ev)) toSay = 'Four! ' + bits;
+          else if(/wicket|out|\bw\b/.test(ev)) toSay = 'Wicket! ' + bits;
+          else if(ev && ev !== 'dot' && ev !== '0') toSay = (data.strikerName || 'Batter') + ', ' + ev + '. ' + bits;
+          else toSay = bits || ('Score is ' + (data.runs|0) + ' for ' + (data.wickets|0));
         }
+
+        var srcForExcited = (toSay || '') + ' ' + ev;
+        var lvl = 0;
+        if(/\b(six|wicket|out|hundred|century|hat\s*-?trick)\b/i.test(srcForExcited) || /छक्का|आउट|विकेट|शतक|हैट्रिक/.test(srcForExcited))
+          lvl = 2;
+        else if(/\b(four|fifty|boundary)\b/i.test(srcForExcited) || /चौका|अर्धशतक/.test(srcForExcited))
+          lvl = 1;
+
+        try{ toSay = sportsCallLine(data, toSay, lvl) || toSay; }catch(eS){}
+
+        // Mark as current ball BEFORE speaking so any interrupt only allows newer keys
+        window.__pendingSpeakKey = scoreKey;
+        window.__lastSpokenScoreKey = scoreKey;
+        lastSpokenLine = toSay;
+
+        // Cancels any previous ball audio — speaks THIS ball only, same default voice
+        speak(toSay, lvl || false);
       }catch(e){}
     }
 
@@ -4386,11 +4425,30 @@ input, select, textarea {
       }catch(eHT){}
       // Key by balls+runs+event — NOT ts (ts updates every publish and was replaying the same FOUR/TWO forever)
       var ek=(data.balls|0)+':'+(data.runs|0)+':'+(data.wickets|0)+':'+(ev||'')+':'+(data.strikerRuns|0);
-      if(ev && ek!==lastEventKey){
+      // Fire on ANY score change (not only when lastEvent is set) so stadium+anim follow balls
+      if(ek!==lastEventKey){
+        var prevEk = lastEventKey;
         lastEventKey=ek;
-        // Never replay event bursts after match ends, or while points overlay is showing
+        // Infer event from score delta when lastEvent missing
+        if(!ev && prevEk){
+          try{
+            var pr = prevEk.split(':');
+            var pBalls = pr[0]|0, pRuns = pr[1]|0, pWk = pr[2]|0;
+            var dBalls = (data.balls|0) - pBalls;
+            var dRuns = (data.runs|0) - pRuns;
+            var dWk = (data.wickets|0) - pWk;
+            if(dWk > 0) ev = 'wicket';
+            else if(dRuns >= 6) ev = 'six';
+            else if(dRuns >= 4) ev = 'four';
+            else if(dRuns > 0) ev = String(dRuns);
+            else if(dBalls > 0) ev = 'dot';
+          }catch(eInf){}
+        }
         if(!data.matchEnded && Date.now()>=skipEventAnimUntil){
-          try{ playAnim(ev,data); try{stadiumReact(ev,data)}catch(eSt){} }catch(eA){}
+          try{ if(ev) playAnim(ev,data); }catch(eA){}
+          try{ if(ev) stadiumReact(ev,data); }catch(eSt){}
+          try{ noteLiveActivity('score-event'); }catch(eN){}
+          try{ if(stadiumOn && typeof forceStadResume==='function') forceStadResume(); }catch(eR){}
         }
       }
       try{refreshPtsUI()}catch(eUp){}
@@ -5612,12 +5670,11 @@ try{setViewerTab('live')}catch(e){}
 
 try{updateStadBtn()}catch(eStad){}
 try{updateTtsBtn()}catch(eTts){}
-    // Boot: stadium + female device commentary on first open (user gesture required)
+    // Boot: stadium + welcome commentary as soon as page can play audio
     (function bootLiveAudio(){
       var started = false;
-      function startAudio(){
-        if(started) return;
-        started = true;
+      var welcomeDone = false;
+      function startAudio(from){
         try{
           ttsEngine = 'device';
           try{ localStorage.setItem('cricket_tts_engine', 'device'); }catch(e0){}
@@ -5631,22 +5688,44 @@ try{updateTtsBtn()}catch(eTts){}
           stadiumOn = true;
           try{ localStorage.setItem('cricket_stadium_on', '1'); }catch(e3){}
           try{ __idleMuted = false; __pendingStadResume = false; }catch(e4){}
-          try{ ttsVoiceCache = {}; }catch(e5){}
           try{ unlockDeviceTts(); }catch(e6){}
+          try{ recoverSpeechEngine(); }catch(eRec){}
+          try{ getPinnedVoice(); }catch(ePin){}
           try{ updateTtsBtn(); updateStadBtn(); updateCommToolsLabel(); }catch(e7){}
           try{ stadStartAmbient(); }catch(e8){}
           try{ if(typeof forceStadResume === 'function') forceStadResume(); }catch(e9){}
-          try{
-            if(typeof speak === 'function'){
+          if(!welcomeDone){
+            welcomeDone = true;
+            try{
+              window.__lastSpokenScoreKey = '';
+              window.__pendingSpeakKey = 'welcome';
               speak('Live commentary is on. Enjoy the match!', false);
-            }
-          }catch(e10){}
+            }catch(e10){}
+          }
+          started = true;
         }catch(e){}
       }
       window.__startLiveAudio = startAudio;
-      ['pointerdown','touchstart','click'].forEach(function(ev){
-        document.addEventListener(ev, startAudio, { once: true, passive: true });
+      // Try immediately on load (works on some PWAs / after prior gesture on site)
+      try{ setTimeout(function(){ startAudio('load'); }, 300); }catch(eL){}
+      try{ setTimeout(function(){ startAudio('load2'); }, 1200); }catch(eL2){}
+      ['pointerdown','touchstart','click','keydown'].forEach(function(ev){
+        document.addEventListener(ev, function(){ startAudio(ev); }, { passive: true });
       });
+      document.addEventListener('visibilitychange', function(){
+        if(!document.hidden) try{ startAudio('visible'); }catch(e){}
+      });
+      window.addEventListener('pageshow', function(){ try{ startAudio('pageshow'); }catch(e){} });
+      // Keep speech engine alive every 2 minutes while tab visible
+      setInterval(function(){
+        try{
+          if(document.hidden || !ttsOn) return;
+          if(!speechSynthesis.speaking && !speechSynthesis.pending){
+            // soft recover so later balls still work after many overs
+            if(speechSynthesis.paused) speechSynthesis.resume();
+          }
+        }catch(e){}
+      }, 120000);
     })();
 
 try{mountDashboards()}catch(e){}
