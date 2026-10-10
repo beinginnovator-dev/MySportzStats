@@ -241,7 +241,11 @@
     .pts-bar b{color:#fbbf24}
     .pts-flash{color:#34d399;font-weight:900}
     .pts-bad{color:#f87171;font-weight:900}
-    .react-float{display:none!important} /* plain giant text floats disabled — use float-bus pills only */
+    .react-float{display:none!important}
+    [data-plain-cheer],.plain-cheer-text,.cheer-giant{
+      display:none!important;font-size:0!important;opacity:0!important;visibility:hidden!important
+    }
+    /* KILL plain cheer text — only data-float-bus pills allowed */
     .pts-burst{position:fixed;left:50%;top:32%;transform:translateX(-50%);z-index:9600;font-size:42px;font-weight:900;pointer-events:none;animation:ptsBurst 1.6s ease-out forwards;text-align:center;text-shadow:0 4px 20px rgba(0,0,0,.6)}
     .pts-burst.up{color:#34d399}
     .pts-burst.down{color:#f87171}
@@ -1589,9 +1593,9 @@ input, select, textarea {
       <div id="name-gate" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:20px">
         <div style="background:#0f172a;border:1px solid rgba(148,163,184,.3);border-radius:16px;padding:20px;max-width:320px;width:100%;text-align:center">
           <div style="font-size:18px;font-weight:900;color:#fbbf24;margin-bottom:8px">Welcome viewer</div>
-          <p style="font-size:13px;color:#94a3b8;margin:0 0 12px">Enter your name to cheer &amp; earn coins</p>
+          <p style="font-size:13px;color:#94a3b8;margin:0 0 12px">Enter your name to join live cheers &amp; commentary</p>
           <input id="gate-name" maxlength="24" placeholder="Your name" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(148,163,184,.35);background:#1e293b;color:#fff;font-weight:800;font-size:15px;margin-bottom:10px" />
-          <button type="button" onclick="saveGateName()" style="width:100%;padding:12px;border:0;border-radius:10px;background:#10b981;color:#042f2e;font-weight:900;font-size:14px;cursor:pointer">Continue · 10 coins</button>
+          <button type="button" onclick="saveGateName()" style="width:100%;padding:12px;border:0;border-radius:10px;background:#10b981;color:#042f2e;font-weight:900;font-size:14px;cursor:pointer">Continue</button>
         </div>
       </div>
       <div id="panel-sum" class="panel hidden">
@@ -1605,7 +1609,25 @@ input, select, textarea {
         </div>
         <div id="sum-teams"></div>
         <div id="sum-sum" class="hidden"></div>
-        <div id="sum-viewers" class="hidden"></div>
+        <div id="sum-viewers" class="hidden">
+          <div class="sec-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+            <span>👁 Viewers log</span>
+            <span style="font-size:11px;font-weight:800;color:#94a3b8">Today: <b id="sum-today-total" style="color:#34d399">0</b></span>
+          </div>
+          <div id="sum-viewers-table" style="overflow:auto;max-height:320px"><div class="empty">No viewers yet</div></div>
+          <div id="admin-viewers-reset" style="display:none;padding:8px 0">
+            <button type="button" class="icon-btn" style="font-size:11px" onclick="adminResetViewersLog()">Reset viewers log</button>
+          </div>
+        </div>
+        <div id="viewer-activity-modal" class="hidden" style="position:fixed;inset:0;z-index:12000;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeViewerActivity()">
+          <div style="background:#0f172a;border:1px solid rgba(148,163,184,.3);border-radius:14px;max-width:420px;width:100%;max-height:80vh;overflow:auto;padding:14px 16px" onclick="event.stopPropagation()">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <b id="va-title" style="font-size:15px;color:#fbbf24">Activity</b>
+              <button type="button" class="icon-btn" onclick="closeViewerActivity()">✕</button>
+            </div>
+            <div id="va-body" style="font-size:13px;color:#e2e8f0;line-height:1.5"></div>
+          </div>
+        </div>
         <div id="sum-orange" class="hidden"></div>
         <div id="sum-purple" class="hidden"></div>
         <div id="sum-fow" class="hidden"></div>
@@ -1948,7 +1970,10 @@ input, select, textarea {
       if(!t) t='live';
       if(t==='summary') t='sum';
       if(t==='viewers') t='fan';
-      if(t==='sum'){ try{setSumSub('teams')}catch(e){} }
+      window.__currentViewerTab = t;
+      try{ postViewerActivity('tab', {tab:t, text:'Opened '+t}); }catch(eTab){}
+      if(t==='sum'){ try{setSumSub('teams')}catch(e){} try{ paintViewersSummary(); }catch(eV){} }
+      if(t==='fan'){ try{ loadFansRank(); paintViewersSummary(); }catch(eF){} }
       var ids=['live','comm','stats','fan','sum'];
       ids.forEach(function(x){
         var tb=$('tab-'+x), pn=$('panel-'+x);
@@ -2200,7 +2225,7 @@ input, select, textarea {
         if(b)b.classList.toggle('on',s===x);
         if(p)p.classList.toggle('hidden',s!==x);
       });
-      if(s==='viewers'){ try{ paintViewersSummary(); }catch(e){} }
+      if(s==='viewers'){ try{ var sv=$('sum-viewers'); if(sv) sv.classList.remove('hidden'); paintViewersSummary(); heartbeat(); }catch(e){} }
       if(s==='fow'){ try{ paintFallOfWickets(); }catch(e){} }
     }
     
@@ -2304,47 +2329,145 @@ input, select, textarea {
         });
       }catch(e){}
     }
+    function fmtViewerTime(ts){
+      try{
+        if(!ts) return '—';
+        var d=new Date(ts);
+        return d.toLocaleDateString([], {day:'2-digit',month:'short'})+' '+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+      }catch(e){ return '—'; }
+    }
+    function matchLabelList(matches){
+      try{
+        var arr=(matches||[]).map(function(m,i){
+          var s=String(m||'');
+          if(/^current$/i.test(s)) return 'M'+(i+1);
+          // use short form
+          if(/match[-_]?(\d+)/i.test(s)) return 'M'+RegExp.$1;
+          if(/^m?\d+$/i.test(s)) return 'M'+s.replace(/\D/g,'');
+          return s.length>10 ? ('M'+(i+1)) : s;
+        });
+        // unique keep order
+        var seen={}, out=[];
+        arr.forEach(function(x){ if(!seen[x]){ seen[x]=1; out.push(x); } });
+        return out.length ? out.join(', ') : '—';
+      }catch(e){ return '—'; }
+    }
     function paintViewersSummary(){
-      var el=$('sum-viewers'); if(!el) return;
-      var rows=Object.keys(__viewerMap).map(function(k){return __viewerMap[k]});
-      rows.sort(function(a,b){ return (b.online?1:0)-(a.online?1:0) || (b.lastSeen|0)-(a.lastSeen|0); });
-      if(!rows.length){ el.innerHTML='<div class="empty">No viewers yet</div>'; return; }
-      function fmtT(ts){
-        try{ var d=new Date(ts); return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}); }catch(e){ return '—'; }
+      var el=$('sum-viewers-table')||$('sum-viewers'); if(!el) return;
+      try{ $('sum-viewers') && $('sum-viewers').classList.remove('hidden'); }catch(e0){}
+      var rows=[];
+      if(window.__viewerHistoryList && window.__viewerHistoryList.length){
+        rows = window.__viewerHistoryList.slice();
+      } else {
+        rows=Object.keys(__viewerMap||{}).map(function(k){return __viewerMap[k]});
       }
-      var html='<div style="padding:8px 4px;font-size:12px;color:#94a3b8">Online / offline · visit &amp; last seen · Activity</div>';
+      rows.sort(function(a,b){ return (b.online?1:0)-(a.online?1:0) || (b.lastSeen|0)-(a.lastSeen|0); });
+      try{
+        var tt=$('sum-today-total');
+        if(tt) tt.textContent=String(window.__viewerTodayTotal!=null?window.__viewerTodayTotal:rows.length);
+      }catch(eT){}
+      if(!rows.length){ el.innerHTML='<div class="empty">No viewers yet</div>'; return; }
+      var html='<table class="stats" style="font-size:11px;width:100%"><thead><tr>'
+        +'<th>Viewer</th><th>Status</th><th>In</th><th>Out</th><th>Match</th><th></th></tr></thead><tbody>';
       rows.forEach(function(v){
-        var emKeys=Object.keys(v.emojis||{});
-        var emTotal=0; emKeys.forEach(function(k){ emTotal+=v.emojis[k]|0; });
-        html+='<div style="display:flex;align-items:center;gap:8px;padding:10px 8px;border-bottom:1px solid rgba(148,163,184,.12)">';
-        html+='<span style="width:8px;height:8px;border-radius:50%;background:'+(v.online?'#34d399':'#64748b')+';flex-shrink:0"></span>';
-        html+='<div style="flex:1;min-width:0"><div style="font-weight:800;color:#e2e8f0">'+esc(v.name||'Fan')+'</div>';
-        html+='<div style="font-size:11px;color:#94a3b8">'+(v.online?'Online':'Offline')+' · in '+fmtT(v.firstSeen)+' · last '+fmtT(v.lastSeen)+'</div></div>';
-        html+='<button type="button" class="icon-btn" style="font-size:11px" onclick="showViewerActivity(\''+esc(v.id).replace(/'/g,"\\'")+'\')">Activity</button>';
-        html+='</div>';
+        var id=esc(String(v.id||v.name||'')).replace(/'/g,"\\'");
+        var status=v.online?'<span style="color:#34d399;font-weight:800">Online</span>':'<span style="color:#94a3b8">Offline</span>';
+        var left = v.online ? '—' : fmtViewerTime(v.leftAt||v.lastSeen);
+        html+='<tr>'
+          +'<td style="font-weight:800">'+esc(v.name||'Fan')+'</td>'
+          +'<td>'+status+'</td>'
+          +'<td style="white-space:nowrap">'+fmtViewerTime(v.joinedAt||v.firstSeen)+'</td>'
+          +'<td style="white-space:nowrap">'+left+'</td>'
+          +'<td>'+esc(matchLabelList(v.matches))+'</td>'
+          +'<td><button type="button" class="icon-btn" style="font-size:10px;padding:2px 6px" onclick="showViewerActivity(\''+id+'\')">Activity</button></td>'
+          +'</tr>';
       });
+      html+='</tbody></table>';
       el.innerHTML=html;
+      try{
+        var ar=$('admin-viewers-reset');
+        if(ar) ar.style.display = window.__adminKey ? 'block' : 'none';
+      }catch(eA){}
     }
     function showViewerActivity(id){
-      var v=__viewerMap[id]; if(!v){ alert('No activity'); return; }
-      var emKeys=Object.keys(v.emojis||{});
-      var emHtml=emKeys.length?emKeys.map(function(k){ return k+' ×'+(v.emojis[k]|0); }).join(' · '):'No emojis';
-      var msgHtml=(v.messages||[]).length?(v.messages.slice().reverse().map(function(m){
-        return '<div style="padding:6px 0;border-bottom:1px solid rgba(148,163,184,.1)">'+(m.emoji?esc(m.emoji)+' ':'')+esc(m.text||'')+'</div>';
-      }).join('')):'<div class="empty">No messages</div>';
-      var box=document.createElement('div');
-      box.style.cssText='position:fixed;inset:0;z-index:10060;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:16px';
-      box.onclick=function(e){ if(e.target===box) box.remove(); };
-      box.innerHTML='<div style="background:#0f172a;border:1px solid rgba(148,163,184,.3);border-radius:14px;padding:16px;max-width:340px;width:100%;max-height:80vh;overflow:auto;color:#e2e8f0">'+
-        '<div style="font-weight:900;color:#fbbf24;margin-bottom:8px">'+esc(v.name||'Fan')+' · Activity</div>'+
-        '<div style="font-size:12px;color:#94a3b8;margin-bottom:10px">'+(v.online?'Online':'Offline')+'</div>'+
-        '<div style="font-size:12px;font-weight:800;color:#7dd3fc;margin-bottom:4px">Emojis</div>'+
-        '<div style="font-size:14px;margin-bottom:12px">'+emHtml+'</div>'+
-        '<div style="font-size:12px;font-weight:800;color:#7dd3fc;margin-bottom:4px">Messages</div>'+msgHtml+
-        '<button type="button" style="width:100%;margin-top:12px;padding:10px;border:0;border-radius:10px;background:#1e293b;color:#e2e8f0;font-weight:800;cursor:pointer" onclick="this.closest(\'div[style*=fixed]\').remove()">Close</button></div>';
-      document.body.appendChild(box);
+      var v=null;
+      if(window.__viewerHistoryList){
+        for(var i=0;i<window.__viewerHistoryList.length;i++){
+          if(String(window.__viewerHistoryList[i].id)===String(id)){ v=window.__viewerHistoryList[i]; break; }
+        }
+      }
+      if(!v && __viewerMap) v=__viewerMap[id];
+      if(!v){ alert('No activity'); return; }
+      var modal=$('viewer-activity-modal');
+      var body=$('va-body');
+      var title=$('va-title');
+      if(title) title.textContent=(v.name||'Fan')+' · activity';
+      var lines=[];
+      lines.push('<div style="margin-bottom:8px;color:#94a3b8;font-size:12px">'+(v.online?'🟢 Online':'⚪ Offline')
+        +' · Matches: '+esc(matchLabelList(v.matches))+'</div>');
+      var tabs=v.tabs||{};
+      var tabKeys=Object.keys(tabs);
+      if(tabKeys.length){
+        lines.push('<div class="sec-title" style="margin:8px 0 4px">Tabs visited</div>');
+        lines.push('<div>'+tabKeys.map(function(k){ return esc(k)+' ×'+(tabs[k]|0); }).join(' · ')+'</div>');
+      }
+      var acts=v.activities||[];
+      if(!acts.length && v.messages){
+        acts=(v.messages||[]).map(function(m){ return {type:'message', text:m.text, emoji:m.emoji, ts:m.ts}; });
+      }
+      lines.push('<div class="sec-title" style="margin:10px 0 4px">Smileys &amp; messages</div>');
+      if(!acts.length){
+        lines.push('<div class="empty">No messages or reactions yet</div>');
+      } else {
+        acts.slice().reverse().forEach(function(a){
+          var when=fmtViewerTime(a.ts);
+          var bit=(a.emoji?a.emoji+' ':'')+(a.text||a.tab||a.type||'');
+          lines.push('<div style="padding:6px 0;border-bottom:1px solid rgba(148,163,184,.1)"><span style="color:#64748b;font-size:10px">'+when+'</span><br>'+esc(bit)+'</div>');
+        });
+      }
+      if(body) body.innerHTML=lines.join('');
+      if(modal){
+        modal.classList.remove('hidden');
+        modal.style.display='flex';
+      } else {
+        alert((v.name||'Fan')+'\n'+(acts.length?acts.length+' events':'No activity'));
+      }
     }
-    var cheerTarget='striker';
+    function closeViewerActivity(){
+      try{
+        var modal=$('viewer-activity-modal');
+        if(modal){ modal.classList.add('hidden'); modal.style.display='none'; }
+      }catch(e){}
+    }
+    function adminResetViewersLog(){
+      if(!window.__adminKey){ alert('Admin only'); return; }
+      if(!confirm('Reset all viewers log?')) return;
+      if(!API_BASE) return;
+      fetch(API_BASE+'/admin/reset-viewers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:window.__adminKey})})
+        .then(function(r){ return r.json(); })
+        .then(function(){
+          window.__viewerHistoryList=[];
+          window.__viewerTodayTotal=0;
+          try{ paintViewersSummary(); }catch(e){}
+          alert('Viewers log reset');
+        })
+        .catch(function(){ alert('Reset failed'); });
+    }
+    function postViewerActivity(type, extra){
+      try{
+        if(!API_BASE || !getChatName()) return;
+        var body=Object.assign({
+          id:uid(),
+          name:getChatName()||'Fan',
+          match:LIVE_MATCH||'current',
+          type:type||'event',
+          tab: window.__currentViewerTab || 'live'
+        }, extra||{});
+        fetch(API_BASE+'/viewer-activity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),cache:'no-store'}).catch(function(){});
+      }catch(e){}
+    }
+
+
     function setCheerTarget(t){
       cheerTarget=t==='bowler'?'bowler':'striker';
       try{
@@ -3093,11 +3216,12 @@ input, select, textarea {
     var __lastOverKeyWhistle='';
     var __stadAmbientAudio=null;
     var __stadUnlocked=false;
+    var STAD_SFX_VER = 'v10';
     var STAD_SFX = {
-      short: '/sounds/crowd_short.mp3',
-      cheer: '/sounds/crowd_cheer.mp3',
-      chant: '/sounds/crowd_chant.mp3',
-      whistle: '/sounds/crowd_whistle.mp3'
+      short: '/sounds/crowd_short.mp3?'+STAD_SFX_VER,
+      cheer: '/sounds/crowd_cheer.mp3?'+STAD_SFX_VER,
+      chant: '/sounds/crowd_chant.mp3?'+STAD_SFX_VER,
+      whistle: '/sounds/crowd_whistle.mp3?'+STAD_SFX_VER
     };
     var __stadActive = [];
     function stadPlaySample(key, vol, rate){
@@ -3105,10 +3229,15 @@ input, select, textarea {
       try{
         var url = STAD_SFX[key];
         if(!url) return null;
-        var a = new Audio(url);
+        var a = new Audio();
+        try{ a.setAttribute('playsinline',''); a.setAttribute('webkit-playsinline',''); }catch(e0){}
+        a.preload = 'auto';
+        a.crossOrigin = 'anonymous';
+        a.src = url;
         a.volume = Math.max(0, Math.min(1, vol!=null?vol:0.45));
         if(rate && a.playbackRate != null) try{ a.playbackRate = rate; }catch(e){}
-        a.play().catch(function(){});
+        var p = a.play();
+        if(p && p.catch) p.catch(function(){ try{ stadUnlock(); a.play().catch(function(){}); }catch(e2){} });
         __stadActive.push(a);
         a.addEventListener('ended', function(){
           try{ __stadActive = __stadActive.filter(function(x){ return x!==a; }); }catch(e){}
@@ -3147,10 +3276,14 @@ input, select, textarea {
           try{ __stadAmbientAudio.play().catch(function(){}); }catch(e){}
           return;
         }
-        var a = new Audio(STAD_SFX.short);
+        var a = new Audio();
+        try{ a.setAttribute('playsinline',''); a.setAttribute('webkit-playsinline',''); }catch(e0){}
+        a.preload = 'auto';
+        a.src = STAD_SFX.short;
         a.loop = true;
         a.volume = 0.028; // very low — far / distant crowd
-        a.play().catch(function(){});
+        var p = a.play();
+        if(p && p.catch) p.catch(function(){});
         __stadAmbientAudio = a;
       }catch(e){}
     }
@@ -4368,18 +4501,92 @@ input, select, textarea {
     function saveEmojiRail(){
       try{localStorage.setItem('emoji_rail_v2_'+(LIVE_MATCH||'current'), JSON.stringify(emojiRailCounts))}catch(e){}
     }
+        function contextCheerMessage(emoji, data){
+      try{
+        data = data || lastData || {};
+        var ev = String(data.lastEvent||'').toLowerCase();
+        var lines = [];
+        var need = null;
+        if(data.targetScore!=null || data.target!=null){
+          need = Math.max(0, ((data.targetScore!=null?data.targetScore:data.target)|0) - (data.runs|0));
+        }
+        var overBalls = (data.thisOver && data.thisOver.balls) || [];
+        var dots = 0, ones = 0;
+        overBalls.forEach(function(b){
+          var s=String(b).toLowerCase();
+          if(s==='0'||s==='dot'||s==='.') dots++;
+          if(s==='1') ones++;
+        });
+        var striker = data.strikerName || 'the batter';
+        var bowler = data.bowlerName || 'the bowler';
+        var team = data.battingTeamName || data.teamA || 'Team';
+
+        if(/six|4|four|boundary/.test(ev) || /🔥|👏|🤩|🎉/.test(emoji)){
+          lines = [
+            'Great shot by '+striker+'!',
+            "That's a big hit!!",
+            'What a boundary!',
+            striker+' finds the rope!',
+            'Superb timing!'
+          ];
+        } else if(/wicket|out|\bw\b/.test(ev) || /😲|🎯/.test(emoji)){
+          lines = [
+            'Wicket! Brilliant by '+bowler+'!',
+            'What a delivery!',
+            bowler+' strikes again!',
+            'Huge moment for the bowling side!',
+            'Wicket! Wicket!!'
+          ];
+        } else if(need!=null && need>0 && need<=15){
+          lines = [
+            'Come on '+team+'!!',
+            'Only '+need+' more — stay calm!',
+            'Finish it strong!',
+            'Come on Team!!',
+            'Every run counts!'
+          ];
+        } else if(dots+ones >= 3 || /👍|❤️/.test(emoji)){
+          lines = [
+            'Waiting for boundaries — come on!!',
+            'Rotate the strike!',
+            'Build the innings…',
+            'Time for a big shot!',
+            'Come on '+striker+'!'
+          ];
+        } else {
+          lines = [
+            'Come on!!',
+            'Great energy!',
+            'Love this match!',
+            'What a contest!',
+            'Keep going!'
+          ];
+        }
+        return lines[Math.floor(Math.random()*lines.length)];
+      }catch(e){ return 'Come on!!'; }
+    }
+
     async function sendMatchEmoji(emoji){
       var name=getChatName()||'Fan';
+      if(!getChatName()){ try{ensureNameGate()}catch(e){} return; }
+      var msg = contextCheerMessage(emoji, lastData);
+      var payload = emoji + ' ' + msg;
       try{bumpEmojiRail(emoji,1)}catch(e0){}
-      try{ __recordActivity(uid(), name, '__FLOAT__'+emoji, emoji, Date.now()); }catch(eAct){}
-      // Local: one side-lane bubble only (score stays clear)
-      try{ if(typeof __fbBubbles==='function') __fbBubbles(emoji); else spawnEmojiBubbles(emoji,1); }catch(e1){}
-      try{ if(typeof __fbBanner==='function') __fbBanner(name, emoji); else floatCheerBanner(name, emoji); }catch(e2){}
+      try{ __recordActivity(uid(), name, msg, emoji, Date.now()); }catch(eAct){}
+      try{ postViewerActivity('emoji', {emoji:emoji, text:msg}); }catch(ePA){}
+      // Local: one gradient pill only (emoji + short line) — no plain white text
+      try{
+        document.querySelectorAll('.react-float, [data-plain-cheer], .pts-burst').forEach(function(n){
+          // don't kill points bursts
+        });
+        document.querySelectorAll('.react-float, [data-plain-cheer]').forEach(function(n){ try{n.remove()}catch(e){} });
+      }catch(eCl){}
+      try{ if(typeof __fbBanner==='function') __fbBanner(name, payload); else floatCheerBanner(name, payload); }catch(e2){}
+      try{ if(typeof __fbBubbles==='function') __fbBubbles(emoji); }catch(e1){}
       try{ if(!window.__myFloatMids) window.__myFloatMids={}; window.__myFloatMids['recent']=1; setTimeout(function(){try{delete window.__myFloatMids['recent']}catch(e){}},6000); }catch(e){}
-      var body={id:uid(),name:name,text:'__FLOAT__'+emoji,emoji:emoji,match:LIVE_MATCH||'current'};
-      try{ __fbSeen['fp|'+uid()+'|'+emoji+'|'+Math.floor(Date.now()/2500)]=1; }catch(e){}
+      var body={id:uid(),name:name,text:msg,emoji:emoji,match:LIVE_MATCH||'current'};
+      try{ __fbSeen['fp|'+uid()+'|'+emoji+'|'+msg+'|'+Math.floor(Date.now()/2500)]=1; }catch(e){}
       if(!API_BASE)return;
-      // ONE server write only — avoids duplicate copies on other viewers
       try{
         var r=await fetch(API_BASE+'/floats',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),cache:'no-store'});
         var d=await r.json().catch(function(){return null});
@@ -4392,6 +4599,7 @@ input, select, textarea {
         }
       }catch(e){ console.log('emoji floats post', e); }
     }
+
     function spawnEmojiBubbles(emoji, count){
       // side lanes only, max 2
       try{ if(typeof __fbBubbles==='function'){ __fbBubbles(emoji); return; } }catch(e){}
@@ -4685,6 +4893,7 @@ input, select, textarea {
             try{ localStorage.setItem('cricket_admin_key', k); }catch(e){}
             try{ var ar=$('admin-row'); if(ar) ar.style.display='flex'; }catch(e){}
             try{ var ab=$('admin-coins-bar'); if(ab) ab.style.display='flex'; }catch(e){}
+            try{ var ar=$('admin-viewers-reset'); if(ar) ar.style.display='block'; }catch(e2){}
             alert('Admin mode on');
             try{ loadFansRank(); }catch(e){}
           } else {
@@ -4842,10 +5051,22 @@ input, select, textarea {
     async function heartbeat(){
       if(!API_BASE)return;
       try{
-        var r=await fetch(API_BASE+'/presence',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:uid(),name:getChatName()||'Fan',match:LIVE_MATCH||'current'}),cache:'no-store'});
+        var r=await fetch(API_BASE+'/presence',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+          id:uid(),
+          name:getChatName()||'Fan',
+          match:LIVE_MATCH||'current',
+          tab: window.__currentViewerTab || 'live'
+        }),cache:'no-store'});
         if(r.ok){
           var d=await r.json();
+          try{
+            if(d.history) window.__viewerHistoryList = d.history;
+            if(d.todayTotal!=null) window.__viewerTodayTotal = d.todayTotal|0;
+          }catch(eH){}
           try{renderViewers(d.viewers||d.list||[], d.count||d.watching||0)}catch(eV){}
+          try{
+            if($('sum-viewers') && !$('sum-viewers').classList.contains('hidden')) paintViewersSummary();
+          }catch(eP){}
           try{applyFloats(d.floats||d.messages||[])}catch(eM){}
         }
       }catch(e){ console.log('heartbeat err', e); }
@@ -5087,6 +5308,28 @@ try{mountDashboards()}catch(e){}
     });
 
 try{setViewerTab('live')}catch(e){}
+    // Play commentary welcome when live opens (after name / first paint)
+    (function bootCommentaryOnOpen(){
+      try{
+        var tried=false;
+        function go(){
+          if(tried) return;
+          if(!ttsOn) return;
+          tried=true;
+          try{ stadUnlock(); }catch(e0){}
+          try{
+            if(lastData && typeof speakNewCommentary==='function'){
+              speakNewCommentary(lastData);
+            } else if(typeof speak==='function'){
+              speak(ttsLang==='hi'?'लाइव मैच शुरू':'Live match is on. Enjoy the action!', false);
+            }
+          }catch(e1){}
+        }
+        document.addEventListener('pointerdown', function once(){ go(); }, {once:true, passive:true});
+        setTimeout(function(){ if(getChatName()) go(); }, 2500);
+      }catch(e){}
+    })();
+
 try{updateStadBtn()}catch(eStad){}
 try{updateTtsBtn()}catch(eTts){}
     // Boot: device commentary + stadium ON when Live tab is open
