@@ -1552,8 +1552,11 @@ input, select, textarea {
             <option value="aivoice-helios">AI · Helios (M)</option>
             <option value="aivoice-perseus">AI · Perseus (M)</option>
             <option value="voice-auto">Device voice: Auto</option>
+            <option value="voice-male">Device voice: Male (sports)</option>
             <option value="voice-female">Device voice: Female</option>
-            <option value="voice-male">Device voice: Male</option>
+            <option value="style-sports">Style: Sports punchy</option>
+            <option value="style-calm">Style: Calm read</option>
+            <option value="style-excited">Style: Excited live</option>
             <option value="stadium">Stadium FX: On/Off</option>
             <option value="sound">Toggle sound on/off</option>
           </select>
@@ -3394,107 +3397,147 @@ input, select, textarea {
     var __ttsAbort=null;          // AbortController for in-flight AI fetch
     var __ttsGen=0;               // generation token — stale responses ignored
     var __ttsFallbackTimer=null;
-    var FEMALE_HINTS=/female|woman|zira|samantha|susan|karen|moira|tessa|veena|fiona|kate|salli|joanna|ivy|kendra|amy|emma|aditi|swara|priya|neerja|heera/i;
-    var MALE_HINTS=/male|\bman\b|david|daniel|fred|george|james|mark|ryan|guy|ravi|arjun|hemant|rishi|matthew|justin|brian|tom|google uk english male|google us english|microsoft david|microsoft mark|microsoft ravi|microsoft hemant|google हिन्दी|hindi male|en-in-x-ene|en-gb-x-rjs|en-us-x-iog|en-us-x-tpd|en-au-x-afh|en-gb-x-gbd|en-gb-x-gbg/i;
-    function voiceGender(v){var n=v.name||'';if(FEMALE_HINTS.test(n))return'female';if(MALE_HINTS.test(n))return'male';return'unknown'}
-    function pickBestVoice(lang,gender){
+    // Device voices — strict gender + optional explicit voice URI
+    var ttsVoiceUri=(function(){try{return localStorage.getItem('cricket_tts_voice_uri')||''}catch(e){return ''}})();
+    var ttsStyle=(function(){try{return localStorage.getItem('cricket_tts_style')||'sports'}catch(e){return 'sports'}})();
+    var FEMALE_HINTS=/female|#female|woman|zira|samantha|susan|karen|moira|tessa|veena|fiona|kate|salli|joanna|ivy|kendra|amy|emma|aditi|swara|priya|neerja|heera|serena|victoria|karen|martha|paulina|nicky|allison|ava|susan|hazel|susan|google us english(?!\s*male)|google UK english female|microsoft zira|microsoft eva|microsoft aria|microsoft jenny|enhanced quality|samantha/i;
+    var MALE_HINTS=/male|#male|\bman\b|david|daniel|fred|george|james|mark|ryan|guy|ravi|arjun|hemant|rishi|matthew|justin|brian|tom|alex(?!\s*a)|google uk english male|google us english male|microsoft david|microsoft mark|microsoft ravi|microsoft hemant|microsoft guy|microsoft tony|en-in-x-ene|en-gb-x-rjs|en-us-x-iog|en-us-x-tpd|en-au-x-afh|en-gb-x-gbd|en-gb-x-gbg|en-us-x-sfg#male|hindi male|rishi|akash|anuj|prabhat/i;
+
+    function voiceGender(v){
       try{
-        var voices=speechSynthesis.getVoices()||[];
-        if(!voices.length)return null;
-        var langPrefix=(lang==='hi')?'hi':'en';
-        var pool=voices.filter(function(v){return v.lang&&v.lang.toLowerCase().indexOf(langPrefix)===0});
-        if(!pool.length)pool=voices.slice();
-        var wantGender=gender&&gender!=='auto'?gender:null;
-        // Prefer gender match strictly when user picked male/female
-        if(wantGender){
-          var gendered=pool.filter(function(v){return voiceGender(v)===wantGender});
-          if(gendered.length) pool=gendered;
-          else {
-            // Heuristic: for male, drop obvious female names
-            if(wantGender==='male'){
-              var filtered=pool.filter(function(v){return voiceGender(v)!=='female'});
-              if(filtered.length) pool=filtered;
-            }
-            if(wantGender==='female'){
-              var filtered2=pool.filter(function(v){return voiceGender(v)!=='male'});
-              if(filtered2.length) pool=filtered2;
-            }
+        if(!v) return 'unknown';
+        var n = String(v.name||'') + ' ' + String(v.voiceURI||'') + ' ' + String(v.lang||'');
+        var low = n.toLowerCase();
+        // Explicit markers first
+        if(/#female|_female|female/i.test(low) && !/#male|_male|\bmale\b/i.test(low)) return 'female';
+        if(/#male|_male|\bmale\b/i.test(low)) return 'male';
+        if(FEMALE_HINTS.test(n)) return 'female';
+        if(MALE_HINTS.test(n)) return 'male';
+        // Android Google: default "Google ... English" without Male is usually female
+        if(/^google\s/i.test(v.name||'') && !/male/i.test(v.name||'')) return 'female';
+        return 'unknown';
+      }catch(e){ return 'unknown'; }
+    }
+
+    function listDeviceVoices(){
+      try{ return (speechSynthesis.getVoices&&speechSynthesis.getVoices())||[]; }catch(e){ return []; }
+    }
+
+    function pickBestVoice(lang, gender){
+      try{
+        var voices = listDeviceVoices();
+        if(!voices.length) return null;
+        // Explicit user-picked voice wins
+        if(ttsVoiceUri){
+          for(var i=0;i<voices.length;i++){
+            if(voices[i].voiceURI===ttsVoiceUri || voices[i].name===ttsVoiceUri) return voices[i];
           }
         }
+        var langPrefix = (lang==='hi') ? 'hi' : 'en';
+        var pool = voices.filter(function(v){ return v.lang && v.lang.toLowerCase().indexOf(langPrefix)===0; });
+        if(!pool.length) pool = voices.slice();
+
+        var want = gender && gender!=='auto' ? gender : null;
+
+        if(want==='male'){
+          var males = pool.filter(function(v){ return voiceGender(v)==='male'; });
+          if(males.length) pool = males;
+          else {
+            // Prefer non-female unknowns over females
+            var nonF = pool.filter(function(v){ return voiceGender(v)!=='female'; });
+            if(nonF.length) pool = nonF;
+            // else keep pool but we'll lower pitch in speakDevice
+          }
+        } else if(want==='female'){
+          var females = pool.filter(function(v){ return voiceGender(v)==='female'; });
+          if(females.length) pool = females;
+          else {
+            var nonM = pool.filter(function(v){ return voiceGender(v)!=='male'; });
+            if(nonM.length) pool = nonM;
+          }
+        }
+
         function rank(v){
-          var score=0;
-          var n=(v.name||'')+' '+(v.lang||'');
-          if(/natural|neural|premium|enhanced/i.test(n))score+=3;
-          if(langPrefix==='en'&&/en-IN|en_IN|en-in/i.test(n))score+=4; // cricket / India accent
-          if(langPrefix==='en'&&/en-GB|en_GB/i.test(n))score+=2;
-          if(wantGender&&voiceGender(v)===wantGender)score+=8;
-          if(wantGender==='male'&&voiceGender(v)==='female')score-=10;
-          if(wantGender==='female'&&voiceGender(v)==='male')score-=10;
-          if(v.localService)score+=2; // offline, low lag
+          var score = 0;
+          var n = (v.name||'') + ' ' + (v.lang||'') + ' ' + (v.voiceURI||'');
+          var g = voiceGender(v);
+          if(want && g===want) score += 20;
+          if(want==='male' && g==='female') score -= 50;
+          if(want==='female' && g==='male') score -= 50;
+          if(langPrefix==='en' && /en-IN|en_IN|en-in/i.test(n)) score += 6;
+          if(langPrefix==='en' && /en-GB|en_GB/i.test(n)) score += 4;
+          if(langPrefix==='hi' && /hi-IN|hi_IN/i.test(n)) score += 6;
+          if(/male/i.test(n) && want==='male') score += 10;
+          if(/natural|neural|premium|enhanced/i.test(n)) score += 2;
+          if(v.localService) score += 3;
           return score;
         }
-        pool=pool.slice().sort(function(a,b){return rank(b)-rank(a)});
-        return pool[0]||voices[0];
-      }catch(e){return null}
+        pool = pool.slice().sort(function(a,b){ return rank(b)-rank(a); });
+        return pool[0] || voices[0];
+      }catch(e){ return null; }
     }
+
     function getVoiceFor(lang){
-      var key=lang+':'+ttsGender;
-      if(!ttsVoiceCache[key])ttsVoiceCache[key]=pickBestVoice(lang,ttsGender);
+      var key = lang+':'+ttsGender+':'+ttsVoiceUri;
+      if(!ttsVoiceCache[key]) ttsVoiceCache[key] = pickBestVoice(lang, ttsGender);
       return ttsVoiceCache[key];
     }
+
+    function populateDeviceVoiceOptions(){
+      try{
+        var dd = $('comm-tools-dd'); if(!dd) return;
+        // Remove old dynamic voice options
+        Array.prototype.slice.call(dd.querySelectorAll('option[data-dyn-voice="1"]')).forEach(function(o){ o.remove(); });
+        var voices = listDeviceVoices();
+        if(!voices.length) return;
+        var langPrefix = ttsLang==='hi' ? 'hi' : 'en';
+        var relevant = voices.filter(function(v){ return v.lang && v.lang.toLowerCase().indexOf(langPrefix)===0; });
+        if(!relevant.length) relevant = voices.slice(0, 24);
+        // Prefer listing males first when filtering
+        relevant = relevant.slice().sort(function(a,b){
+          var ga=voiceGender(a), gb=voiceGender(b);
+          if(ga==='male' && gb!=='male') return -1;
+          if(gb==='male' && ga!=='male') return 1;
+          return String(a.name).localeCompare(String(b.name));
+        });
+        var max = Math.min(relevant.length, 18);
+        for(var i=0;i<max;i++){
+          var v = relevant[i];
+          var g = voiceGender(v);
+          var tag = g==='male'?'♂':(g==='female'?'♀':'•');
+          var opt = document.createElement('option');
+          opt.value = 'pickvoice:' + (v.voiceURI || v.name);
+          opt.setAttribute('data-dyn-voice','1');
+          opt.textContent = 'Device · '+tag+' ' + (v.name||'Voice').slice(0, 28);
+          dd.appendChild(opt);
+        }
+      }catch(e){}
+    }
+
     try{
       if('speechSynthesis' in window){
-        speechSynthesis.onvoiceschanged=function(){ttsVoiceCache={}};
+        speechSynthesis.onvoiceschanged = function(){ ttsVoiceCache={}; try{ populateDeviceVoiceOptions(); }catch(e){} };
+        setTimeout(function(){ try{ populateDeviceVoiceOptions(); }catch(e){} }, 600);
+        setTimeout(function(){ try{ populateDeviceVoiceOptions(); }catch(e){} }, 2000);
       }
     }catch(e){}
 
-    function stopAllSpeech(){
-      try{ if(__ttsFallbackTimer){ clearTimeout(__ttsFallbackTimer); __ttsFallbackTimer=null; } }catch(e){}
-      try{ if(__ttsAbort){ __ttsAbort.abort(); __ttsAbort=null; } }catch(e){}
+    function setDeviceVoiceUri(uri){
+      ttsVoiceUri = uri || '';
+      try{ localStorage.setItem('cricket_tts_voice_uri', ttsVoiceUri); }catch(e){}
+      ttsVoiceCache = {};
+      setTtsEngine('device');
       try{
-        if(__ttsAudio){
-          __ttsAudio.onended=null; __ttsAudio.onerror=null;
-          __ttsAudio.pause();
-          try{ __ttsAudio.removeAttribute('src'); __ttsAudio.load(); }catch(e2){}
-          __ttsAudio=null;
-        }
-      }catch(e){}
-      try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){}
+        var v = getVoiceFor(ttsLang);
+        var label = v ? (v.name||'voice') : 'default';
+        speak('Sports commentary. Voice set to '+label, false);
+      }catch(e2){}
     }
 
-    function setTtsEngine(eng){
-      ttsEngine=(eng==='ai')?'ai':'device';
-      try{ localStorage.setItem('cricket_tts_engine', ttsEngine); }catch(e){}
-      stopAllSpeech();
-      updateCommToolsLabel();
-      if(ttsOn){
-        try{
-          var name = ttsEngine==='ai' ? ('AI · '+ttsAiVoice) : 'Device';
-          speak(ttsLang==='hi'
-            ? (ttsEngine==='ai'?'एआई आवाज़: '+ttsAiVoice:'डिवाइस आवाज़ चालू')
-            : (name + ' on'), false);
-        }catch(e2){}
-      }
-    }
-    function setAiVoice(v){
-      v = String(v||'asteria').toLowerCase();
-      if(TTS_AI_VOICES.indexOf(v)<0) v='asteria';
-      ttsAiVoice=v;
-      try{ localStorage.setItem('cricket_tts_ai_voice', ttsAiVoice); }catch(e){}
-      ttsEngine='ai';
-      try{ localStorage.setItem('cricket_tts_engine', 'ai'); }catch(e){}
-      stopAllSpeech();
-      updateCommToolsLabel();
-      if(ttsOn){
-        try{ speak('AI voice '+ttsAiVoice, false); }catch(e2){}
-      } else {
-        // briefly enable so user can hear sample
-        try{
-          var was=ttsOn; ttsOn=true;
-          speak('AI voice '+ttsAiVoice, false);
-          setTimeout(function(){ ttsOn=was; updateTtsBtn(); }, 50);
-        }catch(e3){}
-      }
+    function setTtsStyle(style){
+      ttsStyle = style || 'sports';
+      try{ localStorage.setItem('cricket_tts_style', ttsStyle); }catch(e){}
+      try{ speak(ttsStyle==='calm'?'Calm commentary mode':(ttsStyle==='excited'?'Excited commentary mode':'Sports commentary mode'), true); }catch(e){}
     }
 
     function updateTtsBtn(){
@@ -3521,7 +3564,26 @@ input, select, textarea {
       }catch(e){}
     }
     function toggleLang(){ttsLang=(ttsLang==='hi')?'en':'hi';try{localStorage.setItem('cricket_tts_lang',ttsLang)}catch(e){}updateLangBtn();lastSpokenLine='';updateCommToolsLabel()}
-    function onGenderChange(){var sel=$('voice-gender');if(!sel)return;ttsGender=sel.value;try{localStorage.setItem('cricket_tts_gender',ttsGender)}catch(e){}ttsVoiceCache={};if(ttsOn)try{speak(ttsLang==='hi'?'आवाज़ बदल दी गई':'Voice updated',false)}catch(e2){}}
+    function onGenderChange(){
+      var sel=$('voice-gender');
+      var g = sel ? sel.value : ttsGender;
+      ttsGender = g || 'male';
+      try{ localStorage.setItem('cricket_tts_gender', ttsGender); }catch(e){}
+      // Clear pinned URI so gender filter can re-pick a matching voice
+      ttsVoiceUri = '';
+      try{ localStorage.removeItem('cricket_tts_voice_uri'); }catch(e2){}
+      ttsVoiceCache = {};
+      try{ populateDeviceVoiceOptions(); }catch(e3){}
+      setTtsEngine('device');
+      if(ttsOn){
+        try{
+          var v = getVoiceFor(ttsLang);
+          var nm = v ? (v.name||'') : '';
+          var gg = v ? voiceGender(v) : '?';
+          speak((ttsGender==='male'?'Male sports commentary. ':'Female sports commentary. ')+(nm?('Using '+nm+'. '):'')+'Four! What a shot!', true);
+        }catch(e4){}
+      }
+    }
     function onCommToolsChange(v){
       if(!v)return;
       if(v==='lang') toggleLang();
@@ -3530,8 +3592,14 @@ input, select, textarea {
       else if(v==='engine-device') setTtsEngine('device');
       else if(v==='engine-ai') setTtsEngine('ai');
       else if(v.indexOf('aivoice-')===0){ setAiVoice(v.replace('aivoice-','')); }
+      else if(v.indexOf('pickvoice:')===0){ setDeviceVoiceUri(v.slice('pickvoice:'.length)); }
+      else if(v.indexOf('style-')===0){ setTtsStyle(v.replace('style-','')); setTtsEngine('device'); }
       else if(v.indexOf('voice-')===0){
-        var g=v.replace('voice-',''); var sel=$('voice-gender'); if(sel){sel.value=g; onGenderChange();}
+        var g=v.replace('voice-','');
+        ttsGender = g;
+        try{ localStorage.setItem('cricket_tts_gender', ttsGender); }catch(eG){}
+        var sel=$('voice-gender'); if(sel) sel.value=g;
+        onGenderChange();
         setTtsEngine('device');
       }
       try{ var dd=$('comm-tools-dd'); if(dd) dd.selectedIndex=0; }catch(e){}
@@ -3548,7 +3616,7 @@ input, select, textarea {
       }
     }
 
-    /** Device TTS (Web Speech) — instant, sports-style delivery */
+    /** Device TTS (Web Speech) — sports commentary delivery */
     function speakDevice(text, excited){
       try{
         if(!('speechSynthesis' in window))return;
@@ -3557,15 +3625,34 @@ input, select, textarea {
         if(!raw)return;
         var u=new SpeechSynthesisUtterance(raw);
         var v=getVoiceFor(ttsLang);
-        if(v)u.voice=v;
-        u.lang=ttsLang==='hi'?'hi-IN':(v&&v.lang)||'en-IN';
-        // Sports commentary: punchy rate/pitch on big moments
-        if(excited===2){ // maximum (six / wicket / century)
-          u.rate=1.18; u.pitch=1.28; u.volume=1;
+        if(v) u.voice=v;
+        u.lang = ttsLang==='hi' ? 'hi-IN' : ((v&&v.lang)||'en-IN');
+        u.volume = 1;
+
+        var style = ttsStyle || 'sports';
+        var baseRate = style==='calm' ? 0.95 : (style==='excited' ? 1.12 : 1.05);
+        var basePitch = 1.0;
+        // If user wants male but OS only gave a female voice, drop pitch to sound deeper
+        var g = v ? voiceGender(v) : 'unknown';
+        if(ttsGender==='male' && g!=='male'){
+          basePitch = 0.82; // deeper fallback when no true male voice installed
+        } else if(ttsGender==='female' && g!=='female'){
+          basePitch = 1.12;
+        } else if(g==='male'){
+          basePitch = 0.95;
+        } else if(g==='female'){
+          basePitch = 1.05;
+        }
+
+        if(excited===2){
+          u.rate = Math.min(1.25, baseRate + 0.12);
+          u.pitch = basePitch + (ttsGender==='male' ? 0.06 : 0.15);
         } else if(excited){
-          u.rate=1.12; u.pitch=1.2; u.volume=1;
+          u.rate = Math.min(1.2, baseRate + 0.06);
+          u.pitch = basePitch + (ttsGender==='male' ? 0.04 : 0.1);
         } else {
-          u.rate=1.02; u.pitch=1.05; u.volume=1;
+          u.rate = baseRate;
+          u.pitch = basePitch;
         }
         speechSynthesis.speak(u);
       }catch(e){}
