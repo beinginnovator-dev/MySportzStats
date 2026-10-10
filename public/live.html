@@ -1561,7 +1561,7 @@ input, select, textarea {
             <option value="sound">Toggle sound on/off</option>
           </select>
           <button type="button" class="icon-btn" id="lang-btn" onclick="toggleLang()" style="display:none">EN</button>
-          <select id="voice-gender" class="icon-btn" style="display:none" onchange="onGenderChange()">
+          <select id="voice-gender" data-default="female" class="icon-btn" style="display:none" onchange="onGenderChange()">
             <option value="auto">Voice: Auto</option>
             <option value="female">Voice: Female</option>
             <option value="male">Voice: Male</option>
@@ -1858,6 +1858,8 @@ input, select, textarea {
       heartbeat();try{pushFanScore()}catch(e2){}
     }
     function saveGateName(){
+      try{ if(window.__startLiveAudio) window.__startLiveAudio(); }catch(eAud){}
+
       var n=($('gate-name').value||'').trim().slice(0,24);
       if(!n){alert('Enter your name');return}
       try{localStorage.setItem('cricket_viewer_name',n)}catch(e){}
@@ -3269,24 +3271,47 @@ input, select, textarea {
       });
     }
     try{ stadBindUnlock(); }catch(eU){}
+    try{
+      ['pointerdown','touchstart','keydown'].forEach(function(ev){
+        document.addEventListener(ev, function(){
+          try{
+            noteLiveActivity('ui');
+            if(__pendingStadResume || (__idleMuted===false && stadiumOn && (!__stadAmbientAudio || __stadAmbientAudio.paused))){
+              forceStadResume();
+            }
+          }catch(e){}
+        }, {passive:true});
+      });
+    }catch(eIdleUi){}
 
     /** Low-volume looping background — crowd_short only */
     function stadStartAmbient(){
       if(!stadiumOn) return;
+      if(typeof __idleMuted!=='undefined' && __idleMuted) return;
       try{
         if(__stadAmbientAudio){
           try{ __stadAmbientAudio.volume = 0.028; }catch(eV){}
-          try{ __stadAmbientAudio.play().catch(function(){}); }catch(e){}
-          return;
+          try{
+            var p0 = __stadAmbientAudio.play();
+            if(p0 && p0.catch) p0.catch(function(){
+              // recreate on failure
+              try{ __stadAmbientAudio = null; }catch(eR){}
+              try{ stadStartAmbient(); }catch(eR2){}
+            });
+          }catch(e){ __stadAmbientAudio = null; }
+          if(__stadAmbientAudio) return;
         }
         var a = new Audio();
         try{ a.setAttribute('playsinline',''); a.setAttribute('webkit-playsinline',''); }catch(e0){}
         a.preload = 'auto';
-        a.src = STAD_SFX.short;
         a.loop = true;
-        a.volume = 0.028; // very low — far / distant crowd
+        a.volume = 0.028;
+        a.src = STAD_SFX.short + (STAD_SFX.short.indexOf('?')>=0 ? '&' : '?') + 'r=' + Date.now();
         var p = a.play();
-        if(p && p.catch) p.catch(function(){});
+        if(p && p.catch) p.catch(function(err){
+          try{ console.warn('ambient play blocked', err); }catch(e1){}
+          __pendingStadResume = true;
+        });
         __stadAmbientAudio = a;
       }catch(e){}
     }
@@ -3323,6 +3348,100 @@ input, select, textarea {
       }catch(e){}
     }
 
+    // ---------- Idle auto-mute (5 min no score/activity) ----------
+    var IDLE_MS = 5 * 60 * 1000;
+    var __lastLiveActivityAt = Date.now();
+    var __idleMuted = false;
+    var __idleTimer = null;
+    var __userStadiumPref = true; // preference to restore after idle
+    var __pendingStadResume = false;
+
+    function noteLiveActivity(reason){
+      try{
+        __lastLiveActivityAt = Date.now();
+        if(__idleTimer){ clearTimeout(__idleTimer); __idleTimer = null; }
+        __idleTimer = setTimeout(function(){
+          try{ enterIdleMute(); }catch(e){}
+        }, IDLE_MS);
+
+        // Always resume if we were idle — score/UI activity
+        if(__idleMuted){
+          exitIdleMute(reason || 'activity');
+        } else if(__pendingStadResume){
+          try{ forceStadResume(); }catch(e2){}
+        }
+      }catch(e){}
+    }
+
+    function enterIdleMute(){
+      try{
+        if(__idleMuted) return;
+        if(Date.now() - __lastLiveActivityAt < IDLE_MS - 500) return;
+        __idleMuted = true;
+        __userStadiumPref = !!stadiumOn;
+        try{ stadStopAmbient(); }catch(e0){}
+        try{ stadStopAllSamples(); }catch(e1){}
+        try{ stopAllSpeech(); }catch(e2){}
+        try{
+          var b = $('btn-sound-stad');
+          if(b){ b.style.opacity = '0.35'; b.title = 'Stadium paused (idle 5 min)'; }
+        }catch(e3){}
+        try{ console.log('[idle] muted'); }catch(e4){}
+      }catch(e){}
+    }
+
+    function forceStadResume(){
+      try{
+        __pendingStadResume = false;
+        if(!stadiumOn && __userStadiumPref){
+          stadiumOn = true;
+          try{ localStorage.setItem('cricket_stadium_on', '1'); }catch(eL){}
+        }
+        if(!stadiumOn) return;
+        // Recreate ambient audio — play() after long pause often fails on mobile
+        try{
+          if(__stadAmbientAudio){
+            try{ __stadAmbientAudio.pause(); }catch(e0){}
+            __stadAmbientAudio = null;
+          }
+        }catch(e1){}
+        try{ stadStartAmbient(); }catch(e2){}
+        // Second attempt after tick (autoplay policies)
+        setTimeout(function(){
+          try{
+            if(stadiumOn && !__idleMuted){
+              if(__stadAmbientAudio){
+                __stadAmbientAudio.volume = 0.028;
+                var p = __stadAmbientAudio.play();
+                if(p && p.catch) p.catch(function(){ __pendingStadResume = true; });
+              } else {
+                stadStartAmbient();
+              }
+            }
+          }catch(e3){ __pendingStadResume = true; }
+        }, 120);
+        try{ updateStadBtn(); }catch(e4){}
+      }catch(e){ __pendingStadResume = true; }
+    }
+
+    function exitIdleMute(reason){
+      try{
+        if(!__idleMuted && !__pendingStadResume) {
+          // still ensure ambient if preferred
+          if(stadiumOn) try{ forceStadResume(); }catch(e0){}
+          return;
+        }
+        __idleMuted = false;
+        forceStadResume();
+        try{ console.log('[idle] resumed:', reason || ''); }catch(e1){}
+      }catch(e){
+        __idleMuted = false;
+        __pendingStadResume = true;
+      }
+    }
+
+    try{ noteLiveActivity('boot'); }catch(eBoot){}
+
     /**
      * Event SFX only:
      * - four / six / boundary → crowd_cheer
@@ -3331,6 +3450,8 @@ input, select, textarea {
      * - 1, 2, 3, wide, noball, dot → silent
      */
     function stadiumReact(ev, data){
+      try{ if(ev) noteLiveActivity('sfx'); }catch(eN){}
+      if(__idleMuted) return; // quiet while idle
       if(!stadiumOn||!ev) return;
       var e=String(ev).toLowerCase();
       try{
@@ -3382,9 +3503,9 @@ input, select, textarea {
     // ---------- Text-to-speech (Commentary): Device + AI, language + voice gender ----------
     var ttsOn=(function(){try{var v=localStorage.getItem('cricket_tts_on'); if(v===null||v===undefined||v==='') return true; return v!=='0'&&v!=='false'}catch(e){return true}})();
     var ttsLang=(function(){try{return localStorage.getItem('cricket_tts_lang')||'en'}catch(e){return 'en'}})();
-    var ttsGender=(function(){try{return localStorage.getItem('cricket_tts_gender')||'male'}catch(e){return 'male'}})();
+    var ttsGender=(function(){try{var g=localStorage.getItem('cricket_tts_gender'); if(g==='male'||g==='female'||g==='auto') return g; return 'female'}catch(e){return 'female'}})();
     // 'device' = Web Speech API (instant). 'ai' = neural/online audio with device fallback.
-    var ttsEngine=(function(){try{var e=localStorage.getItem('cricket_tts_engine');return (e==='ai'||e==='device')?e:'device'}catch(e){return 'device'}})();
+    var ttsEngine=(function(){try{var e=localStorage.getItem('cricket_tts_engine');return (e==='ai')?'ai':'device'}catch(e){return 'device'}})();
     var TTS_AI_VOICES=['asteria','luna','athena','stella','hera','angus','orion','zeus','orpheus','arcas','helios','perseus'];
     var ttsAiVoice=(function(){try{var v=(localStorage.getItem('cricket_tts_ai_voice')||'asteria').toLowerCase();return TTS_AI_VOICES.indexOf(v)>=0?v:'asteria'}catch(e){return 'asteria'}})();
     var ttsVoiceCache={};
@@ -3395,7 +3516,9 @@ input, select, textarea {
     }catch(eDef){}
     var __ttsAudio=null;          // current HTMLAudioElement (AI)
     var __ttsAbort=null;          // AbortController for in-flight AI fetch
-    var __ttsGen=0;               // generation token — stale responses ignored
+    var __ttsGen=0;
+    var __ttsSpeakTimer=null;
+    var __ttsUnlocked=false;               // generation token — stale responses ignored
     var __ttsFallbackTimer=null;
     // Device voices — strict gender + optional explicit voice URI
     var ttsVoiceUri=(function(){try{return localStorage.getItem('cricket_tts_voice_uri')||''}catch(e){return ''}})();
@@ -3610,52 +3733,118 @@ input, select, textarea {
       try{localStorage.setItem('cricket_tts_on',ttsOn?'1':'0')}catch(e){}
       updateTtsBtn();try{updateCommToolsLabel()}catch(_u){}
       if(ttsOn){
-        try{speak(ttsLang==='hi'?'कमेंट्री ध्वनि चालू':'Commentary sound on')}catch(e2){}
+        try{ unlockDeviceTts(); }catch(eU){}
+        try{ setTtsEngine('device'); }catch(eE){}
+        try{ speak(ttsLang==='hi'?'कमेंट्री चालू। Four!':'Commentary on. Four! What a shot!', true); }catch(e2){}
       } else {
-        stopAllSpeech();
+        try{ stopAllSpeech(); }catch(e3){}
       }
+    }
+
+
+    function unlockDeviceTts(){
+      try{
+        if(__ttsUnlocked) return;
+        if(!('speechSynthesis' in window)) return;
+        // Warm-up empty utterance (required on iOS / some Android browsers)
+        var u = new SpeechSynthesisUtterance(' ');
+        u.volume = 0.01;
+        u.rate = 1;
+        u.pitch = 1;
+        speechSynthesis.speak(u);
+        speechSynthesis.cancel();
+        __ttsUnlocked = true;
+      }catch(e){}
+    }
+    try{
+      ['pointerdown','touchstart','click'].forEach(function(ev){
+        document.addEventListener(ev, function(){ try{ unlockDeviceTts(); }catch(e){} }, {once:false, passive:true});
+      });
+    }catch(eU){}
+
+    function stopAllSpeech(){
+      try{ if(__ttsSpeakTimer){ clearTimeout(__ttsSpeakTimer); __ttsSpeakTimer=null; } }catch(e0){}
+      try{ if(__ttsFallbackTimer){ clearTimeout(__ttsFallbackTimer); __ttsFallbackTimer=null; } }catch(e1){}
+      try{ if(__ttsAbort){ __ttsAbort.abort(); __ttsAbort=null; } }catch(e2){}
+      try{
+        if(__ttsAudio){
+          try{ __ttsAudio.pause(); }catch(e3){}
+          try{ __ttsAudio.removeAttribute('src'); __ttsAudio.load(); }catch(e4){}
+          __ttsAudio=null;
+        }
+      }catch(e5){}
+      try{
+        if('speechSynthesis' in window){
+          speechSynthesis.cancel();
+          // Some engines stay "paused"
+          try{ if(speechSynthesis.paused) speechSynthesis.resume(); }catch(e6){}
+        }
+      }catch(e7){}
     }
 
     /** Device TTS (Web Speech) — sports commentary delivery */
     function speakDevice(text, excited){
       try{
-        if(!('speechSynthesis' in window))return;
+        if(!ttsOn) return;
+        if(!('speechSynthesis' in window)) return;
+        var raw = String(text || '').replace(/\*/g, '').replace(/\s+/g, ' ').trim();
+        if(!raw) return;
+
+        try{ unlockDeviceTts(); }catch(eU){}
+
+        // Chrome/Safari: cancel then speak on next tick
+        try{ if(__ttsSpeakTimer){ clearTimeout(__ttsSpeakTimer); __ttsSpeakTimer = null; } }catch(eT){}
         try{ speechSynthesis.cancel(); }catch(e0){}
-        var raw=String(text).replace(/\*/g,'').replace(/\s+/g,' ').trim();
-        if(!raw)return;
-        var u=new SpeechSynthesisUtterance(raw);
-        var v=getVoiceFor(ttsLang);
-        if(v) u.voice=v;
-        u.lang = ttsLang==='hi' ? 'hi-IN' : ((v&&v.lang)||'en-IN');
-        u.volume = 1;
 
-        var style = ttsStyle || 'sports';
-        var baseRate = style==='calm' ? 0.95 : (style==='excited' ? 1.12 : 1.05);
-        var basePitch = 1.0;
-        // If user wants male but OS only gave a female voice, drop pitch to sound deeper
-        var g = v ? voiceGender(v) : 'unknown';
-        if(ttsGender==='male' && g!=='male'){
-          basePitch = 0.82; // deeper fallback when no true male voice installed
-        } else if(ttsGender==='female' && g!=='female'){
-          basePitch = 1.12;
-        } else if(g==='male'){
-          basePitch = 0.95;
-        } else if(g==='female'){
-          basePitch = 1.05;
-        }
+        __ttsSpeakTimer = setTimeout(function(){
+          try{
+            try{ if(speechSynthesis.paused) speechSynthesis.resume(); }catch(eR){}
 
-        if(excited===2){
-          u.rate = Math.min(1.25, baseRate + 0.12);
-          u.pitch = basePitch + (ttsGender==='male' ? 0.06 : 0.15);
-        } else if(excited){
-          u.rate = Math.min(1.2, baseRate + 0.06);
-          u.pitch = basePitch + (ttsGender==='male' ? 0.04 : 0.1);
-        } else {
-          u.rate = baseRate;
-          u.pitch = basePitch;
-        }
-        speechSynthesis.speak(u);
-      }catch(e){}
+            var u = new SpeechSynthesisUtterance(raw);
+            var v = null;
+            try{ v = getVoiceFor(ttsLang); }catch(eV){}
+            if(v){
+              try{ u.voice = v; }catch(eVoice){}
+            }
+            u.lang = (ttsLang === 'hi') ? 'hi-IN' : ((v && v.lang) || 'en-IN');
+            u.volume = 1;
+
+            var style = ttsStyle || 'sports';
+            var baseRate = style === 'calm' ? 0.95 : (style === 'excited' ? 1.12 : 1.05);
+            var basePitch = 1.05; // female default pitch
+            var g = 'unknown';
+            try{ g = v ? voiceGender(v) : 'unknown'; }catch(eG){}
+            if(ttsGender === 'male'){
+              basePitch = (g === 'male') ? 0.95 : 0.85;
+            } else if(ttsGender === 'female'){
+              basePitch = (g === 'female') ? 1.08 : 1.12;
+            }
+
+            var rate = baseRate;
+            var pitch = basePitch;
+            if(excited === 2){ rate = Math.min(1.2, baseRate + 0.1); pitch = basePitch + 0.05; }
+            else if(excited){ rate = Math.min(1.15, baseRate + 0.05); pitch = basePitch + 0.03; }
+
+            u.rate = Math.max(0.7, Math.min(1.4, rate));
+            u.pitch = Math.max(0.6, Math.min(1.6, pitch));
+
+            u.onerror = function(){
+              try{
+                var u2 = new SpeechSynthesisUtterance(raw);
+                u2.lang = ttsLang === 'hi' ? 'hi-IN' : 'en-IN';
+                u2.rate = 1; u2.pitch = 1; u2.volume = 1;
+                speechSynthesis.speak(u2);
+              }catch(e2){}
+            };
+
+            speechSynthesis.speak(u);
+          }catch(eSpeak){
+            try{ console.warn('speakDevice', eSpeak); }catch(e){}
+          }
+        }, 80);
+      }catch(e){
+        try{ console.warn('speakDevice outer', e); }catch(e2){}
+      }
     }
 
     /** Build AI TTS URL (Google Translate TTS — no API key). Split long text. */
@@ -3768,19 +3957,27 @@ input, select, textarea {
     }
 
     function speak(text, excited){
-      if(!ttsOn || !text) return;
-      // Invalidate in-flight AI work so rapid balls never queue (no lag)
-      __ttsGen++;
-      var gen = __ttsGen;
-      stopAllSpeech();
+      try{
+        if(!ttsOn || !text) return;
+        // Score-driven speech always clears idle first so commentary is not swallowed
+        try{
+          if(__idleMuted){ __idleMuted = false; forceStadResume(); }
+        }catch(eIdle){}
+        __ttsGen++;
+        var gen = __ttsGen;
+        try{ stopAllSpeech(); }catch(eS){}
 
-      var clean = String(text).replace(/\*/g,'').replace(/\s+/g,' ').trim();
-      if(!clean) return;
+        var clean = String(text).replace(/\*/g,'').replace(/\s+/g,' ').trim();
+        if(!clean) return;
 
-      if(ttsEngine === 'ai'){
-        speakAi(clean, !!excited, gen);
-      } else {
-        speakDevice(clean, !!excited);
+        // Device first for reliability
+        if(ttsEngine === 'ai'){
+          try{ speakAi(clean, !!excited, gen); }catch(eA){ speakDevice(clean, !!excited); }
+        } else {
+          speakDevice(clean, !!excited);
+        }
+      }catch(e){
+        try{ speakDevice(String(text||''), !!excited); }catch(e2){}
       }
     }
 
@@ -3894,11 +4091,9 @@ input, select, textarea {
         else if(/\\b(four|fifty|boundary)\\b/i.test(srcForExcited+ev)||/चौका|अर्धशतक/.test(last))
           lvl=1;
         toSay=sportsCallLine(data, toSay, lvl);
-        // Exciting moments: Device TTS immediately (no AI lag). Normal balls may use AI.
+        // Always go through speak() so unlock + delay + stop are consistent
         if(lvl>=1){
-          __ttsGen++;
-          stopAllSpeech();
-          speakDevice(toSay, lvl);
+          speak(toSay, lvl);
         } else {
           speak(toSay, false);
         }
@@ -4137,6 +4332,25 @@ input, select, textarea {
     setInterval(function(){ try{ updateMatchClock(lastData||{}); }catch(e){} }, 1000);
 
     function render(data){
+      // Any score / ball / event change → reset idle + resume stadium + allow commentary
+      try{
+        if(data){
+          var actKey = (data.runs|0)+'|'+(data.wickets|0)+'|'+(data.balls|0)+'|'+String(data.lastEvent||'')+'|'+String(data.overs||'')+'|'+String((data.commentary&&data.commentary.length)||0);
+          var prevKey = window.__lastActKey || '';
+          if(actKey !== prevKey){
+            window.__lastActKey = actKey;
+            // Clear idle BEFORE commentary/SFX in this render
+            try{
+              if(typeof __idleMuted!=='undefined' && __idleMuted){
+                __idleMuted = false;
+              }
+              noteLiveActivity('score');
+              if(typeof forceStadResume==='function') forceStadResume();
+            }catch(eN){}
+          }
+        }
+      }catch(eAct){}
+
       var prevData=lastData;
       var wasEnded=!!lastViewerMatchEnded;
       lastData=data; try{updateMatchClock(data)}catch(eClk){} try{maybeShowOverLeaders(data)}catch(eOL){}
@@ -5395,45 +5609,44 @@ try{mountDashboards()}catch(e){}
     });
 
 try{setViewerTab('live')}catch(e){}
-    // Play commentary welcome when live opens (after name / first paint)
-    (function bootCommentaryOnOpen(){
-      try{
-        var tried=false;
-        function go(){
-          if(tried) return;
-          if(!ttsOn) return;
-          tried=true;
-          try{ stadUnlock(); }catch(e0){}
-          try{
-            if(lastData && typeof speakNewCommentary==='function'){
-              speakNewCommentary(lastData);
-            } else if(typeof speak==='function'){
-              speak(ttsLang==='hi'?'लाइव मैच शुरू':'Live match is on. Enjoy the action!', false);
-            }
-          }catch(e1){}
-        }
-        document.addEventListener('pointerdown', function once(){ go(); }, {once:true, passive:true});
-        setTimeout(function(){ if(getChatName()) go(); }, 2500);
-      }catch(e){}
-    })();
 
 try{updateStadBtn()}catch(eStad){}
 try{updateTtsBtn()}catch(eTts){}
-    // Boot: device commentary + stadium ON when Live tab is open
+    // Boot: stadium + female device commentary on first open (user gesture required)
     (function bootLiveAudio(){
-      try{
-        if(ttsOn) updateTtsBtn();
-        updateCommToolsLabel();
-        // Unlock + ambient on first interaction OR after short delay if already interacting
-        var start=function(){
-          try{ if(stadiumOn && typeof stadStartAmbient==='function') stadStartAmbient(); }catch(e){}
-          try{ if(ttsOn && typeof speechSynthesis!=='undefined') speechSynthesis.getVoices(); }catch(e2){}
-        };
-        document.addEventListener('visibilitychange', function(){
-          if(!document.hidden) start();
-        });
-        setTimeout(start, 1500);
-      }catch(e){}
+      var started = false;
+      function startAudio(){
+        if(started) return;
+        started = true;
+        try{
+          ttsEngine = 'device';
+          try{ localStorage.setItem('cricket_tts_engine', 'device'); }catch(e0){}
+          try{
+            var sg = localStorage.getItem('cricket_tts_gender');
+            if(sg === 'male' || sg === 'female') ttsGender = sg;
+            else { ttsGender = 'female'; localStorage.setItem('cricket_tts_gender', 'female'); }
+          }catch(e1){ ttsGender = 'female'; }
+          ttsOn = true;
+          try{ localStorage.setItem('cricket_tts_on', '1'); }catch(e2){}
+          stadiumOn = true;
+          try{ localStorage.setItem('cricket_stadium_on', '1'); }catch(e3){}
+          try{ __idleMuted = false; __pendingStadResume = false; }catch(e4){}
+          try{ ttsVoiceCache = {}; }catch(e5){}
+          try{ unlockDeviceTts(); }catch(e6){}
+          try{ updateTtsBtn(); updateStadBtn(); updateCommToolsLabel(); }catch(e7){}
+          try{ stadStartAmbient(); }catch(e8){}
+          try{ if(typeof forceStadResume === 'function') forceStadResume(); }catch(e9){}
+          try{
+            if(typeof speak === 'function'){
+              speak('Live commentary is on. Enjoy the match!', false);
+            }
+          }catch(e10){}
+        }catch(e){}
+      }
+      window.__startLiveAudio = startAudio;
+      ['pointerdown','touchstart','click'].forEach(function(ev){
+        document.addEventListener(ev, startAudio, { once: true, passive: true });
+      });
     })();
 
 try{mountDashboards()}catch(e){}
