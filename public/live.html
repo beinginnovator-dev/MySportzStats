@@ -1303,21 +1303,23 @@ input, select, textarea {
 }
 
   
-    /* Soft audio unlock — only if browser blocks autoplay */
+    /* Audio unlock — top of screen, flashes until tapped (only if autoplay blocked) */
     #audio-unlock-banner{
       position:fixed;left:50%;transform:translateX(-50%);
-      bottom:calc(12px + env(safe-area-inset-bottom,0px));
-      z-index:10040;max-width:min(92vw,28rem);width:auto;
-      padding:10px 14px;border-radius:999px;
+      top:calc(10px + env(safe-area-inset-top,0px));
+      bottom:auto;
+      z-index:10050;max-width:min(94vw,28rem);width:auto;
+      padding:11px 16px;border-radius:999px;
       background:linear-gradient(90deg,#059669,#2563eb);
       color:#fff;font-weight:900;font-size:12px;text-align:center;
-      box-shadow:0 8px 24px rgba(0,0,0,.4);cursor:pointer;
-      animation:unlockFlash 1.1s ease-in-out infinite;
-      border:1px solid rgba(255,255,255,.25);
+      box-shadow:0 8px 28px rgba(0,0,0,.5);cursor:pointer;
+      animation:unlockFlash 1s ease-in-out infinite;
+      border:1px solid rgba(255,255,255,.3);
+      pointer-events:auto;
     }
     @keyframes unlockFlash{
-      0%,100%{opacity:1;transform:translateX(-50%) scale(1)}
-      50%{opacity:.82;transform:translateX(-50%) scale(1.04);box-shadow:0 0 20px rgba(52,211,153,.55)}
+      0%,100%{opacity:1;transform:translateX(-50%) scale(1);box-shadow:0 6px 20px rgba(0,0,0,.4)}
+      50%{opacity:0.88;transform:translateX(-50%) scale(1.06);box-shadow:0 0 22px rgba(52,211,153,.7),0 0 8px rgba(37,99,235,.5)}
     }
 
   </style>
@@ -5715,8 +5717,7 @@ try{setViewerTab('live')}catch(e){}
 
 try{updateStadBtn()}catch(eStad){}
 try{updateTtsBtn()}catch(eTts){}
-    // Boot: auto-start stadium + commentary when live opens (banner only if browser blocks)
-    (function bootLiveAudio(){
+        (function bootLiveAudio(){
       var welcomeDone = false;
       var bannerShown = false;
 
@@ -5743,7 +5744,7 @@ try{updateTtsBtn()}catch(eTts){}
               hideUnlockBanner();
             }, true);
           }
-          // Keep original fixed bottom position — CSS handles flash
+          // Fixed TOP of screen (CSS) — flash until tapped
           if(!ban.parentNode) document.body.appendChild(ban);
           bannerShown = true;
         }catch(e){}
@@ -5758,6 +5759,7 @@ try{updateTtsBtn()}catch(eTts){}
 
       function startAudio(from){
         try{
+          // 1st action: turn on device commentary + stadium
           ttsEngine = 'device';
           try{ localStorage.setItem('cricket_tts_engine', 'device'); }catch(e0){}
           try{
@@ -5769,8 +5771,7 @@ try{updateTtsBtn()}catch(eTts){}
           try{ localStorage.setItem('cricket_tts_on', '1'); }catch(e2){}
           stadiumOn = true;
           try{ localStorage.setItem('cricket_stadium_on', '1'); }catch(e3){}
-          // Opening the page is activity, but do not clear a true 5-min score idle unless user/score
-          if(from === 'score' || from === 'banner' || from === 'ui' || from === 'gate'){
+          if(from === 'banner' || from === 'ui' || from === 'gate' || from === 'score'){
             try{ __idleMuted = false; }catch(e4){}
           }
           try{ __pendingStadResume = false; }catch(e5){}
@@ -5793,7 +5794,6 @@ try{updateTtsBtn()}catch(eTts){}
             }catch(e10){}
           }
 
-          // If ambient is actually playing, hide banner
           setTimeout(function(){
             try{
               if(audioLooksAlive()){
@@ -5807,22 +5807,19 @@ try{updateTtsBtn()}catch(eTts){}
 
       window.__startLiveAudio = startAudio;
 
-      // Auto-start on open (same idea as older build — no banner first)
+      // FIRST: auto-start as soon as live page opens
       try{ startAudio('load'); }catch(e0){}
       try{ setTimeout(function(){ startAudio('load-300'); }, 300); }catch(e1){}
-      try{ setTimeout(function(){ startAudio('load-1200'); }, 1200); }catch(e2){}
+      try{ setTimeout(function(){ startAudio('load-1000'); }, 1000); }catch(e2){}
 
-      // Only if browser blocked autoplay after ~2s, show flashing chip over Cheers/Predict
+      // Only if autoplay still blocked → show flashing TOP banner
       try{
         setTimeout(function(){
           try{
-            if(!audioLooksAlive()){
-              placeUnlockBanner();
-            } else {
-              hideUnlockBanner();
-            }
+            if(!audioLooksAlive()) placeUnlockBanner();
+            else hideUnlockBanner();
           }catch(e){}
-        }, 2000);
+        }, 1800);
       }catch(e3){}
 
       ['pointerdown','touchstart','click'].forEach(function(ev){
