@@ -3,7 +3,9 @@ export class MatchDO {
     this.state = state;
     this.env = env;
     this.sessions = new Map();
-    this.httpViewers = new Map(); // id -> {name, joinedAt, lastSeen, coins}
+    this.httpViewers = new Map(); // id -> live heartbeat
+    this.viewerLog = new Map(); // persistent session history (online + offline)
+    this.viewerDayKey = ''; // YYYY-MM-DD for daily total
     this.live = {
       ts: 0,
       runs: 0,
@@ -107,48 +109,84 @@ export class MatchDO {
         const body = await request.json().catch(() => ({}));
         const id = String((body && (body.id || body.uid)) || "").slice(0, 64);
         const name = String((body && body.name) || "Fan").slice(0, 40);
+        const matchId = String((body && (body.match || body.liveMatchId || body.matchId)) || "current").slice(0, 80);
+        const tab = body && body.tab ? String(body.tab).slice(0, 24) : "";
         const now = Date.now();
-        if (id) {
-          const prev = this.httpViewers.get(id) || {};
-          this.httpViewers.set(id, {
-            id,
-            name: name || prev.name || "Fan",
-            joinedAt: prev.joinedAt || now,
-            lastSeen: now,
-            coins: prev.coins != null ? prev.coins : 10,
-            online: true,
-          });
-        }
-        for (const [k, v] of [...this.httpViewers.entries()]) {
-          if (now - (v.lastSeen || 0) > 45000) this.httpViewers.delete(k);
-        }
+        this.touchViewer(id, name, matchId, now, tab);
+        this.expireHttpViewers(now);
         const viewers = this.collectViewers();
+        const hist = this.historyPayload();
         return new Response(
           JSON.stringify({
             ok: true,
             viewers,
-            count: viewers.length,
-            watching: viewers.length,
+            count: viewers.filter((v) => v.online).length,
+            watching: viewers.filter((v) => v.online).length,
+            history: hist.list,
+            todayTotal: hist.todayTotal,
             floats: (this.live.floats || []).slice(-15),
           }),
           { headers: cors }
         );
       } catch (_) {
-        return new Response(JSON.stringify({ ok: true, viewers: [], count: 0 }), {
+        return new Response(JSON.stringify({ ok: true, viewers: [], count: 0, history: [], todayTotal: 0 }), {
           headers: cors,
         });
       }
     }
 
+    if (url.pathname === "/viewers-history" && request.method === "GET") {
+      const hist = this.historyPayload();
+      return new Response(JSON.stringify({ ok: true, ...hist }), { headers: cors });
+    }
+
+    if (url.pathname === "/viewer-activity" && request.method === "POST") {
+      try {
+        const body = await request.json().catch(() => ({}));
+        const id = String((body && (body.id || body.uid)) || "").slice(0, 64);
+        const name = String((body && body.name) || "Fan").slice(0, 40);
+        const matchId = String((body && (body.match || body.liveMatchId)) || "current").slice(0, 80);
+        const now = Date.now();
+        if (id) {
+          this.touchViewer(id, name, matchId, now, body.tab || "");
+          const rec = this.viewerLog.get(id);
+          if (rec) {
+            rec.activities = rec.activities || [];
+            const act = {
+              type: String(body.type || "event").slice(0, 24),
+              text: String(body.text || body.emoji || body.tab || "").slice(0, 200),
+              emoji: body.emoji ? String(body.emoji).slice(0, 16) : "",
+              tab: body.tab ? String(body.tab).slice(0, 24) : "",
+              ts: now,
+            };
+            rec.activities.push(act);
+            if (rec.activities.length > 80) rec.activities = rec.activities.slice(-80);
+            if (body.tab) {
+              rec.tabs = rec.tabs || {};
+              rec.tabs[String(body.tab).slice(0, 24)] = (rec.tabs[String(body.tab).slice(0, 24)] || 0) + 1;
+            }
+            this.viewerLog.set(id, rec);
+          }
+        }
+        return new Response(JSON.stringify({ ok: true }), { headers: cors });
+      } catch (_) {
+        return new Response(JSON.stringify({ ok: false }), { status: 400, headers: cors });
+      }
+    }
+
     if (url.pathname === "/fans" && request.method === "GET") {
-      const viewers = this.collectViewers();
-      const fans = viewers.map((v) => ({
+      const hist = this.historyPayload();
+      const fans = hist.list.map((v) => ({
         id: v.id || v.name,
         name: v.name || "Fan",
         points: v.coins != null ? v.coins : 10,
         correct: 0,
+        online: !!v.online,
+        joinedAt: v.joinedAt,
+        leftAt: v.leftAt,
+        matches: v.matches || [],
       }));
-      return new Response(JSON.stringify({ ok: true, fans, list: fans }), {
+      return new Response(JSON.stringify({ ok: true, fans, list: fans, todayTotal: hist.todayTotal }), {
         headers: cors,
       });
     }
@@ -236,6 +274,19 @@ export class MatchDO {
       }
     }
 
+    if (url.pathname === "/admin/reset-viewers" && request.method === "POST") {
+      try {
+        const body = await request.json().catch(() => ({}));
+        // accept any admin key style used elsewhere
+        this.viewerLog = new Map();
+        this.httpViewers = new Map();
+        this.live.viewers = [];
+        return new Response(JSON.stringify({ ok: true }), { headers: cors });
+      } catch (_) {
+        return new Response(JSON.stringify({ ok: false }), { status: 400, headers: cors });
+      }
+    }
+
     if (url.pathname.startsWith("/admin/")) {
       return new Response(JSON.stringify({ ok: true }), { headers: cors });
     }
@@ -243,22 +294,157 @@ export class MatchDO {
     return new Response("Not found", { status: 404 });
   }
 
+
+  dayKey(ts) {
+    try {
+      const d = new Date(ts || Date.now());
+      return d.getUTCFullYear() + "-" + String(d.getUTCMonth() + 1).padStart(2, "0") + "-" + String(d.getUTCDate()).padStart(2, "0");
+    } catch (_) {
+      return "unknown";
+    }
+  }
+
+  touchViewer(id, name, matchId, now, tab) {
+    if (!id) return;
+    now = now || Date.now();
+    matchId = matchId || "current";
+    const day = this.dayKey(now);
+    this.viewerDayKey = day;
+
+    let rec = this.viewerLog.get(id);
+    if (!rec) {
+      rec = {
+        id,
+        name: name || "Fan",
+        firstSeen: now,
+        joinedAt: now,
+        lastSeen: now,
+        leftAt: null,
+        online: true,
+        coins: 10,
+        matches: [matchId],
+        sessions: [{ joinedAt: now, leftAt: null, matchId }],
+        activities: [],
+        tabs: {},
+        dayKey: day,
+      };
+    } else {
+      const wasOffline = !rec.online;
+      rec.name = name || rec.name || "Fan";
+      rec.lastSeen = now;
+      rec.online = true;
+      rec.leftAt = null;
+      if (wasOffline) {
+        rec.joinedAt = now;
+        rec.sessions = rec.sessions || [];
+        rec.sessions.push({ joinedAt: now, leftAt: null, matchId });
+        if (rec.sessions.length > 20) rec.sessions = rec.sessions.slice(-20);
+      }
+      rec.matches = rec.matches || [];
+      if (matchId && rec.matches.indexOf(matchId) < 0) {
+        rec.matches.push(matchId);
+        if (rec.matches.length > 30) rec.matches = rec.matches.slice(-30);
+      }
+      if (rec.sessions && rec.sessions.length) {
+        const last = rec.sessions[rec.sessions.length - 1];
+        if (last && !last.leftAt) last.matchId = matchId || last.matchId;
+      }
+    }
+    if (tab) {
+      rec.tabs = rec.tabs || {};
+      const tk = String(tab).slice(0, 24);
+      rec.tabs[tk] = (rec.tabs[tk] || 0) + 1;
+    }
+    this.viewerLog.set(id, rec);
+    this.httpViewers.set(id, {
+      id,
+      name: rec.name,
+      joinedAt: rec.joinedAt,
+      lastSeen: now,
+      coins: rec.coins != null ? rec.coins : 10,
+      online: true,
+    });
+  }
+
+  expireHttpViewers(now) {
+    now = now || Date.now();
+    for (const [k, v] of [...this.httpViewers.entries()]) {
+      if (now - (v.lastSeen || 0) > 45000) {
+        this.httpViewers.delete(k);
+        const rec = this.viewerLog.get(k);
+        if (rec && rec.online) {
+          rec.online = false;
+          rec.leftAt = v.lastSeen || now;
+          if (rec.sessions && rec.sessions.length) {
+            const last = rec.sessions[rec.sessions.length - 1];
+            if (last && !last.leftAt) last.leftAt = rec.leftAt;
+          }
+          this.viewerLog.set(k, rec);
+        }
+      }
+    }
+    for (const [k, rec] of [...this.viewerLog.entries()]) {
+      if (rec.online && now - (rec.lastSeen || 0) > 45000) {
+        rec.online = false;
+        rec.leftAt = rec.lastSeen || now;
+        if (rec.sessions && rec.sessions.length) {
+          const last = rec.sessions[rec.sessions.length - 1];
+          if (last && !last.leftAt) last.leftAt = rec.leftAt;
+        }
+        this.viewerLog.set(k, rec);
+      }
+    }
+  }
+
+  historyPayload() {
+    this.expireHttpViewers(Date.now());
+    const day = this.dayKey(Date.now());
+    const list = [...this.viewerLog.values()]
+      .map((v) => ({
+        id: v.id,
+        name: v.name || "Fan",
+        online: !!v.online,
+        firstSeen: v.firstSeen,
+        joinedAt: v.joinedAt,
+        lastSeen: v.lastSeen,
+        leftAt: v.leftAt,
+        coins: v.coins != null ? v.coins : 10,
+        matches: v.matches || [],
+        sessions: (v.sessions || []).slice(-8),
+        activities: (v.activities || []).slice(-40),
+        tabs: v.tabs || {},
+        dayKey: v.dayKey,
+      }))
+      .sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+    const todayTotal = list.filter((v) => {
+      const dk = v.dayKey || this.dayKey(v.firstSeen || v.joinedAt);
+      return dk === day;
+    }).length;
+    return { list, todayTotal, day };
+  }
+
   collectViewers() {
+    this.expireHttpViewers(Date.now());
     const now = Date.now();
+    // Prefer persistent log (includes offline)
+    if (this.viewerLog && this.viewerLog.size) {
+      return [...this.viewerLog.values()].map((v) => ({
+        id: v.id,
+        name: v.name || "Fan",
+        joinedAt: v.joinedAt || v.firstSeen || now,
+        lastSeen: v.lastSeen,
+        leftAt: v.leftAt,
+        online: !!v.online,
+        coins: v.coins != null ? v.coins : 10,
+        matches: v.matches || [],
+      }));
+    }
     const map = new Map();
-    // WebSocket viewers
     for (const s of this.sessions.values()) {
       if (s.role !== "viewer") continue;
       const id = "ws:" + (s.name || "Fan") + ":" + (s.joinedAt || 0);
-      map.set(id, {
-        id,
-        name: s.name || "Fan",
-        joinedAt: s.joinedAt || now,
-        online: true,
-        coins: 10,
-      });
+      map.set(id, { id, name: s.name || "Fan", joinedAt: s.joinedAt || now, online: true, coins: 10 });
     }
-    // HTTP heartbeat viewers
     for (const [k, v] of this.httpViewers) {
       if (now - (v.lastSeen || 0) > 45000) continue;
       map.set(v.id || k, {

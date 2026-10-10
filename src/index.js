@@ -148,6 +148,9 @@ export default {
 
     const doPaths = [
       "/fans",
+      "/viewers-history",
+      "/viewer-activity",
+      "/admin/reset-viewers",
       "/presence",
       "/chat",
       "/floats",
