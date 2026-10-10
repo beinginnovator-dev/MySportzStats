@@ -3271,7 +3271,14 @@ input, select, textarea {
     try{ stadBindUnlock(); }catch(eU){}
     try{
       ['pointerdown','touchstart','keydown'].forEach(function(ev){
-        document.addEventListener(ev, function(){ try{ noteLiveActivity('ui'); }catch(e){} }, {passive:true});
+        document.addEventListener(ev, function(){
+          try{
+            noteLiveActivity('ui');
+            if(__pendingStadResume || (__idleMuted===false && stadiumOn && (!__stadAmbientAudio || __stadAmbientAudio.paused))){
+              forceStadResume();
+            }
+          }catch(e){}
+        }, {passive:true});
       });
     }catch(eIdleUi){}
 
@@ -3282,17 +3289,27 @@ input, select, textarea {
       try{
         if(__stadAmbientAudio){
           try{ __stadAmbientAudio.volume = 0.028; }catch(eV){}
-          try{ __stadAmbientAudio.play().catch(function(){}); }catch(e){}
-          return;
+          try{
+            var p0 = __stadAmbientAudio.play();
+            if(p0 && p0.catch) p0.catch(function(){
+              // recreate on failure
+              try{ __stadAmbientAudio = null; }catch(eR){}
+              try{ stadStartAmbient(); }catch(eR2){}
+            });
+          }catch(e){ __stadAmbientAudio = null; }
+          if(__stadAmbientAudio) return;
         }
         var a = new Audio();
         try{ a.setAttribute('playsinline',''); a.setAttribute('webkit-playsinline',''); }catch(e0){}
         a.preload = 'auto';
-        a.src = STAD_SFX.short;
         a.loop = true;
-        a.volume = 0.028; // very low — far / distant crowd
+        a.volume = 0.028;
+        a.src = STAD_SFX.short + (STAD_SFX.short.indexOf('?')>=0 ? '&' : '?') + 'r=' + Date.now();
         var p = a.play();
-        if(p && p.catch) p.catch(function(){});
+        if(p && p.catch) p.catch(function(err){
+          try{ console.warn('ambient play blocked', err); }catch(e1){}
+          __pendingStadResume = true;
+        });
         __stadAmbientAudio = a;
       }catch(e){}
     }
@@ -3330,23 +3347,26 @@ input, select, textarea {
     }
 
     // ---------- Idle auto-mute (5 min no score/activity) ----------
-    // Stadium ambient + event SFX pause after 5 min silence.
-    // User's preferred stadiumOn / ttsOn stay in localStorage.
-    // On next score update or user activity → resume ambient + allow commentary again.
     var IDLE_MS = 5 * 60 * 1000;
     var __lastLiveActivityAt = Date.now();
     var __idleMuted = false;
     var __idleTimer = null;
-    var __userStadiumPref = stadiumOn; // last user/system preference before idle mute
-    var __userTtsPref = true;
+    var __userStadiumPref = true; // preference to restore after idle
+    var __pendingStadResume = false;
 
     function noteLiveActivity(reason){
       try{
         __lastLiveActivityAt = Date.now();
-        if(__idleTimer){ clearTimeout(__idleTimer); __idleTimer=null; }
-        __idleTimer = setTimeout(function(){ try{ enterIdleMute(); }catch(e){} }, IDLE_MS);
+        if(__idleTimer){ clearTimeout(__idleTimer); __idleTimer = null; }
+        __idleTimer = setTimeout(function(){
+          try{ enterIdleMute(); }catch(e){}
+        }, IDLE_MS);
+
+        // Always resume if we were idle — score/UI activity
         if(__idleMuted){
-          exitIdleMute(reason||'activity');
+          exitIdleMute(reason || 'activity');
+        } else if(__pendingStadResume){
+          try{ forceStadResume(); }catch(e2){}
         }
       }catch(e){}
     }
@@ -3354,49 +3374,71 @@ input, select, textarea {
     function enterIdleMute(){
       try{
         if(__idleMuted) return;
-        // Only if truly idle
-        if(Date.now() - __lastLiveActivityAt < IDLE_MS - 1000) return;
+        if(Date.now() - __lastLiveActivityAt < IDLE_MS - 500) return;
         __idleMuted = true;
-        __userStadiumPref = stadiumOn;
-        __userTtsPref = !!ttsOn;
-        // Pause all stadium audio (don't flip user pref in localStorage)
+        __userStadiumPref = !!stadiumOn;
         try{ stadStopAmbient(); }catch(e0){}
         try{ stadStopAllSamples(); }catch(e1){}
-        // Pause commentary speech so page is quiet
         try{ stopAllSpeech(); }catch(e2){}
         try{
-          var b=$('btn-sound-stad');
-          if(b){ b.style.opacity='0.35'; b.title='Stadium paused (idle 5 min) — will resume on activity'; }
+          var b = $('btn-sound-stad');
+          if(b){ b.style.opacity = '0.35'; b.title = 'Stadium paused (idle 5 min)'; }
         }catch(e3){}
-        try{ console.log('[idle] stadium+commentary paused after 5 min silence'); }catch(e4){}
+        try{ console.log('[idle] muted'); }catch(e4){}
       }catch(e){}
+    }
+
+    function forceStadResume(){
+      try{
+        __pendingStadResume = false;
+        if(!stadiumOn && __userStadiumPref){
+          stadiumOn = true;
+          try{ localStorage.setItem('cricket_stadium_on', '1'); }catch(eL){}
+        }
+        if(!stadiumOn) return;
+        // Recreate ambient audio — play() after long pause often fails on mobile
+        try{
+          if(__stadAmbientAudio){
+            try{ __stadAmbientAudio.pause(); }catch(e0){}
+            __stadAmbientAudio = null;
+          }
+        }catch(e1){}
+        try{ stadStartAmbient(); }catch(e2){}
+        // Second attempt after tick (autoplay policies)
+        setTimeout(function(){
+          try{
+            if(stadiumOn && !__idleMuted){
+              if(__stadAmbientAudio){
+                __stadAmbientAudio.volume = 0.028;
+                var p = __stadAmbientAudio.play();
+                if(p && p.catch) p.catch(function(){ __pendingStadResume = true; });
+              } else {
+                stadStartAmbient();
+              }
+            }
+          }catch(e3){ __pendingStadResume = true; }
+        }, 120);
+        try{ updateStadBtn(); }catch(e4){}
+      }catch(e){ __pendingStadResume = true; }
     }
 
     function exitIdleMute(reason){
       try{
-        if(!__idleMuted) return;
-        __idleMuted = false;
-        // Resume stadium ambient only if user still wants it on
-        if(__userStadiumPref || stadiumOn){
-          // Ensure stadiumOn flag matches preference without rewriting "off" if user turned off
-          if(stadiumOn){
-            try{ stadStartAmbient(); }catch(e0){}
-          } else if(__userStadiumPref){
-            // was on before idle — restore
-            stadiumOn = true;
-            try{ stadStartAmbient(); }catch(e1){}
-            try{ updateStadBtn(); }catch(e2){}
-          }
+        if(!__idleMuted && !__pendingStadResume) {
+          // still ensure ambient if preferred
+          if(stadiumOn) try{ forceStadResume(); }catch(e0){}
+          return;
         }
-        try{ updateStadBtn(); }catch(e3){}
-        // Commentary: if user had it on, keep it on (ttsOn already true); optional nudge not needed
-        try{ console.log('[idle] resumed on', reason||'activity'); }catch(e4){}
-      }catch(e){}
+        __idleMuted = false;
+        forceStadResume();
+        try{ console.log('[idle] resumed:', reason || ''); }catch(e1){}
+      }catch(e){
+        __idleMuted = false;
+        __pendingStadResume = true;
+      }
     }
 
-    // Start idle watchdog
     try{ noteLiveActivity('boot'); }catch(eBoot){}
-
 
     /**
      * Event SFX only:
@@ -3742,7 +3784,7 @@ input, select, textarea {
     function speakDevice(text, excited){
       try{
         if(!ttsOn) return;
-        if(typeof __idleMuted!=='undefined' && __idleMuted) return;
+        // Idle should already be cleared by speak()/noteLiveActivity
         if(!('speechSynthesis' in window)){
           try{ console.warn('speechSynthesis not available'); }catch(e){}
           return;
@@ -3922,6 +3964,10 @@ input, select, textarea {
     function speak(text, excited){
       try{
         if(!ttsOn || !text) return;
+        // Score-driven speech always clears idle first so commentary is not swallowed
+        try{
+          if(__idleMuted){ __idleMuted = false; forceStadResume(); }
+        }catch(eIdle){}
         __ttsGen++;
         var gen = __ttsGen;
         try{ stopAllSpeech(); }catch(eS){}
@@ -3929,7 +3975,7 @@ input, select, textarea {
         var clean = String(text).replace(/\*/g,'').replace(/\s+/g,' ').trim();
         if(!clean) return;
 
-        // Prefer Device for reliability; AI only when explicitly selected
+        // Device first for reliability
         if(ttsEngine === 'ai'){
           try{ speakAi(clean, !!excited, gen); }catch(eA){ speakDevice(clean, !!excited); }
         } else {
@@ -4291,13 +4337,21 @@ input, select, textarea {
     setInterval(function(){ try{ updateMatchClock(lastData||{}); }catch(e){} }, 1000);
 
     function render(data){
-      // Score / payload update counts as activity → reset 5 min idle + resume audio
+      // Any score / ball / event change → reset idle + resume stadium + allow commentary
       try{
         if(data){
-          var actKey = String(data.ts||'')+'|'+(data.runs|0)+'|'+(data.wickets|0)+'|'+(data.balls|0)+'|'+String(data.lastEvent||'');
-          if(actKey !== window.__lastActKey){
+          var actKey = (data.runs|0)+'|'+(data.wickets|0)+'|'+(data.balls|0)+'|'+String(data.lastEvent||'')+'|'+String(data.overs||'')+'|'+String((data.commentary&&data.commentary.length)||0);
+          var prevKey = window.__lastActKey || '';
+          if(actKey !== prevKey){
             window.__lastActKey = actKey;
-            noteLiveActivity('score');
+            // Clear idle BEFORE commentary/SFX in this render
+            try{
+              if(typeof __idleMuted!=='undefined' && __idleMuted){
+                __idleMuted = false;
+              }
+              noteLiveActivity('score');
+              if(typeof forceStadResume==='function') forceStadResume();
+            }catch(eN){}
           }
         }
       }catch(eAct){}
