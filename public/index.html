@@ -2418,7 +2418,7 @@ body.match-result-active nav {
                         <select id="select-bowler" class="w-full text-sm p-1.5 mb-2 rounded text-white focus:outline-none player-select-merged" onchange="updateView()"></select>
                         <div class="space-y-0.5 mt-auto" id="bowler-stats-panel">
                             <p id="live-bowler-wickets" class="text-xl font-black leading-snug" style="color:#fff!important;-webkit-text-fill-color:#fff!important">0 (0.0)</p>
-                            <p class="text-xs text-slate-300 font-medium">Runs: <span id="live-bowler-runs" class="text-white font-bold">0</span> • Extras: <span id="live-extra-count" class="text-purple-300 font-bold">0</span></p>
+                            <p class="text-xs text-slate-300 font-medium">Runs: <span id="live-bowler-runs" class="text-white font-bold">0</span> • Extras (Wd/Nb/Lb): <span id="live-extra-count" class="text-purple-300 font-bold">0</span></p>
                             <p class="text-xs text-slate-300 font-medium">Dots: <span id="live-bowler-dots" class="text-amber-300 font-bold">0</span></p>
                             <p class="text-xs text-slate-300 font-medium">Econ: <span id="live-bowler-econ" class="text-white font-bold">0.00</span></p>
                         </div>
@@ -2572,16 +2572,18 @@ body.match-result-active nav {
 
             <!-- Input Controls — classic pad (hidden on match result screen) -->
             <div id="scoring-controls-panel" class="theme-panel border theme-border rounded-lg p-3 space-y-2 sticky-score-controls">
-                <div class="grid grid-cols-4 gap-2 text-center text-xs font-bold uppercase tracking-wider">
+                <div class="grid grid-cols-5 gap-1.5 text-center text-xs font-bold uppercase tracking-wider">
                     <button onclick="recordDelivery(0, 'legal', false, 0)" class="score-btn bg-gradient-to-b from-slate-400 to-slate-600 text-white py-3 rounded-lg shadow-sm transition-all">Dot</button>
                     <button onclick="promptDirWheel(1, 0)" class="score-btn bg-gradient-to-b from-blue-500 to-blue-700 text-white py-3 rounded-lg shadow-sm transition-all">1</button>
                     <button onclick="promptDirWheel(2, 0)" class="score-btn bg-gradient-to-b from-blue-500 to-blue-700 text-white py-3 rounded-lg shadow-sm transition-all">2</button>
+                    <button onclick="promptDirWheel(3, 0)" class="score-btn bg-gradient-to-b from-blue-500 to-blue-700 text-white py-3 rounded-lg shadow-sm transition-all">3</button>
                     <button onclick="promptDirWheel(4, 4)" class="score-btn bg-gradient-to-b from-emerald-400 to-emerald-600 text-white py-3 rounded-lg shadow-sm transition-all font-extrabold text-sm">4</button>
                 </div>
-                <div class="grid grid-cols-3 gap-2 text-center text-xs font-bold uppercase tracking-wider">
+                <div class="grid grid-cols-4 gap-1.5 text-center text-xs font-bold uppercase tracking-wider">
                     <button onclick="promptDirWheel(6, 6)" class="score-btn bg-gradient-to-b from-teal-400 to-teal-600 text-white py-3 rounded-lg shadow-sm transition-all font-extrabold text-sm">6</button>
                     <button onclick="recordDelivery(1, 'wide', false, 0)" class="score-btn bg-gradient-to-b from-purple-400 to-purple-600 text-white py-3 rounded-lg normal-case shadow-sm transition-all">Wide</button>
                     <button onclick="recordDelivery(1, 'noball', false, 0)" class="score-btn bg-gradient-to-b from-purple-400 to-purple-600 text-white py-3 rounded-lg normal-case shadow-sm transition-all">No Ball</button>
+                    <button type="button" onclick="promptLegBye()" class="score-btn bg-gradient-to-b from-fuchsia-400 to-fuchsia-700 text-white py-3 rounded-lg normal-case shadow-sm transition-all">Leg Bye</button>
                 </div>
 
                 <button onclick="initiateWicket()" class="score-btn w-full bg-gradient-to-b from-red-500 to-red-700 text-white font-black py-3 rounded-lg shadow-sm text-sm uppercase tracking-widest transition-all">
@@ -2787,6 +2789,7 @@ body.match-result-active nav {
                     <div onclick="showBreakdown('extras')" class="cursor-pointer hover:bg-black/30 transition-colors bg-black/20 p-4 rounded-xl border border-purple-400/30 bg-purple-500/10"><p class="text-4xl font-black text-purple-200" id="rankings-total-extras">0</p><p class="text-[11px] uppercase text-purple-200 mt-1">Extras</p></div>
                     <div onclick="showBreakdown('wides')" class="cursor-pointer hover:bg-black/30 transition-colors bg-black/20 p-3 rounded-lg border border-white/10"><p class="text-2xl font-black" id="rankings-total-wides">0</p><p class="text-[11px] uppercase opacity-80 mt-0.5">Wides</p></div>
                     <div onclick="showBreakdown('noballs')" class="cursor-pointer hover:bg-black/30 transition-colors bg-black/20 p-3 rounded-lg border border-white/10"><p class="text-2xl font-black" id="rankings-total-noballs">0</p><p class="text-[11px] uppercase opacity-80 mt-0.5">No Balls</p></div>
+                    <div onclick="showBreakdown('legbyes')" class="cursor-pointer hover:bg-black/30 transition-colors bg-black/20 p-3 rounded-lg border border-white/10"><p class="text-2xl font-black" id="rankings-total-legbyes">0</p><p class="text-[11px] uppercase opacity-80 mt-0.5">Leg Byes</p></div>
                 </div>
             </div>
             <div class="bg-gradient-to-br from-red-600 to-rose-800 rounded-xl p-4 shadow-lg text-white"><div class="flex items-center gap-2 border-b border-white/20 pb-2 mb-3"><span class="text-xl">💥</span><h3 class="text-base font-black uppercase tracking-wider">Wicket Types</h3></div><div id="rankings-dismissal-breakdown" class="grid grid-cols-2 gap-2"></div></div>
@@ -5110,9 +5113,10 @@ function switchTab(tabId) {
             var tempStats = JSON.parse(JSON.stringify(cumulativeStats || {}));
             var bowlerExtraMapLive = {};
             (deliveryHistory||[]).forEach(function(d){
-                if (!bowlerExtraMapLive[d.bowler]) bowlerExtraMapLive[d.bowler] = { wides:0, noballs:0 };
-                if (d.chipLabel === 'WD') bowlerExtraMapLive[d.bowler].wides++;
-                if (d.chipLabel === 'NB') bowlerExtraMapLive[d.bowler].noballs++;
+                if (!bowlerExtraMapLive[d.bowler]) bowlerExtraMapLive[d.bowler] = { wides:0, noballs:0, legbyes:0 };
+                if (d.chipLabel === 'WD' || d.isWide) bowlerExtraMapLive[d.bowler].wides++;
+                if (d.chipLabel === 'NB' || d.isNoBall) bowlerExtraMapLive[d.bowler].noballs++;
+                if (d.isLegBye || /^LB/i.test(String(d.chipLabel||'')) || d.type==='legbye') bowlerExtraMapLive[d.bowler].legbyes += ((d.runsConceded!=null?d.runsConceded:d.runs)|0);
             });
             if (!matchEnded && p) {
                 if (!tempStats[name]) tempStats[name] = { r:0, b:0, w:0, br:0, bb:0, fours:0, sixes:0, dots:0, wides:0, noballs:0 };
@@ -6736,6 +6740,29 @@ function placeBoundaryAnimationOnStriker(toast){
         if (rotate) swapStrikeEnds();
     }
 
+function promptLegBye() {
+        try {
+            if (typeof blockIfMatchEnded === 'function' && blockIfMatchEnded()) return;
+            if (!tossWinnerTeam) {
+                showModal({ title: 'Toss Required', message: 'Please complete toss', icon: '🪙' });
+                return;
+            }
+            var html = '<p class="text-sm text-slate-600 mb-3">Ball is counted. Runs go to <b>team extras (leg byes)</b> — not to the batsman.</p>'
+                + '<div class="grid grid-cols-4 gap-2">'
+                + [1,2,3,4].map(function(n){
+                    return '<button type="button" class="py-3 rounded-xl font-black text-white bg-gradient-to-b from-fuchsia-500 to-fuchsia-700 shadow" onclick="closeModal();recordDelivery('+n+',\'legbye\',false,0)">'+n+'</button>';
+                }).join('')
+                + '</div>'
+                + '<div class="grid grid-cols-2 gap-2 mt-2">'
+                + '<button type="button" class="py-3 rounded-xl font-black text-white bg-gradient-to-b from-fuchsia-500 to-fuchsia-700 shadow" onclick="closeModal();recordDelivery(5,\'legbye\',false,0)">5</button>'
+                + '<button type="button" class="py-3 rounded-xl font-black text-white bg-gradient-to-b from-fuchsia-500 to-fuchsia-700 shadow" onclick="closeModal();recordDelivery(6,\'legbye\',false,0)">6</button>'
+                + '</div>';
+            showModal({ title: 'Leg Bye runs', message: html, icon: '🦵', html: true });
+        } catch (e) {
+            var r = parseInt(prompt('Leg bye runs (1-6)?', '1'), 10);
+            if (r >= 1 && r <= 6) recordDelivery(r, 'legbye', false, 0);
+        }
+    }
 function recordDelivery(runs, type, isW, bound, dismissal, zone, fielder) {
         try{
         try { if (voiceCommentaryEnabled) ensureAudioCtx(); } catch(eAud){}
@@ -6777,10 +6804,24 @@ function recordDelivery(runs, type, isW, bound, dismissal, zone, fielder) {
             // Fallback for old data
             if(st.entryRank==null){ st.entryRank = nextBattingRank++; st.entryScore = totalScore; st.entryWickets = totalWickets; st.entryOvers = formatOvers(totalBalls); st.entryInnings = currentInnings; }
         }
+        var isLegBye = (type === 'legbye' || type === 'leg_bye' || type === 'LB' || type === 'lb');
         var isLegal = true; if (type === 'wide' || type === 'WD' || type === 'noball' || type === 'NB') isLegal = false; if (isW) isLegal = true;
-        var label = isW ? 'W' : (type === 'wide' || type === 'WD' ? 'WD' : (type === 'noball' || type === 'NB' ? 'NB' : runs));
-        currentOverBalls.push({ label: label, runs: runs, legal: isLegal });
-        if (isLegal) {
+        if (isLegBye) isLegal = true;
+        var label = isW ? 'W' : (type === 'wide' || type === 'WD' ? 'WD' : (type === 'noball' || type === 'NB' ? 'NB' : (isLegBye ? ('LB' + (runs > 0 ? runs : '')) : runs)));
+        currentOverBalls.push({ label: label, runs: runs, legal: isLegal, legBye: !!isLegBye });
+        if (isLegBye) {
+            let activeSt = getActiveStint(st);
+            if(!activeSt && st){ activeSt = ensureBattingStint(st); }
+            if(st){ st.balls++; }
+            if(activeSt){ activeSt.balls++; }
+            if(bw){
+                bw.bowlBalls++;
+                bw.legByes = (bw.legByes || 0) + (runs|0);
+                bw.bowlRuns += (runs|0);
+            }
+            totalScore += (runs|0);
+            totalBalls++;
+        } else if (isLegal) {
             // Update stint as well
             let activeSt = getActiveStint(st);
             if(!activeSt && st){ activeSt = ensureBattingStint(st); }
@@ -6822,7 +6863,7 @@ function recordDelivery(runs, type, isW, bound, dismissal, zone, fielder) {
                 commentaryLog.push('***** Inns' + currentInnings + ' Over ' + Math.floor((totalBalls - 1) / 6) + ' end **** · ' + overOrdinalLabel(Math.floor((totalBalls - 1) / 6)) + ' over complete');
             }
         }
-        deliveryHistory.push({ innings: currentInnings, bowlerId: bid, bowler: bw?bw.name:'Bowler', batsman: st?st.name:'Batsman', over: overLabel, chipLabel: label, runsConceded: runs, legal: isLegal, type: type || 'legal', isWide: (type === 'wide' || type === 'WD' || label === 'WD'), isNoBall: (type === 'noball' || type === 'NB' || label === 'NB'), team: battingTeamName, zone: zone || null, fielder: fielder || null });
+        deliveryHistory.push({ innings: currentInnings, bowlerId: bid, bowler: bw?bw.name:'Bowler', batsman: st?st.name:'Batsman', over: overLabel, chipLabel: label, runsConceded: runs, legal: isLegal, type: type || 'legal', isWide: (type === 'wide' || type === 'WD' || label === 'WD'), isNoBall: (type === 'noball' || type === 'NB' || label === 'NB'), isLegBye: !!isLegBye, team: battingTeamName, zone: zone || null, fielder: fielder || null });
         if (isW) { 
             if(st) {
                 st.isOut=true;
@@ -7244,7 +7285,12 @@ function updateView() {
             if (bw) {
                 for (var d = 0; d < deliveryHistory.length; d++) {
                     var dl = deliveryHistory[d];
-                    if (dl.innings === currentInnings && dl.bowlerId === bw.id && (dl.chipLabel === 'WD' || dl.chipLabel === 'NB')) bwExtras++;
+                    if (dl.innings === currentInnings && dl.bowlerId === bw.id) {
+                        var lab = String(dl.chipLabel || '');
+                        var rc = (dl.runsConceded != null ? dl.runsConceded : dl.runs) | 0;
+                        if (lab === 'WD' || lab === 'NB' || dl.isWide || dl.isNoBall) bwExtras += (rc || 1);
+                        else if (dl.isLegBye || /^LB/i.test(lab) || dl.type === 'legbye') bwExtras += rc;
+                    }
                 }
             }
             var exEl = document.getElementById('live-extra-count'); if (exEl) exEl.textContent = bwExtras;
@@ -9925,9 +9971,10 @@ function printHistoryMatch(){
             var temp = JSON.parse(JSON.stringify(cumulativeStats));
             var bowlerExtraMapLive = {};
             (deliveryHistory||[]).forEach(function(d){
-                if (!bowlerExtraMapLive[d.bowler]) bowlerExtraMapLive[d.bowler] = { wides:0, noballs:0 };
-                if (d.chipLabel === 'WD') bowlerExtraMapLive[d.bowler].wides++;
-                if (d.chipLabel === 'NB') bowlerExtraMapLive[d.bowler].noballs++;
+                if (!bowlerExtraMapLive[d.bowler]) bowlerExtraMapLive[d.bowler] = { wides:0, noballs:0, legbyes:0 };
+                if (d.chipLabel === 'WD' || d.isWide) bowlerExtraMapLive[d.bowler].wides++;
+                if (d.chipLabel === 'NB' || d.isNoBall) bowlerExtraMapLive[d.bowler].noballs++;
+                if (d.isLegBye || /^LB/i.test(String(d.chipLabel||'')) || d.type==='legbye') bowlerExtraMapLive[d.bowler].legbyes += ((d.runsConceded!=null?d.runsConceded:d.runs)|0);
             });
             if (!matchEnded) {
                 players.forEach(function(p){ if(p.name===playerName){ if(!temp[p.name]) temp[p.name]={r:0,b:0,w:0,br:0,bb:0,fours:0,sixes:0,dots:0,wides:0,noballs:0}; temp[p.name].r += p.runs; temp[p.name].b += p.balls; temp[p.name].w += p.wickets; temp[p.name].br += p.bowlRuns; temp[p.name].bb += p.bowlBalls; temp[p.name].fours = (temp[p.name].fours||0)+(p.fours||0); temp[p.name].sixes = (temp[p.name].sixes||0)+(p.sixes||0); temp[p.name].dots = (temp[p.name].dots||0)+(p.dots||0); var ex=bowlerExtraMapLive[p.name]||{wides:0,noballs:0}; temp[p.name].wides=(temp[p.name].wides||0)+ex.wides; temp[p.name].noballs=(temp[p.name].noballs||0)+ex.noballs; } });
@@ -10174,9 +10221,10 @@ function printHistoryMatch(){
         if (!matchEnded) {
             let bowlerExtraMapLive = {};
             deliveryHistory.forEach(d => {
-                if (!bowlerExtraMapLive[d.bowler]) bowlerExtraMapLive[d.bowler] = { wides:0, noballs:0 };
-                if (d.chipLabel === 'WD') bowlerExtraMapLive[d.bowler].wides++;
-                if (d.chipLabel === 'NB') bowlerExtraMapLive[d.bowler].noballs++;
+                if (!bowlerExtraMapLive[d.bowler]) bowlerExtraMapLive[d.bowler] = { wides:0, noballs:0, legbyes:0 };
+                if (d.chipLabel === 'WD' || d.isWide) bowlerExtraMapLive[d.bowler].wides++;
+                if (d.chipLabel === 'NB' || d.isNoBall) bowlerExtraMapLive[d.bowler].noballs++;
+                if (d.isLegBye || /^LB/i.test(String(d.chipLabel||'')) || d.type==='legbye') bowlerExtraMapLive[d.bowler].legbyes += ((d.runsConceded!=null?d.runsConceded:d.runs)|0);
             });
             players.forEach(p => {
                 if (!p.name || !p.name.trim()) return;
@@ -10212,6 +10260,7 @@ function printHistoryMatch(){
         let liveDots = deliveryHistory.filter(d => d.legal && d.runsConceded === 0 && d.chipLabel !== 'W').length;
         let liveWides = deliveryHistory.filter(d => d.chipLabel === 'WD').length;
         let liveNoBalls = deliveryHistory.filter(d => d.chipLabel === 'NB').length;
+        let liveLegByes = deliveryHistory.filter(d => d.isLegBye || /^LB/i.test(String(d.chipLabel||'')) || d.type==='legbye').reduce(function(s,d){ return s + ((d.runsConceded!=null?d.runsConceded:d.runs)|0); }, 0);
         let liveWickets = fallOfWickets.length;
         let totalBallsAll = (globalMeta.totalBalls || 0) + (matchEnded ? 0 : liveBalls);
         let totalWicketsAll = (globalMeta.totalWickets || 0) + (matchEnded ? 0 : liveWickets);
@@ -10225,6 +10274,7 @@ function printHistoryMatch(){
         const elExtras = document.getElementById('rankings-total-extras');
         const elWides = document.getElementById('rankings-total-wides');
         const elNoBalls = document.getElementById('rankings-total-noballs');
+            try{ var rlb=document.getElementById('rankings-total-legbyes'); if(rlb) rlb.textContent = (typeof liveLegByes!=='undefined'?liveLegByes:0); }catch(eLB){}
         if (elBalls) elBalls.innerText = totalBallsAll;
         if (elWkts) elWkts.innerText = totalWicketsAll;
         if (elDots) elDots.innerText = totalDotsAll;
@@ -10306,9 +10356,10 @@ function printHistoryMatch(){
         if (!matchEnded) {
             let bowlerExtraMapLive = {};
             deliveryHistory.forEach(d => {
-                if (!bowlerExtraMapLive[d.bowler]) bowlerExtraMapLive[d.bowler] = { wides:0, noballs:0 };
-                if (d.chipLabel === 'WD') bowlerExtraMapLive[d.bowler].wides++;
-                if (d.chipLabel === 'NB') bowlerExtraMapLive[d.bowler].noballs++;
+                if (!bowlerExtraMapLive[d.bowler]) bowlerExtraMapLive[d.bowler] = { wides:0, noballs:0, legbyes:0 };
+                if (d.chipLabel === 'WD' || d.isWide) bowlerExtraMapLive[d.bowler].wides++;
+                if (d.chipLabel === 'NB' || d.isNoBall) bowlerExtraMapLive[d.bowler].noballs++;
+                if (d.isLegBye || /^LB/i.test(String(d.chipLabel||'')) || d.type==='legbye') bowlerExtraMapLive[d.bowler].legbyes += ((d.runsConceded!=null?d.runsConceded:d.runs)|0);
             });
             players.forEach(p => {
                 if (!p.name || !p.name.trim()) return;
@@ -10511,9 +10562,10 @@ function printHistoryMatch(){
         if (!matchEnded) {
             let bowlerExtraMapLive = {};
             (deliveryHistory||[]).forEach(d => {
-                if (!bowlerExtraMapLive[d.bowler]) bowlerExtraMapLive[d.bowler] = { wides:0, noballs:0 };
-                if (d.chipLabel === 'WD') bowlerExtraMapLive[d.bowler].wides++;
-                if (d.chipLabel === 'NB') bowlerExtraMapLive[d.bowler].noballs++;
+                if (!bowlerExtraMapLive[d.bowler]) bowlerExtraMapLive[d.bowler] = { wides:0, noballs:0, legbyes:0 };
+                if (d.chipLabel === 'WD' || d.isWide) bowlerExtraMapLive[d.bowler].wides++;
+                if (d.chipLabel === 'NB' || d.isNoBall) bowlerExtraMapLive[d.bowler].noballs++;
+                if (d.isLegBye || /^LB/i.test(String(d.chipLabel||'')) || d.type==='legbye') bowlerExtraMapLive[d.bowler].legbyes += ((d.runsConceded!=null?d.runsConceded:d.runs)|0);
             });
             (players||[]).forEach(p => {
                 if (!p.name || !p.name.trim()) return;
@@ -12359,6 +12411,8 @@ function updateVoiceToggleBtn() {
             line += '*' + core + ' — wide.* Down the wrong line.';
         } else if (type === 'noball' || type === 'NB') {
             line += '*' + core + ' — no ball.* Oversteps, free hit coming.';
+        } else if (type === 'legbye' || type === 'leg_bye' || type === 'LB' || type === 'lb') {
+            line += '*' + core + ' — leg bye' + (runs > 1 ? ('s ' + runs) : (runs === 1 ? ' 1' : '')) + '.* Off the pad, team runs.';
         } else if (runs === 0) {
             line += '*' + core + ' — no run.* ' + deliveryDesc() + '. Solid defence.';
         } else if (runs === 1) {
