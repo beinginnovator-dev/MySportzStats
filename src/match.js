@@ -4,8 +4,10 @@ export class MatchDO {
     this.env = env;
     this.sessions = new Map();
     this.httpViewers = new Map(); // id -> live heartbeat
-    this.viewerLog = new Map(); // persistent session history (online + offline)
+    this.viewerLog = new Map(); // session history (persisted to DO storage)
     this.viewerDayKey = ''; // YYYY-MM-DD for daily total
+    this._saveTimer = null;
+    this.ready = this.state.blockConcurrencyWhile(() => this.loadPersistedState());
     this.live = {
       ts: 0,
       runs: 0,
@@ -41,6 +43,7 @@ export class MatchDO {
   }
 
   async fetch(request) {
+    try { await this.ready; } catch (_) {}
     const url = new URL(request.url);
 
     if (request.headers.get("Upgrade") === "websocket") {
@@ -166,6 +169,7 @@ export class MatchDO {
               rec.tabs[String(body.tab).slice(0, 24)] = (rec.tabs[String(body.tab).slice(0, 24)] || 0) + 1;
             }
             this.viewerLog.set(id, rec);
+            this.scheduleSaveViewerLog();
           }
         }
         return new Response(JSON.stringify({ ok: true }), { headers: cors });
@@ -281,6 +285,8 @@ export class MatchDO {
         this.viewerLog = new Map();
         this.httpViewers = new Map();
         this.live.viewers = [];
+        try { await this.state.storage.delete('viewerLog'); } catch (_) {}
+        try { await this.state.storage.delete('viewerDayKey'); } catch (_) {}
         return new Response(JSON.stringify({ ok: true }), { headers: cors });
       } catch (_) {
         return new Response(JSON.stringify({ ok: false }), { status: 400, headers: cors });
@@ -289,6 +295,73 @@ export class MatchDO {
 
     if (url.pathname.startsWith("/admin/")) {
       return new Response(JSON.stringify({ ok: true }), { headers: cors });
+    }
+
+
+    // ---- Platform config (ads + short links) when DO name is __platform_config ----
+    if (url.pathname === "/ads-get" || url.pathname.endsWith("/ads-get")) {
+      const all = url.searchParams.get("all") === "1";
+      const ads = (await this.state.storage.get("ads")) || { banners: [], updatedAt: 0 };
+      let banners = Array.isArray(ads.banners) ? ads.banners : [];
+      if (!all) {
+        const now = Date.now();
+        banners = banners.filter((b) => b && b.enabled !== false && (!b.until || b.until > now));
+      }
+      return new Response(JSON.stringify({ ok: true, banners, updatedAt: ads.updatedAt || 0 }), {
+        headers: cors,
+      });
+    }
+    if (url.pathname === "/ads-set" || url.pathname.endsWith("/ads-set")) {
+      try {
+        const body = await request.json().catch(() => ({}));
+        let banners = Array.isArray(body.banners) ? body.banners : body.banner ? [body.banner] : [];
+        banners = banners.slice(0, 10).map((b, i) => ({
+          id: String(b.id || "ad" + (i + 1)).slice(0, 32),
+          enabled: b.enabled !== false,
+          text: String(b.text || "").slice(0, 200),
+          imageUrl: String(b.imageUrl || b.image || "").slice(0, 500),
+          linkUrl: String(b.linkUrl || b.href || "").slice(0, 500),
+          position: ["top", "bottom", "inline"].includes(b.position) ? b.position : "top",
+          until: b.until ? Number(b.until) : null,
+        }));
+        const payload = { banners, updatedAt: Date.now() };
+        await this.state.storage.put("ads", payload);
+        return new Response(JSON.stringify({ ok: true, ...payload }), { headers: cors });
+      } catch (e) {
+        return new Response(JSON.stringify({ ok: false, error: String(e) }), { status: 400, headers: cors });
+      }
+    }
+    if (url.pathname === "/short-set" || url.pathname.endsWith("/short-set")) {
+      try {
+        const body = await request.json().catch(() => ({}));
+        const code = String(body.code || "").slice(0, 12);
+        if (!code) return new Response(JSON.stringify({ ok: false }), { status: 400, headers: cors });
+        const map = (await this.state.storage.get("shortMap")) || {};
+        map[code] = {
+          matchId: String(body.matchId || "default").slice(0, 80),
+          title: String(body.title || "").slice(0, 120),
+          teamA: String(body.teamA || "").slice(0, 40),
+          teamB: String(body.teamB || "").slice(0, 40),
+          ts: Date.now(),
+        };
+        // prune oldest if huge
+        const keys = Object.keys(map);
+        if (keys.length > 2000) {
+          keys.sort((a, b) => (map[a].ts || 0) - (map[b].ts || 0));
+          for (let i = 0; i < keys.length - 1500; i++) delete map[keys[i]];
+        }
+        await this.state.storage.put("shortMap", map);
+        return new Response(JSON.stringify({ ok: true, code }), { headers: cors });
+      } catch (e) {
+        return new Response(JSON.stringify({ ok: false, error: String(e) }), { status: 400, headers: cors });
+      }
+    }
+    if (url.pathname === "/short-get" || url.pathname.endsWith("/short-get")) {
+      const code = url.searchParams.get("code") || "";
+      const map = (await this.state.storage.get("shortMap")) || {};
+      const rec = map[code];
+      if (!rec) return new Response(JSON.stringify({ ok: false }), { headers: cors });
+      return new Response(JSON.stringify({ ok: true, ...rec }), { headers: cors });
     }
 
     return new Response("Not found", { status: 404 });
@@ -364,6 +437,7 @@ export class MatchDO {
       coins: rec.coins != null ? rec.coins : 10,
       online: true,
     });
+    this.scheduleSaveViewerLog();
   }
 
   expireHttpViewers(now) {
@@ -594,4 +668,55 @@ export class MatchDO {
     this.live.viewers = viewers;
     this.broadcast({ type: "presence", data: viewers });
   }
+
+  scheduleSaveViewerLog() {
+    try {
+      if (this._saveTimer) return;
+      this._saveTimer = true;
+      Promise.resolve()
+        .then(() => this.saveViewerLog())
+        .catch(() => {})
+        .finally(() => {
+          this._saveTimer = null;
+        });
+    } catch (_) {}
+  }
+
+  async loadPersistedState() {
+    try {
+      const raw = await this.state.storage.get("viewerLog");
+      if (raw && Array.isArray(raw)) {
+        this.viewerLog = new Map(raw);
+      } else if (raw && typeof raw === "object") {
+        this.viewerLog = new Map(Object.entries(raw));
+      }
+      const day = await this.state.storage.get("viewerDayKey");
+      if (day) this.viewerDayKey = String(day);
+      for (const [id, rec] of this.viewerLog) {
+        if (rec && rec.online) {
+          rec.online = false;
+          if (!rec.leftAt) rec.leftAt = rec.lastSeen || Date.now();
+          this.viewerLog.set(id, rec);
+        }
+      }
+    } catch (e) {
+      this.viewerLog = this.viewerLog || new Map();
+    }
+  }
+
+  async saveViewerLog() {
+    try {
+      let entries = [...this.viewerLog.entries()];
+      entries.sort((a, b) => ((b[1] && b[1].lastSeen) || 0) - ((a[1] && a[1].lastSeen) || 0));
+      entries = entries.slice(0, 400);
+      for (const pair of entries) {
+        const rec = pair[1];
+        if (rec && rec.activities && rec.activities.length > 40) rec.activities = rec.activities.slice(-40);
+        if (rec && rec.sessions && rec.sessions.length > 12) rec.sessions = rec.sessions.slice(-12);
+      }
+      await this.state.storage.put("viewerLog", entries);
+      if (this.viewerDayKey) await this.state.storage.put("viewerDayKey", this.viewerDayKey);
+    } catch (_) {}
+  }
+
 }
