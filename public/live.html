@@ -1327,6 +1327,18 @@ input, select, textarea {
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
 <body>
+
+<style id="platform-ad-css">
+.platform-ad { margin: 8px 12px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(251,191,36,.35); background: linear-gradient(135deg,#1e293b,#0f172a); }
+.platform-ad a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; text-decoration: none; color: #f8fafc; }
+.platform-ad img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+.platform-ad .ad-text { font-size: 13px; font-weight: 700; line-height: 1.35; }
+.platform-ad .ad-label { font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: #fbbf24; font-weight: 800; margin-bottom: 2px; }
+.platform-ad-bottom { position: sticky; bottom: 0; z-index: 40; margin-bottom: 0; }
+</style>
+
+<div id="platform-ad-top" class="platform-ad platform-ad-top hidden" style="display:none"></div>
+
   <div id="anim-overlay"><div class="burst" id="anim-text"></div></div>
   <div id="modal-ov" class="modal-ov hidden" onclick="if(event.target===this)closeModal()">
     <div class="modal-box">
@@ -5888,5 +5900,39 @@ try{mountDashboards()}catch(e){}
       }catch(e){}
     }, 15000);
   </script>
+
+<script id="platform-ads-boot">
+(function(){
+  function el(id){ return document.getElementById(id); }
+  function renderAd(slot, b){
+    if(!slot || !b) return;
+    var href = b.linkUrl || b.href || '#';
+    var img = b.imageUrl || b.image || '';
+    var text = b.text || '';
+    if(!text && !img) return;
+    slot.style.display = 'block';
+    slot.classList.remove('hidden');
+    slot.innerHTML = '<a href="'+String(href).replace(/"/g,'&quot;')+'" target="_blank" rel="noopener noreferrer">'
+      + (img ? '<img src="'+String(img).replace(/"/g,'&quot;')+'" alt="Ad"/>' : '')
+      + '<div><div class="ad-label">Sponsored</div><div class="ad-text">'+(text||'Offer')+'</div></div></a>';
+  }
+  function loadAds(){
+    try {
+      fetch('/api/ads', { cache: 'no-store' }).then(function(r){ return r.json(); }).then(function(d){
+        if(!d || !d.ok || !Array.isArray(d.banners)) return;
+        var top = el('platform-ad-top');
+        var bottom = el('platform-ad-bottom');
+        var tops = d.banners.filter(function(b){ return !b.position || b.position === 'top' || b.position === 'inline'; });
+        var bots = d.banners.filter(function(b){ return b.position === 'bottom'; });
+        if(tops[0]) renderAd(top, tops[0]);
+        if(bots[0] && bottom) renderAd(bottom, bots[0]);
+      }).catch(function(){});
+    } catch(e){}
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadAds);
+  else loadAds();
+})();
+</script>
+
 </body>
 </html>

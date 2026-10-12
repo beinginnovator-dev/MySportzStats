@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Platform Ads Admin</title>
+<style>
+body{font-family:system-ui;max-width:520px;margin:24px auto;padding:16px;background:#0f172a;color:#f8fafc}
+input,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#fff;margin:6px 0 12px;box-sizing:border-box}
+button{background:#059669;color:#fff;border:0;padding:12px 16px;border-radius:10px;font-weight:800;width:100%;cursor:pointer}
+label{font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase}
+pre{background:#1e293b;padding:12px;border-radius:8px;overflow:auto;font-size:12px}
+h1{font-size:1.2rem}
+</style>
+</head>
+<body>
+<h1>📢 Platform Ad Banners</h1>
+<p style="opacity:.8;font-size:14px">App creator only. Banners appear on <b>all</b> viewer links.</p>
+<label>Admin key</label>
+<input id="key" type="password" placeholder="ADMIN_KEY from wrangler.toml"/>
+<label>Ad text</label>
+<textarea id="text" rows="2" placeholder="Try Premium Scorer — free this week"></textarea>
+<label>Image URL (optional)</label>
+<input id="img" placeholder="https://.../banner.jpg"/>
+<label>Click link URL</label>
+<input id="href" placeholder="https://your-site.com/offer"/>
+<label>Position</label>
+<select id="pos" style="width:100%;padding:10px;border-radius:8px;background:#1e293b;color:#fff;border:1px solid #334155">
+<option value="top">Top of viewer page</option>
+<option value="bottom">Bottom sticky</option>
+</select>
+<button onclick="pushAd()">Push banner to all viewers</button>
+<button onclick="clearAds()" style="background:#b91c1c;margin-top:8px">Clear all banners</button>
+<pre id="out"></pre>
+<script>
+async function pushAd(){
+  const key=document.getElementById('key').value.trim();
+  const body={banners:[{
+    id:'ad1', enabled:true,
+    text:document.getElementById('text').value.trim(),
+    imageUrl:document.getElementById('img').value.trim(),
+    linkUrl:document.getElementById('href').value.trim(),
+    position:document.getElementById('pos').value
+  }]};
+  const r=await fetch('/api/admin/ads',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':key},body:JSON.stringify(body)});
+  document.getElementById('out').textContent=JSON.stringify(await r.json(),null,2);
+}
+async function clearAds(){
+  const key=document.getElementById('key').value.trim();
+  const r=await fetch('/api/admin/ads',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':key},body:JSON.stringify({banners:[]})});
+  document.getElementById('out').textContent=JSON.stringify(await r.json(),null,2);
+}
+</script>
+</body>
+</html>

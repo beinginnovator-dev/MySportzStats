@@ -6749,31 +6749,53 @@ function placeBoundaryAnimationOnStriker(toast){
         });
     }
 
-    function doShareViewerLink() {
+        function doShareViewerLink() {
         try { publishLiveViewerState(); } catch(e){}
-        var server = getLiveServerUrl();
-        var url = getViewerLink();
-        var msg = server
-            ? ('Viewer link:\n' + url + '\n\nScorer POSTs to ' + server + '/api/live\nOpen the link on any phone (internet required).\nKeep this scorer tab open while scoring.')
-            : ('Viewer link:\n' + url + '\n\nShare this link. Configure Cloudflare Live (Worker URL + publish key) so remote phones can sync.');
-        try {
-            if (navigator.share) {
-                navigator.share({ title: 'Live cricket score', text: 'Watch live score & commentary', url: url }).catch(function(){
+        var longUrl = getViewerLink();
+        function finish(url) {
+            url = url || longUrl;
+            var server = getLiveServerUrl();
+            var msg = 'Viewer link (short):\n' + url + (url !== longUrl ? ('\n\nFull link:\n' + longUrl) : '') +
+                '\n\nShare this — opens with match poster preview on WhatsApp.';
+            try {
+                if (navigator.share) {
+                    navigator.share({ title: 'Live cricket score', text: 'Watch live score & commentary', url: url }).catch(function(){
+                        showModal({ title: 'Viewer link', message: msg, icon: '📺' });
+                    });
+                } else if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(url).then(function(){
+                        showModal({ title: 'Viewer link copied', message: msg, icon: '📺' });
+                    }).catch(function(){ showModal({ title: 'Viewer link', message: msg, icon: '📺' }); });
+                } else {
                     showModal({ title: 'Viewer link', message: msg, icon: '📺' });
-                });
-            } else {
-                try {
-                    if (navigator.clipboard && navigator.clipboard.writeText) {
-                        navigator.clipboard.writeText(url).then(function(){
-                            showModal({ title: 'Viewer link copied', message: msg, icon: '📺' });
-                        }).catch(function(){ showModal({ title: 'Viewer link', message: msg, icon: '📺' }); });
-                    } else showModal({ title: 'Viewer link', message: msg, icon: '📺' });
-                } catch(e2) { showModal({ title: 'Viewer link', message: msg, icon: '📺' }); }
-            }
-        } catch(e3) { showModal({ title: 'Viewer link', message: msg, icon: '📺' }); }
+                }
+            } catch(e3) { showModal({ title: 'Viewer link', message: msg, icon: '📺' }); }
+        }
+        // Try short link + poster (like chshare-style /m/CODE)
+        try {
+            var teamA = (teamConfig && teamConfig.A && teamConfig.A.name) || 'Team A';
+            var teamB = (teamConfig && teamConfig.B && teamConfig.B.name) || 'Team B';
+            var title = (typeof matchDesc !== 'undefined' && matchDesc) ? matchDesc : (teamA + ' vs ' + teamB);
+            var base = (getLiveServerUrl() || location.origin || '').replace(/\/$/, '');
+            if (!base || base.indexOf('http') !== 0) { finish(longUrl); return; }
+            fetch(base + '/api/short', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    match: getLiveMatchId(),
+                    matchId: getLiveMatchId(),
+                    title: title,
+                    teamA: teamA,
+                    teamB: teamB
+                })
+            }).then(function(r){ return r.json(); }).then(function(d){
+                if (d && d.ok && d.shortUrl) finish(d.shortUrl);
+                else finish(longUrl);
+            }).catch(function(){ finish(longUrl); });
+        } catch(eShort) { finish(longUrl); }
     }
 
-    function shareViewerLink() {
+function shareViewerLink() {
         // Always allow setting/changing Termux URL, then share
         promptLiveServerUrl(true);
     }
