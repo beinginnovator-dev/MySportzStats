@@ -342,6 +342,8 @@ export class MatchDO {
           title: String(body.title || "").slice(0, 120),
           teamA: String(body.teamA || "").slice(0, 40),
           teamB: String(body.teamB || "").slice(0, 40),
+          desc: String(body.desc || body.description || "").slice(0, 220),
+          imageUrl: String(body.imageUrl || body.image || "").slice(0, 500),
           ts: Date.now(),
         };
         // prune oldest if huge

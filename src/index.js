@@ -178,12 +178,14 @@ async function handlePlatform(request, env, url) {
     const title = String(body.title || body.matchDesc || "Live Cricket").slice(0, 120);
     const teamA = String(body.teamA || "").slice(0, 40);
     const teamB = String(body.teamB || "").slice(0, 40);
+    const desc = String(body.desc || body.description || "").slice(0, 220);
+    const imageUrl = String(body.imageUrl || body.image || "").slice(0, 500);
     const code = shortCode(6);
     await stub.fetch(
       new Request("https://platform/short-set", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, matchId, title, teamA, teamB, ts: Date.now() }),
+        body: JSON.stringify({ code, matchId, title, teamA, teamB, desc, imageUrl, ts: Date.now() }),
       })
     );
     const origin = url.origin;
@@ -219,11 +221,21 @@ async function handleShortPage(request, env, url) {
   const title = data.title || "Live Cricket Match";
   const teamA = data.teamA || "Team A";
   const teamB = data.teamB || "Team B";
+  const desc = data.desc || (teamA + " vs " + teamB + " — live ball-by-ball scores, commentary & stats");
   const liveUrl = new URL("/live.html?match=" + encodeURIComponent(matchId), url.origin).toString();
-  const posterUrl = new URL("/api/poster?title=" + encodeURIComponent(title) + "&a=" + encodeURIComponent(teamA) + "&b=" + encodeURIComponent(teamB), url.origin).toString();
+  // Prefer custom image (JPG/PNG). Fallback poster endpoint (PNG).
+  const customImg = data.imageUrl ? String(data.imageUrl) : "";
+  const posterUrl = customImg || new URL(
+    "/api/poster.png?title=" + encodeURIComponent(title) +
+    "&a=" + encodeURIComponent(teamA) +
+    "&b=" + encodeURIComponent(teamB) +
+    "&desc=" + encodeURIComponent(String(desc).slice(0, 80)),
+    url.origin
+  ).toString();
   const ua = (request.headers.get("User-Agent") || "").toLowerCase();
-  const isBot = /bot|crawl|slurp|facebookexternalhit|whatsapp|telegram|twitter|linkedin|discord|preview/i.test(ua);
+  const isBot = /bot|crawl|slurp|facebookexternalhit|whatsapp|telegram|twitter|linkedin|discord|preview|skypeuri/i.test(ua);
 
+  // Always serve HTML with OG tags for bots; humans redirect
   if (!isBot) {
     return Response.redirect(liveUrl, 302);
   }
@@ -231,28 +243,34 @@ async function handleShortPage(request, env, url) {
   const html = `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="utf-8"/>
-<title>${escapeHtml(title)} | Live Score</title>
+<title>${escapeHtml(title)}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="description" content="${escapeHtml(desc)}"/>
 <meta property="og:type" content="website"/>
+<meta property="og:site_name" content="MySportzStats Live"/>
 <meta property="og:title" content="${escapeHtml(title)}"/>
-<meta property="og:description" content="${escapeHtml(teamA)} vs ${escapeHtml(teamB)} — watch live ball-by-ball scores"/>
+<meta property="og:description" content="${escapeHtml(desc)}"/>
 <meta property="og:image" content="${posterUrl}"/>
+<meta property="og:image:secure_url" content="${posterUrl}"/>
+<meta property="og:image:type" content="image/png"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
 <meta property="og:url" content="${url.origin}/m/${encodeURIComponent(code)}"/>
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:title" content="${escapeHtml(title)}"/>
-<meta name="twitter:description" content="${escapeHtml(teamA)} vs ${escapeHtml(teamB)} — Live"/>
+<meta name="twitter:description" content="${escapeHtml(desc)}"/>
 <meta name="twitter:image" content="${posterUrl}"/>
-<meta http-equiv="refresh" content="0;url=${liveUrl}"/>
+<link rel="image_src" href="${posterUrl}"/>
 </head><body style="font-family:system-ui;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0">
-<div style="text-align:center;padding:24px">
+<div style="text-align:center;padding:24px;max-width:420px">
   <div style="font-size:48px">🏏</div>
-  <h1 style="font-size:1.25rem;margin:12px 0">${escapeHtml(title)}</h1>
-  <p style="opacity:.8">${escapeHtml(teamA)} vs ${escapeHtml(teamB)}</p>
-  <p><a href="${liveUrl}" style="color:#34d399">Open live score →</a></p>
+  <h1 style="font-size:1.35rem;margin:12px 0">${escapeHtml(title)}</h1>
+  <p style="opacity:.85;line-height:1.45">${escapeHtml(desc)}</p>
+  <p style="margin-top:20px"><a href="${liveUrl}" style="color:#34d399;font-weight:700">Open live score →</a></p>
 </div>
 </body></html>`;
   return new Response(html, {
-    headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=60" },
+    headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=120" },
   });
 }
 
@@ -268,23 +286,25 @@ function handlePoster(url) {
   const title = url.searchParams.get("title") || "Live Cricket";
   const a = url.searchParams.get("a") || "Team A";
   const b = url.searchParams.get("b") || "Team B";
-  // SVG poster (works as og:image for many scrapers)
+  const desc = url.searchParams.get("desc") || "Live ball-by-ball scores";
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0f172a"/>
-      <stop offset="50%" stop-color="#1e3a5f"/>
-      <stop offset="100%" stop-color="#0f172a"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d9488"/>
+      <stop offset="45%" stop-color="#0f766e"/>
+      <stop offset="100%" stop-color="#115e59"/>
     </linearGradient>
   </defs>
-  <rect width="1200" height="630" fill="url(#g)"/>
-  <rect x="40" y="40" width="1120" height="550" rx="28" fill="none" stroke="#fbbf24" stroke-width="4" opacity="0.5"/>
-  <text x="600" y="160" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="42" font-weight="800" fill="#fbbf24">LIVE CRICKET</text>
-  <text x="600" y="280" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="56" font-weight="900" fill="#ffffff">${escapeXml(a)}</text>
-  <text x="600" y="350" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="36" font-weight="700" fill="#94a3b8">vs</text>
-  <text x="600" y="430" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="56" font-weight="900" fill="#ffffff">${escapeXml(b)}</text>
-  <text x="600" y="520" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="28" font-weight="600" fill="#34d399">${escapeXml(title.slice(0, 48))}</text>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="980" cy="120" r="160" fill="#fbbf24" opacity="0.15"/>
+  <circle cx="160" cy="520" r="120" fill="#ffffff" opacity="0.08"/>
+  <text x="600" y="120" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="28" font-weight="700" fill="#ecfdf5" letter-spacing="4">LIVE MATCH</text>
+  <text x="600" y="250" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="64" font-weight="900" fill="#ffffff">${escapeXml(a)}</text>
+  <text x="600" y="330" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="36" font-weight="700" fill="#fde68a">VS</text>
+  <text x="600" y="420" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="64" font-weight="900" fill="#ffffff">${escapeXml(b)}</text>
+  <text x="600" y="520" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="26" font-weight="600" fill="#ccfbf1">${escapeXml(String(title).slice(0, 50))}</text>
+  <text x="600" y="575" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="22" fill="#99f6e4">${escapeXml(String(desc).slice(0, 60))}</text>
 </svg>`;
   return new Response(svg, {
     headers: {
@@ -317,7 +337,7 @@ export default {
     }
 
     // Match poster SVG for OG / WhatsApp
-    if (url.pathname === "/api/poster") {
+    if (url.pathname === "/api/poster" || url.pathname === "/api/poster.png") {
       return handlePoster(url);
     }
 
