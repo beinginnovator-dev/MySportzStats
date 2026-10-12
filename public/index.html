@@ -2447,7 +2447,19 @@ body.match-result-active nav {
                     </div>
                 </div>
                 
-</div><!-- /cup-ui-settings-wrap -->
+
+                    <div class="border theme-border rounded-xl p-3 space-y-2 bg-amber-50/40 mt-2">
+                        <label class="text-xs font-black theme-text uppercase tracking-wider block">🔗 Share link preview (WhatsApp)</label>
+                        <p class="text-[10px] theme-muted">Poster image must be a public <b>JPG or PNG</b> URL (WhatsApp often ignores SVG). Description shows on the link card.</p>
+                        <label class="text-[10px] theme-muted font-semibold">Poster image URL</label>
+                        <input type="url" id="cfg-share-poster" placeholder="https://.../match-poster.png" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm"/>
+                        <label class="text-[10px] theme-muted font-semibold">Link description</label>
+                        <textarea id="cfg-share-desc" rows="2" placeholder="Follow this match live — ball by ball on MySportzStats" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm"></textarea>
+                        <button type="button" onclick="saveSharePosterSettings()" class="w-full bg-slate-800 text-white font-bold py-2 rounded-lg text-xs">Save share preview</button>
+                        <button type="button" onclick="openPlatformAdsAdmin()" class="w-full bg-amber-600 text-white font-bold py-2 rounded-lg text-xs mt-1">📢 Open ads push page (app creator)</button>
+                    </div>
+
+                </div><!-- /cup-ui-settings-wrap -->
 
             </div><!-- /cup create+settings panel -->
 
@@ -4763,6 +4775,7 @@ function switchTab(tabId) {
         if (tabBtn) tabBtn.className = "flex-1 py-2 px-0.5 rounded-lg text-center espn-tab-active transition-all";
         try {
             if (tabId === 'tournament') {
+                try { var _sp=document.getElementById('cfg-share-poster'); var _sd=document.getElementById('cfg-share-desc'); if(_sp)_sp.value=localStorage.getItem('cricket_share_poster_url')||''; if(_sd)_sd.value=localStorage.getItem('cricket_share_desc')||''; } catch(eShareCfg){}
                 if (typeof setCupSubTab === 'function') setCupSubTab('create');
                 else if (window.setCupSubTab) window.setCupSubTab('create');
             }
@@ -6749,19 +6762,54 @@ function placeBoundaryAnimationOnStriker(toast){
         });
     }
 
-        function doShareViewerLink() {
+            
+    function openPlatformAdsAdmin() {
+        try {
+            var base = (getLiveServerUrl() || location.origin || '').replace(/\/$/, '');
+            if (!base) base = location.origin;
+            var url = base + '/admin-ads.html';
+            window.open(url, '_blank');
+        } catch(e) {
+            showModal({ title: 'Ads admin', message: 'Open /admin-ads.html on your Worker URL and enter your ADMIN_KEY.', icon: '📢' });
+        }
+    }
+    function saveSharePosterSettings() {
+        try {
+            var img = (document.getElementById('cfg-share-poster') || {}).value || '';
+            var desc = (document.getElementById('cfg-share-desc') || {}).value || '';
+            localStorage.setItem('cricket_share_poster_url', String(img).trim());
+            localStorage.setItem('cricket_share_desc', String(desc).trim());
+            showModal({ title: 'Saved', message: 'Share poster image & description saved for next viewer link.', icon: '✅' });
+        } catch(e) {}
+    }
+
+    function doShareViewerLink() {
         try { publishLiveViewerState(); } catch(e){}
         var longUrl = getViewerLink();
+        var teamA = (teamConfig && teamConfig.A && teamConfig.A.name) || 'Team A';
+        var teamB = (teamConfig && teamConfig.B && teamConfig.B.name) || 'Team B';
+        var title = '';
+        try {
+            title = (document.getElementById('header-match-desc') && document.getElementById('header-match-desc').textContent) || '';
+            title = (title || '').trim();
+        } catch(eT) {}
+        if (!title) title = teamA + ' vs ' + teamB;
+        var desc = 'Follow ' + title + ' and stay updated with every ball — live scores & commentary on MySportzStats.';
         function finish(url) {
             url = url || longUrl;
-            var server = getLiveServerUrl();
-            var msg = 'Viewer link (short):\n' + url + (url !== longUrl ? ('\n\nFull link:\n' + longUrl) : '') +
-                '\n\nShare this — opens with match poster preview on WhatsApp.';
+            // WhatsApp message body (this is the green bubble text)
+            var msg = title + '\n\n' + desc + '\n\n' + url;
             try {
                 if (navigator.share) {
-                    navigator.share({ title: 'Live cricket score', text: 'Watch live score & commentary', url: url }).catch(function(){
-                        showModal({ title: 'Viewer link', message: msg, icon: '📺' });
+                    navigator.share({
+                        title: title,
+                        text: desc,
+                        url: url
+                    }).catch(function(){
+                        openWhatsAppWithText(msg);
                     });
+                } else if (typeof openWhatsAppWithText === 'function') {
+                    openWhatsAppWithText(msg);
                 } else if (navigator.clipboard && navigator.clipboard.writeText) {
                     navigator.clipboard.writeText(url).then(function(){
                         showModal({ title: 'Viewer link copied', message: msg, icon: '📺' });
@@ -6769,15 +6817,19 @@ function placeBoundaryAnimationOnStriker(toast){
                 } else {
                     showModal({ title: 'Viewer link', message: msg, icon: '📺' });
                 }
-            } catch(e3) { showModal({ title: 'Viewer link', message: msg, icon: '📺' }); }
+            } catch(e3) {
+                try { openWhatsAppWithText(msg); } catch(e4) {
+                    showModal({ title: 'Viewer link', message: msg, icon: '📺' });
+                }
+            }
         }
-        // Try short link + poster (like chshare-style /m/CODE)
         try {
-            var teamA = (teamConfig && teamConfig.A && teamConfig.A.name) || 'Team A';
-            var teamB = (teamConfig && teamConfig.B && teamConfig.B.name) || 'Team B';
-            var title = (typeof matchDesc !== 'undefined' && matchDesc) ? matchDesc : (teamA + ' vs ' + teamB);
             var base = (getLiveServerUrl() || location.origin || '').replace(/\/$/, '');
             if (!base || base.indexOf('http') !== 0) { finish(longUrl); return; }
+            var customImage = '';
+            try { customImage = (localStorage.getItem('cricket_share_poster_url') || '').trim(); } catch(eI) {}
+            var customDesc = '';
+            try { customDesc = (localStorage.getItem('cricket_share_desc') || '').trim(); } catch(eD) {}
             fetch(base + '/api/short', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -6786,7 +6838,9 @@ function placeBoundaryAnimationOnStriker(toast){
                     matchId: getLiveMatchId(),
                     title: title,
                     teamA: teamA,
-                    teamB: teamB
+                    teamB: teamB,
+                    desc: customDesc || desc,
+                    imageUrl: customImage
                 })
             }).then(function(r){ return r.json(); }).then(function(d){
                 if (d && d.ok && d.shortUrl) finish(d.shortUrl);
