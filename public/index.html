@@ -205,6 +205,353 @@
     </script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+<style id="offline-core-styles">
+/* ============================================================
+   OFFLINE / content:// FALLBACK
+   App uses Tailwind CDN — when offline, utilities never load.
+   These rules keep Score / Cup / tabs readable without CDN.
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: #f1f5f9;
+  color: #0f172a;
+  -webkit-text-size-adjust: 100%;
+}
+.app-shell {
+  width: 100%;
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 0.35rem 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+/* Header */
+.espn-header {
+  background: linear-gradient(145deg, #0f172a, #1e293b) !important;
+  color: #f8fafc !important;
+  border-radius: 1rem !important;
+  margin-bottom: 0.4rem !important;
+  padding: 0.5rem 0.75rem 0.75rem !important;
+  overflow: hidden;
+}
+.espn-header * { color: inherit; }
+#header-match-desc { color: #fbbf24 !important; text-align: center; font-weight: 800; font-size: 11px; text-transform: uppercase; }
+#innings-banner {
+  background: rgba(255,255,255,0.12) !important;
+  color: #fff !important;
+  border-radius: 999px !important;
+  padding: 0.4rem 1rem !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-align: center;
+  display: inline-block;
+}
+
+/* Tab bar */
+.espn-tabbar {
+  display: flex !important;
+  gap: 2px;
+  background: #0f172a !important;
+  border-radius: 0.75rem !important;
+  padding: 4px !important;
+  margin-bottom: 0.4rem !important;
+}
+.espn-tabbar button {
+  flex: 1 1 0%;
+  border: 0;
+  background: transparent;
+  color: #94a3b8 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 0.55rem 0.15rem !important;
+  border-radius: 0.5rem !important;
+  cursor: pointer;
+}
+.espn-tab-active {
+  background: #f59e0b !important;
+  color: #0f172a !important;
+}
+.espn-tab-inactive { background: transparent !important; color: #94a3b8 !important; }
+
+/* Pages visibility */
+#page-tournament.hidden, #page-toss.hidden, #page-scoring.hidden,
+#page-stats.hidden, #page-livefeed.hidden, #page-rankings.hidden,
+#page-players.hidden, #page-history.hidden, #page-quickinfo.hidden,
+#page-reports.hidden { display: none !important; }
+
+#page-tournament:not(.hidden),
+#page-toss:not(.hidden),
+#page-stats:not(.hidden),
+#page-livefeed:not(.hidden),
+#page-rankings:not(.hidden),
+#page-players:not(.hidden),
+#page-history:not(.hidden),
+#page-quickinfo:not(.hidden) {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+}
+
+/* ===== SCORE PAGE ===== */
+#page-scoring:not(.hidden),
+body.scoring-active #page-scoring {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  overflow: visible !important;
+  padding-bottom: 10rem !important;
+  margin: 0 !important;
+}
+body.scoring-active #page-scoring.hidden {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+}
+
+#sb-result-wrap,
+#sb-swipe-track,
+#scoreboard-card {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  position: relative !important;
+  width: 100% !important;
+}
+#sb-swipe-track {
+  background: #0f172a !important;
+  border-radius: 1rem !important;
+  overflow: hidden !important;
+}
+/* Swipe track works without Tailwind w-1/2 utilities */
+#sb-swipe-track { width: 100% !important; overflow: hidden !important; }
+#sb-swipe-inner {
+  display: flex !important;
+  flex-direction: row !important;
+  width: 200% !important;
+  height: auto !important;
+  min-height: 12rem !important;
+  transition: transform 0.3s ease-out;
+  margin: 0 !important;
+}
+#sb-swipe-inner > div {
+  display: block !important;
+  width: 50% !important;
+  flex: 0 0 50% !important;
+  max-width: 50% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  padding: 0 2px;
+  overflow: hidden !important;
+}
+
+#scoreboard-card {
+  background: linear-gradient(165deg, #0b1220 0%, #1e293b 55%, #0f172a 100%) !important;
+  color: #f8fafc !important;
+  border-radius: 1rem !important;
+  padding: 0.85rem 1rem !important;
+  margin: 0 !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.28);
+}
+#scoreboard-card * {
+  color: #f8fafc;
+}
+#scoreboard-card .text-slate-400,
+#scoreboard-card .text-slate-500 { color: #94a3b8 !important; }
+#scoreboard-card .text-emerald-400,
+#scoreboard-card .text-emerald-300 { color: #34d399 !important; }
+#scoreboard-card .text-amber-300,
+#scoreboard-card .text-amber-200 { color: #fcd34d !important; }
+#scoreboard-card .text-sky-300,
+#scoreboard-card .text-sky-200 { color: #7dd3fc !important; }
+#scoreboard-card .text-red-400 { color: #f87171 !important; }
+
+#dual-team-scores {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 0.5rem !important;
+  margin-bottom: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+  border-bottom: 1px solid #334155 !important;
+}
+#dual-team-scores > div {
+  background: rgba(15,23,42,0.65) !important;
+  border-radius: 0.75rem !important;
+  padding: 0.5rem !important;
+  text-align: center;
+}
+#classic-team-scores.hidden { display: none !important; }
+#classic-team-scores:not(.hidden) {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr 1fr !important;
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+#striker-card, #bowler-card {
+  display: block !important;
+  background: rgba(30,41,59,0.9) !important;
+  border: 1px solid #334155 !important;
+  border-radius: 0.75rem !important;
+  padding: 0.65rem !important;
+  margin: 0.5rem 0 !important;
+  color: #f8fafc !important;
+}
+#striker-card select, #bowler-card select,
+#select-striker, #select-bowler, #select-nonstriker {
+  width: 100%;
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #475569 !important;
+  border-radius: 0.5rem !important;
+  padding: 0.4rem !important;
+  font-weight: 700;
+}
+#current-over-balls {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 28px;
+  margin: 0.5rem 0;
+}
+#sb-match-type, #sb-innings-line {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #fbbf24 !important;
+  margin-bottom: 0.35rem;
+}
+#current-run-rate {
+  text-align: center;
+  font-size: 1.05rem !important;
+  font-weight: 900 !important;
+  color: #f8fafc !important;
+}
+
+/* Run pad */
+#scoring-controls-panel {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 1rem 1rem 0 0 !important;
+  padding: 0.65rem 0.75rem !important;
+  box-shadow: 0 -8px 28px rgba(15,23,42,0.18);
+}
+body.scoring-active #scoring-controls-panel {
+  position: fixed !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  max-width: 28rem !important;
+  z-index: 55 !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  margin: 0 !important;
+}
+body:not(.scoring-active) #scoring-controls-panel { display: none !important; }
+
+.score-btn, #scoring-controls-panel button {
+  border: 0;
+  border-radius: 0.65rem !important;
+  font-weight: 800 !important;
+  padding: 0.7rem 0.25rem !important;
+  cursor: pointer;
+  color: #fff !important;
+}
+#scoring-controls-panel .grid {
+  display: grid !important;
+  grid-template-columns: repeat(5, 1fr) !important;
+  gap: 0.4rem !important;
+}
+
+/* Cup form basics */
+#page-tournament:not(.hidden) input,
+#page-tournament:not(.hidden) select,
+#page-toss:not(.hidden) input,
+#page-toss:not(.hidden) select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #0f172a;
+  font-weight: 600;
+}
+#page-tournament:not(.hidden) button,
+#page-toss:not(.hidden) button {
+  cursor: pointer;
+}
+.cup-subtab {
+  border: 0;
+  cursor: pointer;
+  padding: 0.6rem 0.35rem !important;
+  border-radius: 0.5rem !important;
+  font-weight: 800 !important;
+  font-size: 10px !important;
+}
+#cup-start-match-btn {
+  width: 100%;
+  background: #059669 !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  padding: 0.85rem !important;
+  border: 0;
+  border-radius: 0.75rem !important;
+  margin-top: 0.5rem;
+}
+#cup-match-settings-wrap.hidden,
+#cup-ui-settings-wrap.hidden,
+#cup-sub-create.hidden { display: none !important; }
+#cup-match-settings-wrap:not(.hidden),
+#cup-ui-settings-wrap:not(.hidden),
+#cup-sub-create:not(.hidden) {
+  display: block !important;
+  visibility: visible !important;
+  height: auto !important;
+}
+
+/* Generic helpers if Tailwind missing */
+.hidden { display: none !important; }
+.flex { display: flex; }
+.grid { display: grid; }
+.w-full { width: 100%; }
+.text-center { text-align: center; }
+.font-bold, .font-black, .font-extrabold { font-weight: 800; }
+.rounded-xl { border-radius: 0.75rem; }
+.rounded-2xl { border-radius: 1rem; }
+.rounded-lg { border-radius: 0.5rem; }
+
+/* Modal must work offline */
+#app-modal.hidden { display: none !important; }
+#app-modal:not(.hidden) {
+  display: flex !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10050 !important;
+  background: rgba(0,0,0,0.55);
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1rem;
+}
+#page-transition-fx { pointer-events: none !important; }
+#winner-screen.hidden { display: none !important; }
+</style>
+
     <!-- Canvas Confetti for Animations -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <!-- jsPDF for PDF export -->
@@ -1298,11 +1645,12 @@
     
         /* Discourage pull-to-refresh wiping the live match */
         html, body {
-            overscroll-behavior-y: contain;
-            overscroll-behavior: contain;
+            overscroll-behavior-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         .app-shell {
-            overscroll-behavior-y: contain;
+            overscroll-behavior-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
     
@@ -1599,7 +1947,19 @@ body[data-theme="league"] .bg-amber-100 {
   -webkit-text-fill-color: #f1f5f9 !important;
 }
 
-</style>
+
+        /* Tighten top spacing — remove long empty gap above pages */
+        .app-shell { padding-top: 0.35rem !important; padding-bottom: 0.75rem !important; }
+        .espn-header { margin-bottom: 0.4rem !important; }
+        .espn-header-top { padding-top: 0.4rem !important; }
+        #page-tournament, #page-scoring, #page-toss, #page-stats, #page-livefeed,
+        #page-rankings, #page-players, #page-history, #page-quickinfo {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+        }
+        .espn-tabbar { margin-bottom: 0.35rem !important; }
+
+    </style>
 
 <style id="v2-score-layout">
 /* CRR sits above the total score in the score-status area */
@@ -1879,11 +2239,11 @@ body.match-result-active nav {
         </div>
     </div>
 
-    <div class="app-shell w-full min-h-screen theme-card px-4 py-6 max-w-md mx-auto shadow-xl flex flex-col transition-colors">
+    <div class="app-shell w-full theme-card px-3 pt-1 pb-3 max-w-md mx-auto shadow-xl flex flex-col transition-colors">
 
         <!-- Header : ESPN-style live match banner -->
-        <div class="espn-header rounded-2xl mb-4 overflow-hidden shadow-lg relative">
-            <div class="espn-header-top flex items-center justify-between px-4 pt-3">
+        <div class="espn-header rounded-2xl mb-2 overflow-hidden shadow-lg relative">
+            <div class="espn-header-top flex items-center justify-between px-3 pt-2">
                 <span class="flex items-center gap-1.5">
                     <span class="live-dot"></span>
                     <span class="text-[10px] font-black tracking-[0.2em] text-red-400 uppercase">Live</span>
@@ -1909,7 +2269,7 @@ body.match-result-active nav {
         </div>
 
         <!-- Navigation Tabs -->
-        <div class="flex espn-tabbar p-1 rounded-xl mb-4 text-[11px] font-bold gap-0.5 shadow-sm items-stretch">
+        <div class="flex espn-tabbar p-1 rounded-xl mb-1 text-[11px] font-bold gap-0.5 shadow-sm items-stretch">
             <button id="tab-tournament" onclick="switchTab('tournament')" class="flex-1 py-2.5 px-0.5 rounded-lg text-center espn-tab-active transition-all">🏟️ Cup</button>
             <button id="tab-toss" onclick="switchTab('toss')" class="flex-1 py-2 px-0.5 rounded-lg text-center espn-tab-inactive transition-all">🪙 Toss</button>
             <button id="tab-scoring" onclick="switchTab('scoring')" class="flex-1 py-2.5 px-0.5 rounded-lg text-center espn-tab-inactive transition-all">📊 Score</button>
@@ -1942,7 +2302,13 @@ body.match-result-active nav {
             </div>
 
             <div class="theme-panel border theme-border rounded-xl p-4 space-y-3">
-                <h3 class="text-sm font-black theme-text uppercase tracking-wider border-b theme-border pb-2">Create Match</h3>
+                <div class="flex gap-1.5 border-b theme-border pb-2">
+                    <button type="button" id="cup-subtab-create" onclick="window.setCupSubTab&&window.setCupSubTab('create')" class="cup-subtab flex-1 py-2.5 px-1 rounded-lg text-[10px] font-black uppercase tracking-wide bg-emerald-600 text-white shadow leading-tight" style="touch-action:manipulation;-webkit-tap-highlight-color:transparent">Create Match</button>
+                    <button type="button" id="cup-subtab-settings" onclick="window.setCupSubTab&&window.setCupSubTab('settings')" class="cup-subtab flex-1 py-2.5 px-1 rounded-lg text-[10px] font-black uppercase tracking-wide bg-slate-200 text-slate-700 leading-tight" style="touch-action:manipulation;-webkit-tap-highlight-color:transparent">Match Settings</button>
+                    <button type="button" id="cup-subtab-ui" onclick="window.setCupSubTab&&window.setCupSubTab('ui')" class="cup-subtab flex-1 py-2.5 px-1 rounded-lg text-[10px] font-black uppercase tracking-wide bg-slate-200 text-slate-700 leading-tight" style="touch-action:manipulation;-webkit-tap-highlight-color:transparent">UI Settings</button>
+                </div>
+                <div id="cup-sub-create" class="space-y-3">
+                <h3 class="text-sm font-black theme-text uppercase tracking-wider">Create Match</h3>
                 <div>
                     <label class="text-xs theme-muted font-semibold block mb-1">Match Type</label>
                     <select id="cup-match-type" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm font-bold" onchange="try{updateMatchDescHeader();}catch(e){}">
@@ -1971,30 +2337,21 @@ body.match-result-active nav {
                     <label class="text-xs theme-muted font-semibold block mb-1">Commentators <span class="font-normal">(optional, comma-separated)</span></label>
                     <input type="text" id="cup-commentators" placeholder="e.g. Anil, Suresh" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm">
                 </div>
+                <div>
+                    <label class="text-xs theme-muted font-semibold block mb-1">Venue <span class="font-normal">(optional)</span></label>
+                    <input type="text" id="cup-venue" placeholder="e.g. Lords, Wankhede, Local ground" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm">
+                </div>
+                <button onclick="cupStartMatch()" id="cup-start-match-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl text-sm uppercase tracking-wider shadow">▶ Start Match</button>
+                </div><!-- /cup-sub-create -->
 
-                <!-- Match settings ABOVE Start Match — collapsible -->
-                <div class="border theme-border rounded-xl p-3 space-y-3 bg-slate-50/50">
-                    <button type="button" onclick="toggleCupMatchSettings()" class="w-full flex items-center justify-between text-sm font-black theme-text uppercase tracking-wider">
-                        <span>⚙️ Match Settings</span>
-                        <span id="cup-ms-arrow">▼</span>
-                    </button>
-                    <div id="cup-match-settings-body" class="hidden space-y-3">
+                <!-- Match settings panel (shown via Cup sub-tab) -->
+                <div id="cup-match-settings-wrap" class="hidden border theme-border rounded-xl p-3 space-y-3 bg-slate-50/50">
+                    <h3 class="text-sm font-black theme-text uppercase tracking-wider">Match Settings</h3>
+                    <div id="cup-match-settings-body" class="space-y-3">
                     <div class="grid grid-cols-2 gap-2">
-                        <div>
+                        <div class="col-span-2">
                             <label class="text-xs theme-muted font-semibold block">Max Overs</label>
                             <input type="number" id="cup-max-overs" min="1" max="50" value="8" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm font-bold" onchange="syncCupToScoreboardSettings()">
-                        </div>
-                        <div>
-                            <label class="text-xs theme-muted font-semibold block">UI Theme</label>
-                            <select id="cup-theme" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm font-bold" onchange="syncCupToScoreboardSettings(); applyTheme();">
-                                <option value="light" selected>Light</option>
-                                <option value="dark">Dark</option>
-                                <option value="navy">Navy Matte</option>
-                                <option value="amazon">Amazon</option>
-                                <option value="sports">Sports</option>
-                                <option value="league">League Pro (Dark Glass)</option>
-                                <option value="glass">Light Glass</option>
-                            </select>
                         </div>
                         <div class="col-span-2">
                             <label class="text-xs theme-muted font-semibold block">Super Overs (e.g. 4,6 or 4.6)</label>
@@ -2033,24 +2390,33 @@ body.match-result-active nav {
                         </div>
                     </div>
                     <p class="text-[10px] theme-muted">Players are managed in Teams &amp; Squad above. Team A/B selection loads that roster into the scoreboard.</p>
-                    </div>
-                </div>
 
-                
-                <!-- UI Theme (above Start Match) -->
-                <div class="border theme-border rounded-xl p-3 space-y-2 bg-indigo-50/40">
-                    <label class="text-xs font-black theme-text uppercase tracking-wider block">🎨 UI Theme</label>
-                    <select id="cfg-theme" class="w-full border theme-border p-2 rounded-lg text-sm font-bold theme-card theme-text" onchange="applyTheme()">
-                        <option value="light" selected>Light</option>
-                        <option value="dark">Dark</option>
-                        <option value="navy">Navy Matte</option>
-                        <option value="amazon">Amazon</option>
-                        <option value="sports">Sports</option>
-                        <option value="league">League Pro (Dark Glass)</option>
-                        <option value="glass">Light Glass</option>
-                    </select>
-                    <p class="text-[10px] theme-muted">Applies to the whole app instantly. League Pro = dark glass sports UI · Light Glass = frosted light.</p>
-                </div>
+                    <div class="border theme-border rounded-xl p-3 space-y-2 bg-emerald-50/50">
+                        <label class="text-xs font-black theme-text uppercase tracking-wider block">🏏 Batting Mode</label>
+                        <label class="flex items-center gap-2 text-sm theme-text font-semibold cursor-pointer">
+                            <input type="checkbox" id="cfg-dual-batting" class="w-4 h-4 rounded border-slate-300" onchange="setDualBattingMode(this.checked)">
+                            <span>2 players batting (auto strike rotate)</span>
+                        </label>
+                        <p class="text-[10px] theme-muted">Odd runs (1,3) and end of over swap striker ↔ non-striker automatically.</p>
+                    </div>
+                    </div><!-- /cup-match-settings-body -->
+                </div><!-- /cup-match-settings-wrap -->
+
+                <div id="cup-ui-settings-wrap" class="hidden border theme-border rounded-xl p-3 space-y-3 bg-sky-50/40">
+                    <h3 class="text-sm font-black theme-text uppercase tracking-wider">UI Settings</h3>
+                    <div>
+                        <label class="text-xs theme-muted font-semibold block mb-1">UI Theme</label>
+                        <select id="cup-theme" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm font-bold" onchange="syncCupToScoreboardSettings(); applyTheme();">
+                            <option value="light" selected>Light</option>
+                            <option value="dark">Dark</option>
+                            <option value="navy">Navy Matte</option>
+                            <option value="amazon">Amazon</option>
+                            <option value="sports">Sports</option>
+                            <option value="league">League Pro (Dark Glass)</option>
+                            <option value="glass">Light Glass</option>
+                        </select>
+                    </div>
+
                 <div class="border theme-border rounded-xl p-3 space-y-2 bg-sky-50/50">
                     <label class="text-xs font-black theme-text uppercase tracking-wider block">📊 Scoreboard display</label>
                     <p class="text-[10px] theme-muted mb-1">Choose one format (not both at once)</p>
@@ -2080,18 +2446,12 @@ body.match-result-active nav {
                         </button>
                     </div>
                 </div>
-                <div class="border theme-border rounded-xl p-3 space-y-2 bg-emerald-50/50">
-                    <label class="text-xs font-black theme-text uppercase tracking-wider block">🏏 Batting Mode</label>
-                    <label class="flex items-center gap-2 text-sm theme-text font-semibold cursor-pointer">
-                        <input type="checkbox" id="cfg-dual-batting" class="w-4 h-4 rounded border-slate-300" onchange="setDualBattingMode(this.checked)">
-                        <span>2 players batting (auto strike rotate)</span>
-                    </label>
-                    <p class="text-[10px] theme-muted">Odd runs (1,3) and end of over swap striker ↔ non-striker automatically.</p>
-                </div>
+                
+</div><!-- /cup-ui-settings-wrap -->
 
-<button onclick="cupStartMatch()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl text-sm uppercase tracking-wider shadow">▶ Start Match</button>
-            </div>
-        </div>
+            </div><!-- /cup create+settings panel -->
+
+        </div><!-- /page-tournament -->
 
         <!-- PAGE: TOSS -->
         <div id="page-toss" class="hidden space-y-4">
@@ -2180,16 +2540,7 @@ body.match-result-active nav {
                 </div>
             </div>
 
-            <!-- PDF Download - Small button on 1st Page only (fixed) -->
-            <div class="theme-panel border theme-border rounded-xl p-3 shadow-sm flex justify-between items-center">
-                <div>
-                    <p class="text-xs font-bold theme-text uppercase tracking-wider flex items-center gap-1">📄 Export Report</p>
-                    <p class="text-[11px] theme-muted">All pages as PDF</p>
-                </div>
-                <button onclick="downloadFullPDF(event)" class="w-10 h-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center shadow text-lg transition-colors" title="Download PDF">
-                    📄
-                </button>
-            </div>
+
         </div>
 
 
@@ -2418,7 +2769,7 @@ body.match-result-active nav {
                         <select id="select-bowler" class="w-full text-sm p-1.5 mb-2 rounded text-white focus:outline-none player-select-merged" onchange="updateView()"></select>
                         <div class="space-y-0.5 mt-auto" id="bowler-stats-panel">
                             <p id="live-bowler-wickets" class="text-xl font-black leading-snug" style="color:#fff!important;-webkit-text-fill-color:#fff!important">0 (0.0)</p>
-                            <p class="text-xs text-slate-300 font-medium">Runs: <span id="live-bowler-runs" class="text-white font-bold">0</span> • Extras (Wd/Nb/Lb): <span id="live-extra-count" class="text-purple-300 font-bold">0</span></p>
+                            <p class="text-xs text-slate-300 font-medium">Runs: <span id="live-bowler-runs" class="text-white font-bold">0</span> • Extras: <span id="live-extra-count" class="text-purple-300 font-bold">—</span></p>
                             <p class="text-xs text-slate-300 font-medium">Dots: <span id="live-bowler-dots" class="text-amber-300 font-bold">0</span></p>
                             <p class="text-xs text-slate-300 font-medium">Econ: <span id="live-bowler-econ" class="text-white font-bold">0.00</span></p>
                         </div>
@@ -2472,6 +2823,7 @@ body.match-result-active nav {
                                                     <th class="p-1.5 text-center">R</th>
                                                     <th class="p-1.5 text-center">W</th>
                                                     <th class="p-1.5 text-center">Dot</th>
+                                                    <th class="p-1.5 text-center">Extras</th>
                                                     <th class="p-1.5 text-center">Econ</th>
                                                 </tr>
                                             </thead>
@@ -2662,6 +3014,7 @@ body.match-result-active nav {
                                 <th class="p-2 text-center font-bold">R</th>
                                 <th class="p-2 text-center font-bold text-red-600">W</th>
                                 <th class="p-2 text-center font-bold">Dots</th>
+                                <th class="p-2 text-center font-bold text-fuchsia-700">Extras</th>
                                 <th class="p-2 text-center font-bold text-blue-800">Econ</th>
                             </tr>
                         </thead>
@@ -2703,6 +3056,7 @@ body.match-result-active nav {
                                 <th class="p-2 text-center font-bold">R</th>
                                 <th class="p-2 text-center font-bold text-red-600">W</th>
                                 <th class="p-2 text-center font-bold">Dots</th>
+                                <th class="p-2 text-center font-bold text-fuchsia-700">Extras</th>
                                 <th class="p-2 text-center font-bold text-orange-800">Econ</th>
                             </tr>
                         </thead>
@@ -3098,15 +3452,18 @@ body.match-result-active nav {
         blue: { bgMain: 'bg-blue-600', hex: '#2563eb' }, indigo: { bgMain: 'bg-indigo-600', hex: '#4f46e5' }, cyan: { bgMain: 'bg-cyan-600', hex: '#0891b2' },
         orange: { bgMain: 'bg-orange-500', hex: '#f97316' }, red: { bgMain: 'bg-red-500', hex: '#ef4444' }, emerald: { bgMain: 'bg-emerald-500', hex: '#10b981' }
     };
-    const DISMISSAL_TYPES = ['Bowled', 'Hit out of box', 'Hit wicket', 'Catch out', 'Not playing'];
+    const DISMISSAL_TYPES = ['Bowled', 'Catch out', 'LBW', 'Stumped', 'Run out', 'Hit wicket', 'Hit out of box', 'Not playing'];
 
     function isNotPlayingDismissal(dismissal) {
         var d = String(dismissal || '').trim().toLowerCase();
         return d === 'not playing' || d === 'dismissed' || d === 'retired' || d === 'retired out';
     }
     function isBowlerCreditedWicket(dismissal) {
-        // Administrative outs do not count on bowler / purple-cap stats
-        return !isNotPlayingDismissal(dismissal);
+        // Administrative outs + run outs do not count on bowler / purple-cap stats
+        if (isNotPlayingDismissal(dismissal)) return false;
+        var d = String(dismissal || '').trim().toLowerCase();
+        if (d === 'run out' || d === 'runout' || d.indexOf('run out') >= 0) return false;
+        return true;
     }
 
     let teamConfig = { A: { name: "Serene Tigers", color: "blue", count: 7 }, B: { name: "Serene Warriors", color: "orange", count: 7 } };
@@ -3327,6 +3684,7 @@ body.match-result-active nav {
     let currentMatchStage = 'normal'; // normal | knockout | quarter | semi | final
     let currentUmpires = '';
     let currentCommentators = '';
+    let currentVenue = '';
 
     function saveCupTeams() {
         try { localStorage.setItem(CUP_TEAMS_KEY, JSON.stringify(cupTeams)); } catch(e){}
@@ -3381,6 +3739,50 @@ body.match-result-active nav {
             if (sbType) sbType.textContent = st;
         } catch(e) {}
     }
+    
+    function setCupSubTab(which){
+        try{
+            which = which || 'create';
+            var create = document.getElementById('cup-sub-create');
+            var settings = document.getElementById('cup-match-settings-wrap');
+            var ui = document.getElementById('cup-ui-settings-wrap');
+            var btnC = document.getElementById('cup-subtab-create');
+            var btnS = document.getElementById('cup-subtab-settings');
+            var btnU = document.getElementById('cup-subtab-ui');
+            var startBtn = document.getElementById('cup-start-match-btn');
+            var inactive = 'flex-1 py-2 px-1 rounded-lg text-[10px] font-black uppercase tracking-wide bg-slate-200 text-slate-700 leading-tight';
+            var active = 'flex-1 py-2 px-1 rounded-lg text-[10px] font-black uppercase tracking-wide bg-emerald-600 text-white shadow leading-tight';
+            function hideEl(el){
+                if(!el) return;
+                el.classList.add('hidden');
+                el.style.display = 'none';
+            }
+            function showEl(el){
+                if(!el) return;
+                el.classList.remove('hidden');
+                el.style.display = '';
+            }
+            hideEl(create); hideEl(settings); hideEl(ui);
+            if(startBtn){ startBtn.classList.add('hidden'); startBtn.style.display = 'none'; }
+            if(btnC) btnC.className = inactive;
+            if(btnS) btnS.className = inactive;
+            if(btnU) btnU.className = inactive;
+            if(which === 'settings'){
+                showEl(settings);
+                if(btnS) btnS.className = active;
+            } else if(which === 'ui'){
+                showEl(ui);
+                if(btnU) btnU.className = active;
+            } else {
+                showEl(create);
+                if(startBtn){ startBtn.classList.remove('hidden'); startBtn.style.display = ''; }
+                if(btnC) btnC.className = active;
+            }
+        }catch(e){ try{ console.log('setCupSubTab', e); }catch(e2){} }
+    }
+    try{ window.setCupSubTab = setCupSubTab; }catch(eW){}
+
+
     function toggleCupMatchSettings() {
         var body = document.getElementById('cup-match-settings-body');
         var arrow = document.getElementById('cup-ms-arrow');
@@ -3406,7 +3808,7 @@ body.match-result-active nav {
             var aCount = document.getElementById('cup-cfg-teamA-count');
             var bCount = document.getElementById('cup-cfg-teamB-count');
             if (overs && document.getElementById('cfg-max-overs')) document.getElementById('cfg-max-overs').value = overs.value;
-            if (theme && document.getElementById('cfg-theme')) document.getElementById('cfg-theme').value = theme.value;
+            if (theme && (document.getElementById('cup-theme')||document.getElementById('cfg-theme'))) (document.getElementById('cup-theme')||document.getElementById('cfg-theme')).value = theme.value;
             var superEl = document.getElementById('cup-super-overs');
             if (superEl && document.getElementById('cfg-super-overs')) {
                 document.getElementById('cfg-super-overs').value = superEl.value;
@@ -3434,7 +3836,7 @@ body.match-result-active nav {
         try {
             var set = function(id, val) { var el = document.getElementById(id); if (el && val != null && val !== '') el.value = val; };
             if (document.getElementById('cfg-max-overs')) set('cup-max-overs', document.getElementById('cfg-max-overs').value);
-            if (document.getElementById('cfg-theme')) set('cup-theme', document.getElementById('cfg-theme').value);
+            if ((document.getElementById('cup-theme')||document.getElementById('cfg-theme'))) set('cup-theme', (document.getElementById('cup-theme')||document.getElementById('cfg-theme')).value);
             if (document.getElementById('cfg-super-overs')) set('cup-super-overs', document.getElementById('cfg-super-overs').value);
             if (document.getElementById('cfg-teamA-name')) set('cup-cfg-teamA-name', document.getElementById('cfg-teamA-name').value);
             if (document.getElementById('cfg-teamB-name')) set('cup-cfg-teamB-name', document.getElementById('cfg-teamB-name').value);
@@ -3799,8 +4201,10 @@ function cupRenameTeam(idx) {
         currentMatchStage = type;
         var umpEl = document.getElementById('cup-umpires');
         var comEl = document.getElementById('cup-commentators');
+        var venEl = document.getElementById('cup-venue');
         currentUmpires = umpEl ? umpEl.value.trim() : '';
         currentCommentators = comEl ? comEl.value.trim() : '';
+        currentVenue = venEl ? venEl.value.trim() : '';
         // Push Cup match settings + team pick into scoreboard Match Settings
         var cupAName = document.getElementById('cup-cfg-teamA-name');
         var cupBName = document.getElementById('cup-cfg-teamB-name');
@@ -4087,7 +4491,7 @@ function cupRenameTeam(idx) {
             selNonStriker: selNon,
             selBowler: selBowler,
             activeTab: 'scoring',
-            theme: document.getElementById('cfg-theme') ? document.getElementById('cfg-theme').value : 'light',
+            theme: (document.getElementById('cup-theme')||document.getElementById('cfg-theme')) ? (document.getElementById('cup-theme')||document.getElementById('cfg-theme')).value : 'light',
             dualBatting: !!dualBattingMode,
             scoreFmt: scoreDisplayFormat,
             savedAt: Date.now()
@@ -4161,7 +4565,7 @@ function cupRenameTeam(idx) {
                 nonStriker: s.selNonStriker || '',
                 bowler: s.selBowler || s.lastBowler || ''
             };
-            if (s.theme && document.getElementById('cfg-theme')) document.getElementById('cfg-theme').value = s.theme;
+            if (s.theme && (document.getElementById('cup-theme')||document.getElementById('cfg-theme'))) (document.getElementById('cup-theme')||document.getElementById('cfg-theme')).value = s.theme;
             if (typeof s.dualBatting !== 'undefined') setDualBattingMode(!!s.dualBatting);
             if (s.scoreFmt === 'classic' || s.scoreFmt === 'dual') { scoreDisplayFormat = s.scoreFmt; applyScoreDisplayFormat(); }
             // Live match if toss done OR any balls scored
@@ -4288,8 +4692,9 @@ function cupRenameTeam(idx) {
             + '<path d="M72 82 Q82 78 92 82" fill="none" stroke="#fff" stroke-width="1.5"/>'
             + '</svg>';
         box.appendChild(wrap);
+        box.style.pointerEvents = 'none';
         box.classList.add('show');
-        setTimeout(function(){ try { box.classList.remove('show'); box.innerHTML=''; } catch(e){} }, 800);
+        setTimeout(function(){ try { box.classList.remove('show'); box.innerHTML=''; } catch(e){} }, 350);
     }
 
 
@@ -4330,9 +4735,52 @@ function switchTab(tabId) {
             if(btn) btn.className = "flex-1 py-2 px-0.5 rounded-lg text-center espn-tab-inactive transition-all";
         }
 
-        toggleHidden(`page-${tabId}`, true);
-        var tabBtn = document.getElementById(`tab-${tabId}`);
+        toggleHidden('page-' + tabId, true);
+        // Force active page visible (defeats stale inline display:none / height:0)
+        try {
+            var activePage = document.getElementById('page-' + tabId);
+            if (activePage) {
+                activePage.classList.remove('hidden');
+                activePage.style.display = (tabId === 'scoring') ? 'flex' : 'block';
+                activePage.style.visibility = 'visible';
+                activePage.style.opacity = '1';
+                activePage.style.height = 'auto';
+                activePage.style.maxHeight = 'none';
+                activePage.style.overflow = 'visible';
+                activePage.style.pointerEvents = 'auto';
+            }
+            // Ensure all other pages truly hidden
+            var allPages = ['toss','tournament','scoring','stats','livefeed','rankings','players','history','reports','quickinfo'];
+            for (var pi = 0; pi < allPages.length; pi++) {
+                if (allPages[pi] === tabId) continue;
+                var op = document.getElementById('page-' + allPages[pi]);
+                if (!op) continue;
+                op.classList.add('hidden');
+                op.style.display = 'none';
+            }
+        } catch (eForce) {}
+        var tabBtn = document.getElementById('tab-' + tabId);
         if (tabBtn) tabBtn.className = "flex-1 py-2 px-0.5 rounded-lg text-center espn-tab-active transition-all";
+        try {
+            if (tabId === 'tournament') {
+                if (typeof setCupSubTab === 'function') setCupSubTab('create');
+                else if (window.setCupSubTab) window.setCupSubTab('create');
+            }
+            if (tabId === 'scoring') {
+                var sb = document.getElementById('scoreboard-card');
+                var track = document.getElementById('sb-swipe-track');
+                var wrap = document.getElementById('sb-result-wrap');
+                [sb, track, wrap].forEach(function(el){
+                    if (!el) return;
+                    el.style.display = '';
+                    el.style.visibility = 'visible';
+                    el.style.opacity = '1';
+                    el.style.height = 'auto';
+                    el.style.minHeight = '';
+                });
+                try { if (typeof updateView === 'function') updateView(); } catch (eUV) {}
+            }
+        } catch (eCup) {}
         try {
             // Always hide run pad when leaving Score (Cup / Rank / Hist / Info / Feed)
             if (tabId !== 'scoring') {
@@ -4394,12 +4842,12 @@ function switchTab(tabId) {
     }
 
     function applyTheme() {
-        var el = document.getElementById('cfg-theme') || document.getElementById('cup-theme');
+        var el = (document.getElementById('cup-theme')||document.getElementById('cfg-theme')) || document.getElementById('cup-theme');
         var theme = (el && el.value) ? el.value : 'light';
         // Keep both selects in sync
         try {
             var cup = document.getElementById('cup-theme');
-            var cfg = document.getElementById('cfg-theme');
+            var cfg = (document.getElementById('cup-theme')||document.getElementById('cfg-theme'));
             if (cup && cup.value !== theme) cup.value = theme;
             if (cfg && cfg.value !== theme) cfg.value = theme;
         } catch(e){}
@@ -4415,7 +4863,7 @@ function switchTab(tabId) {
         try {
             var t = localStorage.getItem('cup-theme') || 'light';
             var cup = document.getElementById('cup-theme');
-            var cfg = document.getElementById('cfg-theme');
+            var cfg = (document.getElementById('cup-theme')||document.getElementById('cfg-theme'));
             if (cup) cup.value = t;
             if (cfg) cfg.value = t;
             applyTheme();
@@ -4981,7 +5429,23 @@ function switchTab(tabId) {
         return item.q + ' (' + item.a + ')';
     }
 
-    function toggleHidden(id, show) { var el = document.getElementById(id); if (el) { if (show) el.classList.remove('hidden'); else el.classList.add('hidden'); } return el; }
+    function toggleHidden(id, show) {
+        var el = document.getElementById(id);
+        if (!el) return el;
+        if (show) {
+            el.classList.remove('hidden');
+            el.style.display = '';
+            el.style.visibility = '';
+            el.style.height = '';
+            el.style.maxHeight = '';
+            el.style.overflow = '';
+            el.style.pointerEvents = 'auto';
+        } else {
+            el.classList.add('hidden');
+            el.style.display = 'none';
+        }
+        return el;
+    }
     function esc(n) { return String(n).replace(/'/g, "\\'"); }
     function buildBattingRowsHTML(list, teamCode, forcePlayerList) {
         // History must use saved player list — never live battingStints
@@ -5048,14 +5512,31 @@ function switchTab(tabId) {
                 + '<td class="p-2 text-center text-[10px] align-top '+(p.isOut?'text-red-600 font-semibold':'text-slate-400')+'">'+how+'</td></tr>';
         }).join('');
     }
-    function buildBowlingRowsHTML(list) {
+        function buildBowlingRowsHTML(list) {
         list = list.filter(function (p) { return p.bowlBalls > 0; });
-        if (!list.length) return '<tr><td colspan="6" class="p-2 text-center text-xs italic text-slate-400">No bowling data yet</td></tr>';
+        if (!list.length) return '<tr><td colspan="7" class="p-2 text-center text-xs italic text-slate-400">No bowling data yet</td></tr>';
         return list.map(function (p) {
-            return '<tr class="cursor-pointer hover:bg-black/5" onclick="showPlayerDetail(\'' + esc(p.name) + '\')"><td class="p-2">' + p.name + '</td><td class="p-2 text-center">' + formatOvers(p.bowlBalls) + '</td><td class="p-2 text-center">' + p.bowlRuns + '</td><td class="p-2 text-center text-red-600 font-bold">' + p.wickets + '</td><td class="p-2 text-center">' + (p.dots || 0) + '</td><td class="p-2 text-center text-blue-800 font-bold">' + calcEcon(p.bowlRuns, p.bowlBalls) + '</td></tr>';
+            var wR = 0, nR = 0, lR = 0;
+            try {
+                (deliveryHistory || []).forEach(function (d) {
+                    var same = (d.bowlerId && p.id && d.bowlerId === p.id) || (d.bowler && p.name && String(d.bowler) === String(p.name));
+                    if (!same) return;
+                    var lab = String(d.chipLabel || '');
+                    var rc = (d.runsConceded != null ? d.runsConceded : d.runs) | 0;
+                    if (lab === 'WD' || d.isWide) wR += (rc || 1);
+                    else if (lab === 'NB' || d.isNoBall) nR += (rc || 1);
+                    else if (d.isLegBye || /^LB/i.test(lab) || d.type === 'legbye') lR += rc;
+                });
+            } catch (eEx) {}
+            var exBits = [];
+            if (wR) exBits.push('W-' + wR);
+            if (nR) exBits.push('N-' + nR);
+            if (lR) exBits.push('L-' + lR);
+            var exStr = exBits.length ? exBits.join(',') : '—';
+            return '<tr class="cursor-pointer hover:bg-black/5" onclick="showPlayerDetail(\'' + esc(p.name) + '\')"><td class="p-2">' + p.name + '</td><td class="p-2 text-center">' + formatOvers(p.bowlBalls) + '</td><td class="p-2 text-center">' + p.bowlRuns + '</td><td class="p-2 text-center text-red-600 font-bold">' + p.wickets + '</td><td class="p-2 text-center">' + (p.dots || 0) + '</td><td class="p-2 text-center text-[10px] text-fuchsia-700 font-bold">' + exStr + '</td><td class="p-2 text-center text-blue-800 font-bold">' + calcEcon(p.bowlRuns, p.bowlBalls) + '</td></tr>';
         }).join('');
     }
-    function howOutLabel(name, isOut, howOut, outFielder) {
+function howOutLabel(name, isOut, howOut, outFielder) {
         if (!isOut && !howOut) return 'not out';
         var label = howOut || '';
         if (isNotPlayingDismissal(label) || /^dismissed$/i.test(String(label))) return 'Not playing';
@@ -5370,7 +5851,7 @@ function placeBoundaryAnimationOnStriker(toast){
             showModal({
                 type: 'confirm',
                 title: 'Match Ended',
-                message: 'Undo last ball to keep scoring, or start a new match from Cup.',
+                message: 'Undo last ball to keep scoring, or start a new match (opens Toss).',
                 icon: '🏁',
                 confirmText: 'New Match',
                 cancelText: 'Result',
@@ -6483,12 +6964,30 @@ function placeBoundaryAnimationOnStriker(toast){
         }
         if (bowlRows) {
             var bowlers = players.filter(function(p){ return p.team === bowlT && ((p.bowlBalls||0) > 0 || (p.wickets||0) > 0); });
-            bowlRows.innerHTML = bowlers.map(function(p) {
+                        bowlRows.innerHTML = bowlers.map(function(p) {
                 var ov = Math.floor((p.bowlBalls||0)/6) + '.' + ((p.bowlBalls||0)%6);
                 var econ = (p.bowlBalls||0) ? (((p.bowlRuns||0) / p.bowlBalls) * 6).toFixed(2) : '0.00';
+                var wR = 0, nR = 0, lR = 0;
+                try {
+                    (deliveryHistory || []).forEach(function(d) {
+                        if (d.innings != null && d.innings !== currentInnings) return;
+                        var same = (d.bowlerId && p.id && d.bowlerId === p.id) || (d.bowler && p.name && String(d.bowler) === String(p.name));
+                        if (!same) return;
+                        var lab = String(d.chipLabel || '');
+                        var rc = (d.runsConceded != null ? d.runsConceded : d.runs) | 0;
+                        if (lab === 'WD' || d.isWide) wR += (rc || 1);
+                        else if (lab === 'NB' || d.isNoBall) nR += (rc || 1);
+                        else if (d.isLegBye || /^LB/i.test(lab) || d.type === 'legbye') lR += rc;
+                    });
+                } catch (eEx) {}
+                var exBits = [];
+                if (wR) exBits.push('W-' + wR);
+                if (nR) exBits.push('N-' + nR);
+                if (lR) exBits.push('L-' + lR);
+                var exStr = exBits.length ? exBits.join(',') : '—';
                 var safe = String(p.name).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-                return '<tr class="border-b border-slate-800 cursor-pointer hover:bg-white/5" onclick="showPlayerDirectionWheel(\'' + safe + '\',\'bowl\')"><td class="p-1.5 font-semibold text-sky-200 underline decoration-dotted">' + p.name + '</td><td class="p-1.5 text-center">' + ov + '</td><td class="p-1.5 text-center">' + (p.bowlRuns||0) + '</td><td class="p-1.5 text-center font-bold text-red-400">' + (p.wickets||0) + '</td><td class="p-1.5 text-center text-amber-300">' + (p.dots||0) + '</td><td class="p-1.5 text-center text-sky-300">' + econ + '</td></tr>';
-            }).join('') || '<tr><td colspan="6" class="p-3 text-center text-slate-500 italic">No bowling yet</td></tr>';
+                return '<tr class="border-b border-slate-800 cursor-pointer hover:bg-white/5" onclick="showPlayerDirectionWheel(\'' + safe + '\',\'bowl\')"><td class="p-1.5 font-semibold text-sky-200 underline decoration-dotted">' + p.name + '</td><td class="p-1.5 text-center">' + ov + '</td><td class="p-1.5 text-center">' + (p.bowlRuns||0) + '</td><td class="p-1.5 text-center font-bold text-red-400">' + (p.wickets||0) + '</td><td class="p-1.5 text-center text-amber-300">' + (p.dots||0) + '</td><td class="p-1.5 text-center text-[10px] text-fuchsia-300 font-bold">' + exStr + '</td><td class="p-1.5 text-center text-sky-300">' + econ + '</td></tr>';
+            }).join('') || '<tr><td colspan="7" class="p-3 text-center text-slate-500 italic">No bowling yet</td></tr>';
         }
         // Direction wheels — batsman (scored) + bowler (conceded)
         try {
@@ -6563,7 +7062,7 @@ function placeBoundaryAnimationOnStriker(toast){
             type: 'select', title: 'How was the batsman out?', message: 'Select the dismissal type to record the wicket.', icon: '💥',
             options: DISMISSAL_TYPES.map(d => ({ label: d, value: d })),
             onSelect: function(dismissal) {
-                if (dismissal === 'Catch out') {
+                if (dismissal === 'Catch out' || dismissal === 'Run out') {
                     updateHeaderTeamScores();
             var batT = currentInnings === 1 ? firstBattingTeam : (firstBattingTeam === 'A' ? 'B' : 'A');
                     var fieldT = batT === 'A' ? 'B' : 'A';
@@ -6574,7 +7073,7 @@ function placeBoundaryAnimationOnStriker(toast){
                     }
                     showModal({
                         type: 'select',
-                        title: 'Who took the catch?',
+                        title: (dismissal === 'Run out' ? 'Who was involved in the run out?' : 'Who took the catch?'),
                         message: 'Select fielder from ' + (teamConfig[fieldT] ? teamConfig[fieldT].name : 'fielding team'),
                         icon: '🧤',
                         options: fielders.map(function(p){ return { label: p.name, value: p.name }; }),
@@ -7281,19 +7780,24 @@ function updateView() {
                 bwWEl.style.webkitTextFillColor = '#ffffff'; bwWEl.style.visibility = 'visible';
             }
             var bwREl = document.getElementById('live-bowler-runs'); if (bwREl) bwREl.textContent = bw ? (bw.bowlRuns || 0) : 0;
-            var bwExtras = 0;
+            var wR = 0, nR = 0, lR = 0;
             if (bw) {
                 for (var d = 0; d < deliveryHistory.length; d++) {
                     var dl = deliveryHistory[d];
-                    if (dl.innings === currentInnings && dl.bowlerId === bw.id) {
+                    if (dl.innings === currentInnings && (dl.bowlerId === bw.id || dl.bowler === bw.name)) {
                         var lab = String(dl.chipLabel || '');
                         var rc = (dl.runsConceded != null ? dl.runsConceded : dl.runs) | 0;
-                        if (lab === 'WD' || lab === 'NB' || dl.isWide || dl.isNoBall) bwExtras += (rc || 1);
-                        else if (dl.isLegBye || /^LB/i.test(lab) || dl.type === 'legbye') bwExtras += rc;
+                        if (lab === 'WD' || dl.isWide) wR += (rc || 1);
+                        else if (lab === 'NB' || dl.isNoBall) nR += (rc || 1);
+                        else if (dl.isLegBye || /^LB/i.test(lab) || dl.type === 'legbye') lR += rc;
                     }
                 }
             }
-            var exEl = document.getElementById('live-extra-count'); if (exEl) exEl.textContent = bwExtras;
+            var exBits = [];
+            if (wR) exBits.push('W-' + wR);
+            if (nR) exBits.push('N-' + nR);
+            if (lR) exBits.push('L-' + lR);
+            var exEl = document.getElementById('live-extra-count'); if (exEl) exEl.textContent = exBits.length ? exBits.join(',') : '—';
             var bwDEl = document.getElementById('live-bowler-dots'); if (bwDEl) bwDEl.textContent = bw ? (bw.dots || 0) : 0;
             var bwEconEl = document.getElementById('live-bowler-econ'); if (bwEconEl) bwEconEl.textContent = bw ? calcEcon(bw.bowlRuns, bw.bowlBalls) : '0.00';
 
@@ -7863,7 +8367,10 @@ function updateView() {
                     totalBalls: (totalBalls|0) + (firstInningsBalls|0)
                 },
                 stage: (typeof currentMatchStage!=='undefined'?currentMatchStage:'normal'),
-                matchDescription: (typeof getMatchDescription==='function'?getMatchDescription():'')
+                matchDescription: (typeof getMatchDescription==='function'?getMatchDescription():''),
+                umpires: (typeof currentUmpires!=='undefined'?currentUmpires:'') || '',
+                commentators: (typeof currentCommentators!=='undefined'?currentCommentators:'') || '',
+                venue: (typeof currentVenue!=='undefined'?currentVenue:'') || ''
             };
             hist.push(entry);
             // Cap to last 50 matches
@@ -8182,7 +8689,7 @@ function updateView() {
         rebatExtraWickets={1:0,2:0}; rebatPromptShown={1:false,2:false}; battingStints=[]; currentStintId=1;
         requireBatsmanChange=false; requireBowlerChange=false; lastStriker=''; lastBowler='';
         strikerBoundaryStreak = 0; lastStrikerForStreak = null; bowlerWicketStreak = {}; bowlerJustHatTrick = {};
-        currentMatchStage = 'normal'; currentUmpires = ''; currentCommentators = '';
+        currentMatchStage = 'normal'; currentUmpires = ''; currentCommentators = ''; currentVenue = '';
         toggleHidden('winner-screen', false); setMatchResultMode(false);
         var controls = document.getElementById('scoring-controls-panel');
         if (controls) controls.style.display = '';
@@ -8195,13 +8702,13 @@ function updateView() {
         initSelectors(true, true); resetTossPanel();
         try { localStorage.removeItem('cricket_scorer_match_state'); } catch(e){}
         updateView();
-        switchTab('tournament');
+        switchTab('toss');
     }
     function handleNewMatchClick() {
         showModal({
             type: 'confirm',
             title: "Start New Match?",
-            message: "Scoreboard will be reset. You will return to Cup to select the next match.",
+            message: "Scoreboard will be reset. You will go to the Toss page for the next match.",
             icon: "🔄",
             confirmText: "Reset",
             cancelText: "Cancel",
@@ -9171,6 +9678,7 @@ function computeManOfTheMatch(plist) {
                 var badgeCls = stageColors[st] || 'bg-slate-500';
                 var desc = m.matchDescription || stLab;
                 var officials = '';
+                if (m.venue) officials += '<p class="text-[11px] theme-muted mt-0.5">📍 Venue: '+m.venue+'</p>';
                 if (m.umpires) officials += '<p class="text-[11px] theme-muted mt-0.5">Umpires: '+m.umpires+'</p>';
                 if (m.commentators) officials += '<p class="text-[11px] theme-muted">Commentators: '+m.commentators+'</p>';
                 return '<div class="theme-card border theme-border rounded-xl p-3 shadow-sm history-print-card"><div class="flex justify-between items-start"><div class="flex-1 pr-2"><p class="text-[11px] font-black uppercase tracking-widest theme-muted">Match #'+m.matchNo+' • '+m.date+' '+m.time+'</p><span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase text-white '+badgeCls+'">'+desc+'</span><p class="font-bold text-sm mt-1 theme-text">'+m.teamA+' vs '+m.teamB+'</p><p class="text-xs theme-muted mt-1">'+m.score+'/'+m.wickets+' in '+m.overs+'/'+m.maxOvers+' ov • Target '+(m.targetScore||'-')+'</p><p class="text-xs font-bold text-emerald-600 mt-1">'+winText+'</p>'+officials+'</div><div class="flex flex-col gap-1.5 shrink-0 no-print"><button onclick="openHistoryDetail('+m.matchNo+')" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[11px] font-bold uppercase">View 📋</button><button onclick="downloadMatchCommentaryFile('+m.matchNo+')" class="px-3 py-1 bg-slate-700 text-white rounded-lg text-[10px] font-bold uppercase">🎙️ Comm</button><button onclick="deleteHistoryEntry('+m.matchNo+')" class="px-3 py-1 bg-red-50 text-red-600 border border-red-200 rounded-lg text-[10px] font-bold uppercase">🗑️ Delete</button></div></div></div>';
@@ -9294,6 +9802,7 @@ function computeManOfTheMatch(plist) {
             var stLab = m.matchDescription || m.stageLabel || (typeof stageLabel==='function'?stageLabel(m.stage || 'normal'):(m.stage||'Match'));
             var summaryText = bowlTeamName1 + ' posted ' + (m.firstInningsScore!=null?m.firstInningsScore:'—') + '. ' + batTeamName2 + ' was ' + (m.score!=null?m.score:'—') + '/' + (m.wickets!=null?m.wickets:'—') + ' in ' + (m.overs||'—') + ' overs (Target: ' + (m.targetScore!=null?m.targetScore:'-') + '). ' + winText;
             var officialsHtml = '';
+            if (m.venue) officialsHtml += '<p class="text-xs mt-2 opacity-90">📍 Venue: ' + m.venue + '</p>';
             if (m.umpires) officialsHtml += '<p class="text-xs mt-2 opacity-90">Umpires: ' + m.umpires + '</p>';
             if (m.commentators) officialsHtml += '<p class="text-xs opacity-90">Commentators: ' + m.commentators + '</p>';
             if (m.manOfTheMatch) officialsHtml += '<p class="text-xs mt-1 font-bold">⭐ Man of the Match: ' + m.manOfTheMatch + '</p>';
@@ -12022,7 +12531,7 @@ function updateVoiceToggleBtn() {
 
 
 
-    setInterval(updateScoreboardInnerScores, 250);
+    setInterval(function(){ try{ if(document.hidden) return; updateScoreboardInnerScores(); }catch(e){} }, 1000);
     setTimeout(updateScoreboardInnerScores, 100);
     // Soft live-refresh Quick Info (skips redraw if data+tab unchanged — prevents tab jump)
     setInterval(function(){
@@ -13687,6 +14196,301 @@ function updateVoiceToggleBtn() {
         <span id="count-B">7</span>
         <span id="config-arrow"></span>
     </div>
+
+
+
+<style id="app-stability-fix">
+/* Keep app responsive and Score page content visible */
+html, body {
+  height: auto !important;
+  min-height: 100% !important;
+  -webkit-overflow-scrolling: touch;
+}
+.app-shell {
+  min-height: 0 !important;
+  height: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.5rem !important;
+}
+.espn-header, .espn-tabbar { margin-bottom: 0.35rem !important; flex-shrink: 0 !important; }
+.espn-tabbar, .espn-tabbar button, .cup-subtab, button, a, input, select, label {
+  pointer-events: auto !important;
+  touch-action: manipulation;
+}
+.espn-tabbar button, .cup-subtab { position: relative; z-index: 20; cursor: pointer; }
+#page-transition-fx { pointer-events: none !important; z-index: 150 !important; }
+
+/* Hidden pages */
+#page-tournament.hidden, #page-toss.hidden, #page-scoring.hidden,
+#page-stats.hidden, #page-livefeed.hidden, #page-rankings.hidden,
+#page-players.hidden, #page-history.hidden, #page-quickinfo.hidden,
+#page-reports.hidden,
+#cup-match-settings-wrap.hidden, #cup-ui-settings-wrap.hidden, #cup-sub-create.hidden {
+  display: none !important;
+}
+
+/* Visible pages */
+#page-tournament:not(.hidden), #page-toss:not(.hidden),
+#page-stats:not(.hidden), #page-livefeed:not(.hidden),
+#page-rankings:not(.hidden), #page-players:not(.hidden),
+#page-history:not(.hidden), #page-quickinfo:not(.hidden) {
+  display: block !important;
+  visibility: visible !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* SCORE PAGE — never blank when active */
+#page-scoring:not(.hidden),
+body.scoring-active #page-scoring {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+  gap: 0.4rem !important;
+  padding-bottom: 9rem !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  margin: 0 !important;
+}
+body.scoring-active #page-scoring.hidden {
+  /* if class lag, still show while on score tab */
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+}
+
+#page-scoring:not(.hidden) #sb-result-wrap,
+#page-scoring:not(.hidden) #sb-swipe-track,
+#page-scoring:not(.hidden) #scoreboard-card,
+body.scoring-active #sb-result-wrap,
+body.scoring-active #sb-swipe-track,
+body.scoring-active #scoreboard-card {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 8rem !important;
+  overflow: visible !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+body.scoring-active #sb-swipe-inner {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  min-height: 8rem !important;
+}
+body.scoring-active #striker-card,
+body.scoring-active #bowler-card {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+#cup-match-settings-wrap:not(.hidden),
+#cup-ui-settings-wrap:not(.hidden),
+#cup-sub-create:not(.hidden) {
+  display: block !important;
+  visibility: visible !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+body.scoring-active #scoring-controls-panel {
+  position: fixed !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  bottom: 0 !important;
+  margin: 0 !important;
+  max-width: 28rem !important;
+  width: 100% !important;
+  z-index: 55 !important;
+  pointer-events: auto !important;
+}
+</style>
+
+
+
+<style id="score-layout-align">
+/* Align layout WITHOUT blocking vertical scroll */
+html, body {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  max-width: 100vw !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 100% !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-y: auto !important;
+  touch-action: pan-x pan-y !important;
+}
+.app-shell {
+  width: 100% !important;
+  max-width: 28rem !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 0.6rem !important;
+  padding-right: 0.6rem !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+  height: auto !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+#page-scoring:not(.hidden), body.scoring-active #page-scoring {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding-bottom: 11rem !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+  height: auto !important;
+  max-height: none !important;
+  box-sizing: border-box !important;
+}
+#sb-result-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+  box-sizing: border-box !important;
+}
+#sb-swipe-track {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+  border-radius: 1rem !important;
+  box-sizing: border-box !important;
+}
+#sb-swipe-inner {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  width: 200% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+#sb-swipe-inner > div {
+  flex: 0 0 50% !important;
+  width: 50% !important;
+  max-width: 50% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  padding: 0 2px !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+}
+#scoreboard-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+#scoring-tools-panel {
+  display: block !important;
+  visibility: visible !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0.5rem 0 0.25rem !important;
+  padding: 0.65rem !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+  z-index: 5 !important;
+  overflow: visible !important;
+}
+body.match-result-active #scoring-tools-panel { display: none !important; }
+body.scoring-active #scoring-controls-panel,
+body.scoring-active > #scoring-controls-panel.scoring-pad-pinned {
+  position: fixed !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  bottom: 0 !important;
+  top: auto !important;
+  width: 100% !important;
+  max-width: 28rem !important;
+  margin: 0 !important;
+  padding: 0.55rem 0.65rem !important;
+  padding-bottom: max(0.55rem, env(safe-area-inset-bottom)) !important;
+  box-sizing: border-box !important;
+  z-index: 60 !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  overflow: visible !important;
+}
+#scoring-controls-panel .grid {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 0.35rem !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+#scoring-controls-panel .score-btn,
+#scoring-controls-panel button {
+  min-width: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  font-size: 0.7rem !important;
+}
+/* Never trap the whole page in a non-scrolling box */
+body.scoring-active, body.scoring-active .app-shell {
+  overflow-y: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  position: static !important;
+}
+</style>
+
+
+<style id="scroll-enable-fix">
+html, body, .app-shell {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-y: auto !important;
+  touch-action: manipulation !important;
+}
+body.scoring-active {
+  overflow-y: auto !important;
+  position: static !important;
+  height: auto !important;
+}
+#page-scoring, #page-tournament, #page-toss, #page-stats,
+#page-livefeed, #page-rankings, #page-players, #page-history, #page-quickinfo {
+  overflow-y: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+</style>
 
 </body>
 </html>
