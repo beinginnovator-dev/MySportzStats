@@ -236,8 +236,8 @@ html, body {
   background: linear-gradient(145deg, #0f172a, #1e293b) !important;
   color: #f8fafc !important;
   border-radius: 1rem !important;
-  margin-bottom: 0.4rem !important;
-  padding: 0.5rem 0.75rem 0.75rem !important;
+  margin-bottom: 0.2rem !important;
+  padding: 0.35rem 0.65rem 0.4rem !important;
   overflow: hidden;
 }
 .espn-header * { color: inherit; }
@@ -515,6 +515,7 @@ body:not(.scoring-active) #scoring-controls-panel { display: none !important; }
   margin-top: 0.5rem;
 }
 #cup-match-settings-wrap.hidden,
+#cup-tournament-wrap.hidden,
 #cup-ui-settings-wrap.hidden,
 #cup-sub-create.hidden { display: none !important; }
 #cup-match-settings-wrap:not(.hidden),
@@ -2208,6 +2209,51 @@ body.match-result-active nav {
 }
 </style>
 
+<style id="ui-revamp-overrides">
+/* 1. Single solid background colour for the whole UI (per theme) */
+html, body {
+    background: var(--bg-body) !important;
+    background-image: none !important;
+}
+body[data-theme="light"] {
+    --bg-body: #ffffff;
+    --bg-card: #ffffff;
+    --bg-panel: #f8fafc;
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --border-c: #e2e8f0;
+}
+body[data-theme="navy"] { --bg-body: #0b1e3f; --bg-card: #12295a; --bg-panel: #173470; --text-main: #ffffff; --text-muted: #cbd5e1; --border-c: #24448a; }
+body[data-theme="dark"] { --bg-body: #0b0b0f; --bg-card: #141419; --bg-panel: #1c1c24; --text-main: #ffffff; --text-muted: #a1a1aa; --border-c: #2a2a35; }
+
+/* Remove multi-colour gradients on page sections so every tab shares the same background */
+main, #app, #app-root, .app-shell, .page, .tab-panel, .tab-content, .view,
+[class*="stats"], [class*="rank"], [class*="dashboard"], [class*="board"], [class*="global"] {
+    background-image: none !important;
+}
+main, #app, #app-root, .app-shell, .page, .tab-panel, .tab-content, .view {
+    background-color: var(--bg-body) !important;
+}
+
+/* 2. Rounded corners on every button */
+button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-subtab,
+[class*="btn"], [class*="button"] {
+    border-radius: 14px !important;
+}
+
+/* 3. Button labels: smaller, kept inside the button */
+.cup-subtab, button.cup-subtab, #cup-subtab-create, #cup-subtab-settings, #cup-subtab-ui {
+    font-size: 9.5px !important;
+    line-height: 1.15 !important;
+    letter-spacing: 0.02em !important;
+    white-space: normal !important;
+    overflow: hidden !important;
+    text-overflow: clip !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    min-height: 38px;
+}
+</style>
 </head>
 <body class="p-0 m-0" data-theme="light">
 <div id="boundary-toast-container" class="boundary-toast-container"></div>
@@ -2239,7 +2285,7 @@ body.match-result-active nav {
         </div>
     </div>
 
-    <div class="app-shell w-full theme-card px-3 pt-1 pb-3 max-w-md mx-auto shadow-xl flex flex-col transition-colors">
+    <div class="app-shell w-full theme-card px-2 pt-0 pb-2 max-w-md mx-auto shadow-xl flex flex-col transition-colors">
 
         <!-- Header : ESPN-style live match banner -->
         <div class="espn-header rounded-2xl mb-2 overflow-hidden shadow-lg relative">
@@ -2261,8 +2307,8 @@ body.match-result-active nav {
             <div class="px-3 pt-1 pb-1 flex justify-center">
                 <div class="h-px w-24 bg-gradient-to-r from-transparent via-amber-400/50 to-transparent"></div>
             </div>
-            <div class="flex justify-center pb-3 pt-2">
-                <div id="innings-banner" class="bg-white/10 backdrop-blur text-white text-xs font-bold py-1.5 px-4 rounded-full inline-block uppercase tracking-wider border border-white/10">
+            <div class="flex justify-center pb-1 pt-0.5">
+                <div id="innings-banner" class="bg-white/10 backdrop-blur text-white text-[10px] font-bold py-1 px-3 rounded-full inline-block uppercase tracking-wider border border-white/10 max-w-full truncate">
                     Toss Awaiting Setup
                 </div>
             </div>
@@ -2270,14 +2316,13 @@ body.match-result-active nav {
 
         <!-- Navigation Tabs -->
         <div class="flex espn-tabbar p-1 rounded-xl mb-1 text-[11px] font-bold gap-0.5 shadow-sm items-stretch">
-            <button id="tab-tournament" onclick="switchTab('tournament')" class="flex-1 py-2.5 px-0.5 rounded-lg text-center espn-tab-active transition-all">🏟️ Cup</button>
-            <button id="tab-toss" onclick="switchTab('toss')" class="flex-1 py-2 px-0.5 rounded-lg text-center espn-tab-inactive transition-all">🪙 Toss</button>
-            <button id="tab-scoring" onclick="switchTab('scoring')" class="flex-1 py-2.5 px-0.5 rounded-lg text-center espn-tab-inactive transition-all">📊 Score</button>
-            <button id="tab-stats" onclick="switchTab('stats')" class="flex-1 py-2 px-0.5 rounded-lg text-center espn-tab-inactive transition-all">📋 Stats</button>
-            <button id="tab-livefeed" onclick="switchTab('livefeed')" class="flex-1 py-2 px-0.5 rounded-lg text-center espn-tab-inactive transition-all">🎙️ Feed</button>
-            <button id="tab-rankings" onclick="switchTab('rankings')" class="flex-1 py-2 px-0.5 rounded-lg text-center espn-tab-inactive transition-all">🏆 Rank</button>
-            <button id="tab-history" onclick="switchTab('history')" class="flex-1 py-2 px-0.5 rounded-lg text-center espn-tab-inactive transition-all">📚 Hist</button>
-            <button id="tab-quickinfo" onclick="switchTab('quickinfo')" class="flex-1 py-2 px-0.5 rounded-lg text-center espn-tab-inactive transition-all">⚡ Info</button>
+            <button id="tab-tournament" onclick="switchTab('tournament')" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-active transition-all"><span class="block text-base leading-none">🏆</span><span class="block text-[9px] mt-0.5">Cup</span></button>
+            <button id="tab-toss" onclick="switchTab('toss')" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all"><span class="block text-base leading-none">🎲</span><span class="block text-[9px] mt-0.5">Toss</span></button>
+            <button id="tab-scoring" onclick="switchTab('scoring')" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all"><span class="block text-base leading-none">🏏</span><span class="block text-[9px] mt-0.5">Score</span></button>
+            <button id="tab-stats" onclick="switchTab('stats')" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all"><span class="block text-base leading-none">⏱️</span><span class="block text-[9px] mt-0.5">Stats</span></button>
+            <button id="tab-rankings" onclick="switchTab('rankings')" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all"><span class="block text-base leading-none">🔥</span><span class="block text-[9px] mt-0.5">Rank</span></button>
+            <button id="tab-history" onclick="switchTab('history')" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all"><span class="block text-base leading-none">🗂️</span><span class="block text-[9px] mt-0.5">Hist</span></button>
+            <button id="tab-quickinfo" onclick="switchTab('quickinfo')" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all"><span class="block text-base leading-none">⚡</span><span class="block text-[9px] mt-0.5">Dash</span></button>
         </div>
 
         <!-- PAGE: CUP — simple teams + create match (first page) -->
@@ -2303,9 +2348,10 @@ body.match-result-active nav {
 
             <div class="theme-panel border theme-border rounded-xl p-4 space-y-3">
                 <div class="flex gap-1.5 border-b theme-border pb-2">
-                    <button type="button" id="cup-subtab-create" onclick="window.setCupSubTab&&window.setCupSubTab('create')" class="cup-subtab flex-1 py-2.5 px-1 rounded-lg text-[10px] font-black uppercase tracking-wide bg-emerald-600 text-white shadow leading-tight" style="touch-action:manipulation;-webkit-tap-highlight-color:transparent">Create Match</button>
-                    <button type="button" id="cup-subtab-settings" onclick="window.setCupSubTab&&window.setCupSubTab('settings')" class="cup-subtab flex-1 py-2.5 px-1 rounded-lg text-[10px] font-black uppercase tracking-wide bg-slate-200 text-slate-700 leading-tight" style="touch-action:manipulation;-webkit-tap-highlight-color:transparent">Match Settings</button>
-                    <button type="button" id="cup-subtab-ui" onclick="window.setCupSubTab&&window.setCupSubTab('ui')" class="cup-subtab flex-1 py-2.5 px-1 rounded-lg text-[10px] font-black uppercase tracking-wide bg-slate-200 text-slate-700 leading-tight" style="touch-action:manipulation;-webkit-tap-highlight-color:transparent">UI Settings</button>
+                    <button type="button" id="cup-subtab-create" onclick="window.setCupSubTab&&window.setCupSubTab('create')" class="cup-subtab flex-1 py-2 px-0.5 rounded-xl text-[8px] font-black uppercase tracking-wide bg-emerald-600 text-white shadow leading-tight" style="touch-action:manipulation;-webkit-tap-highlight-color:transparent">Create Match</button>
+                    <button type="button" id="cup-subtab-settings" onclick="window.setCupSubTab&&window.setCupSubTab('settings')" class="cup-subtab flex-1 py-2 px-0.5 rounded-xl text-[8px] font-black uppercase tracking-wide bg-slate-200 text-slate-700 leading-tight" style="touch-action:manipulation;-webkit-tap-highlight-color:transparent">Match Settings</button>
+                    <button type="button" id="cup-subtab-ui" onclick="window.setCupSubTab&&window.setCupSubTab('ui')" class="cup-subtab flex-1 py-2 px-0.5 rounded-xl text-[8px] font-black uppercase tracking-wide bg-slate-200 text-slate-700 leading-tight" style="touch-action:manipulation;-webkit-tap-highlight-color:transparent">UI Settings</button>
+                    <button type="button" id="cup-subtab-tournament" onclick="window.setCupSubTab&&window.setCupSubTab('tournament')" class="cup-subtab flex-1 py-2 px-0.5 rounded-xl text-[8px] font-black uppercase tracking-wide bg-slate-200 text-slate-700 leading-tight" style="touch-action:manipulation;-webkit-tap-highlight-color:transparent">Tournament</button>
                 </div>
                 <div id="cup-sub-create" class="space-y-3">
                 <h3 class="text-sm font-black theme-text uppercase tracking-wider">Create Match</h3>
@@ -2322,13 +2368,19 @@ body.match-result-active nav {
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="text-xs theme-muted font-semibold block mb-1">Team A</label>
-                        <select id="cup-team-a" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm font-bold" onchange="var n=document.getElementById('cup-cfg-teamA-name'); if(n){n.value=this.value; syncCupToScoreboardSettings();} try{updateMatchDescHeader();}catch(e){}"></select>
+                        <select id="cup-team-a" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm font-bold" onchange="var n=document.getElementById('cup-cfg-teamA-name'); if(n){n.value=this.value; syncCupToScoreboardSettings();} try{updateMatchDescHeader(); cupLoadSelectedRosters();}catch(e){}"></select>
                     </div>
                     <div>
                         <label class="text-xs theme-muted font-semibold block mb-1">Team B</label>
-                        <select id="cup-team-b" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm font-bold" onchange="var n=document.getElementById('cup-cfg-teamB-name'); if(n){n.value=this.value; syncCupToScoreboardSettings();} try{updateMatchDescHeader();}catch(e){}"></select>
+                        <select id="cup-team-b" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm font-bold" onchange="var n=document.getElementById('cup-cfg-teamB-name'); if(n){n.value=this.value; syncCupToScoreboardSettings();} try{updateMatchDescHeader(); cupLoadSelectedRosters();}catch(e){}"></select>
                     </div>
                 </div>
+                <!-- Squads managed under Teams only — not on Create Match -->
+                <input type="hidden" id="cup-cfg-teamA-count" value="12">
+                <input type="hidden" id="cup-cfg-teamB-count" value="12">
+                <div id="cup-players-list-A" class="hidden"></div>
+                <div id="cup-players-list-B" class="hidden"></div>
+                <p class="text-[10px] theme-muted">Squads come from <b>Teams &amp; Squad</b> above. Use team cards → Edit Players.</p>
                 <div>
                     <label class="text-xs theme-muted font-semibold block mb-1">Umpires <span class="font-normal">(optional, comma-separated)</span></label>
                     <input type="text" id="cup-umpires" placeholder="e.g. Ravi, Kumar" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm">
@@ -2343,6 +2395,50 @@ body.match-result-active nav {
                 </div>
                 <button onclick="cupStartMatch()" id="cup-start-match-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl text-sm uppercase tracking-wider shadow">▶ Start Match</button>
                 </div><!-- /cup-sub-create -->
+
+                <!-- Tournament schedule -->
+                <div id="cup-tournament-wrap" class="hidden border theme-border rounded-xl p-3 space-y-3" style="background:rgba(99,102,241,0.08)">
+                    <h3 class="text-sm font-black theme-text uppercase tracking-wider">Tournament schedule</h3>
+                    <p class="text-[11px] theme-muted">Schedule fixtures across teams. Start a match from any fixture.</p>
+                    <div>
+                        <label class="text-xs theme-muted font-semibold block mb-1">Tournament name</label>
+                        <input type="text" id="tour-name" placeholder="e.g. Fervent Premier League S2" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm font-bold" onchange="saveTournamentMeta()"/>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs theme-muted font-semibold block mb-1">Start date</label>
+                            <input type="date" id="tour-start" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveTournamentMeta()"/>
+                        </div>
+                        <div>
+                            <label class="text-xs theme-muted font-semibold block mb-1">End date</label>
+                            <input type="date" id="tour-end" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveTournamentMeta()"/>
+                        </div>
+                    </div>
+                    <div class="border theme-border rounded-lg p-2 space-y-2 theme-card">
+                        <p class="text-[10px] font-black theme-text uppercase">Add fixture</p>
+                        <select id="fix-team-a" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm"></select>
+                        <p class="text-center text-[10px] font-bold theme-muted">vs</p>
+                        <select id="fix-team-b" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm"></select>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="date" id="fix-date" class="border theme-border theme-card theme-text p-2 rounded text-sm"/>
+                            <input type="time" id="fix-time" class="border theme-border theme-card theme-text p-2 rounded text-sm"/>
+                        </div>
+                        <select id="fix-type" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm">
+                            <option value="group">Group</option>
+                            <option value="quarter">Quarter-final</option>
+                            <option value="semi">Semi-final</option>
+                            <option value="final">Final</option>
+                            <option value="friendly">Friendly</option>
+                        </select>
+                        <input type="text" id="fix-venue" placeholder="Venue (optional)" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm"/>
+                        <button type="button" onclick="addTournamentFixture()" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg text-xs uppercase">+ Add to schedule</button>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black theme-text uppercase mb-1">Fixtures</p>
+                        <div id="tour-fixtures-list" class="space-y-2"></div>
+                    <button type="button" onclick="shareTournamentSchedule()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase shadow mt-1">📤 Share Schedule</button>
+                    </div>
+                </div>
 
                 <!-- Match settings panel (shown via Cup sub-tab) -->
                 <div id="cup-match-settings-wrap" class="hidden border theme-border rounded-xl p-3 space-y-3 bg-slate-50/50">
@@ -2371,8 +2467,8 @@ body.match-result-active nav {
                                 <option value="red">Red</option>
                                 <option value="emerald">Emerald</option>
                             </select>
-                            <p class="text-[10px] theme-muted">Squad: <span id="cup-count-A">—</span> (from Teams list)</p>
-                            <input type="hidden" id="cup-cfg-teamA-count" value="7">
+                            <p class="text-[10px] theme-muted">Squad: <span id="cup-count-A">—</span> players (from Teams)</p>
+                            <input type="hidden" id="cup-cfg-teamA-count" value="11">
                         </div>
                         <div class="space-y-2 p-3 theme-card border theme-border rounded-lg">
                             <p class="text-xs font-black theme-text uppercase">Team B</p>
@@ -2385,8 +2481,8 @@ body.match-result-active nav {
                                 <option value="indigo">Indigo</option>
                                 <option value="cyan">Cyan</option>
                             </select>
-                            <p class="text-[10px] theme-muted">Squad: <span id="cup-count-B">—</span> (from Teams list)</p>
-                            <input type="hidden" id="cup-cfg-teamB-count" value="7">
+                            <p class="text-[10px] theme-muted">Squad: <span id="cup-count-B">—</span> players (from Teams)</p>
+                            <input type="hidden" id="cup-cfg-teamB-count" value="11">
                         </div>
                     </div>
                     <p class="text-[10px] theme-muted">Players are managed in Teams &amp; Squad above. Team A/B selection loads that roster into the scoreboard.</p>
@@ -2658,6 +2754,8 @@ body.match-result-active nav {
                     <div id="sb-swipe-inner" class="flex transition-transform duration-300 ease-out" style="width:200%; transform:translateX(0%)">
                         <div class="w-1/2 flex-shrink-0 px-0.5">
             <div id="scoreboard-card" class="bg-slate-900 text-white rounded-2xl p-3 shadow-md relative overflow-hidden">
+            <button type="button" id="sb-scroll-lock" onclick="toggleScoreDashLock()" title="Lock vertical scroll"
+              style="position:absolute;right:8px;bottom:8px;z-index:25;width:36px;height:36px;border-radius:999px;border:1px solid rgba(148,163,184,.45);background:rgba(15,23,42,.92);color:#e2e8f0;font-size:16px;line-height:1;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.35)">🔓</button
                 <!-- Both team scores belong INSIDE the scoreboard panel. No score is shown above this panel. -->
                 <!-- Team names removed from scoreboard top; scores only -->
                 <!-- Dual team score chips removed from scoreboard top; keep hidden nodes for JS -->
@@ -2761,7 +2859,7 @@ body.match-result-active nav {
                         <!-- Dual batting: partner picker only until selected — then hidden (no second card) -->
                         <div id="dual-partner-block" class="hidden mt-2 pt-2 border-t border-slate-600/60 space-y-1">
                             <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Select partner (off strike)</p>
-                            <select id="select-nonstriker" class="w-full text-xs p-1.5 rounded text-white focus:outline-none player-select-merged" onchange="onNonStrikerChange()"></select>
+                            <select id="select-nonstriker" class="w-full text-sm p-1.5 mb-1.5 rounded text-white focus:outline-none player-select-merged" onchange="onNonStrikerChange()"></select>
                         </div>
                         <!-- Tiny swap only — no partner stats card -->
                         <button type="button" id="btn-swap-strike" onclick="swapStrikeEnds()" class="hidden mt-1.5 text-[10px] text-indigo-300 underline font-bold self-start">⇄ Swap strike</button>
@@ -2963,9 +3061,6 @@ body.match-result-active nav {
                     <button type="button" id="btn-voice-toggle" onclick="toggleVoiceCommentary()" class="flex-[1.2] py-2.5 rounded-lg text-[11px] font-black uppercase tracking-wide border transition-all bg-slate-200 text-slate-700 border-slate-300 leading-tight">
                         🤖 AI Voice OFF
                     </button>
-                    <button type="button" onclick="switchTab('livefeed')" class="flex-1 py-2.5 rounded-lg text-[11px] font-black uppercase tracking-wide border border-emerald-500 bg-emerald-600 text-white leading-tight shadow-sm">
-                        🎙️ Feed
-                    </button>
                     <button type="button" onclick="shareViewerLink()" class="flex-1 py-2.5 rounded-lg text-[11px] font-black uppercase tracking-wide border border-sky-500 bg-sky-600 text-white leading-tight shadow-sm">
                         📺 Viewer
                     </button>
@@ -2987,11 +3082,15 @@ body.match-result-active nav {
         <!-- PAGE: STATS & SUMMARY -->
         <div id="page-stats" class="hidden space-y-6">
 
-            <!-- Auto Match Summary Banner -->
-            <div class="bg-gradient-to-r from-indigo-600 to-blue-700 text-white rounded-xl p-4 shadow-md">
-                <h3 class="text-sm font-black uppercase tracking-widest border-b border-white/20 pb-1.5 mb-2.5 flex items-center gap-1">📝 Match Summary</h3>
-                <p id="auto-match-summary" class="text-sm font-medium leading-relaxed drop-shadow-sm">Awaiting match data...</p>
-            </div>
+            <details class="bg-gradient-to-r from-indigo-600 to-blue-700 text-white rounded-xl shadow-md">
+                <summary class="text-sm font-black uppercase tracking-widest p-3 cursor-pointer flex items-center justify-between">
+                    <span>📝 Match Summary</span>
+                    <span class="text-xs opacity-80 font-bold">▾ expand</span>
+                </summary>
+                <div class="px-4 pb-4 border-t border-white/20 pt-2">
+                    <p id="auto-match-summary" class="text-sm font-medium leading-relaxed drop-shadow-sm">Awaiting match data...</p>
+                </div>
+            </details>
 
             <!-- Team A Stats Card -->
             <div id="card-teamA" class="border rounded-xl overflow-hidden bg-blue-50/50 border-blue-200 shadow-sm">
@@ -3144,7 +3243,7 @@ body.match-result-active nav {
                     <div class="grid grid-cols-2 gap-3 text-center"><div onclick="showBreakdown('sixes')" class="cursor-pointer hover:bg-black/30 transition-colors bg-black/20 p-4 rounded-xl border border-white/10"><p class="text-4xl font-black" id="rankings-total-sixes">0</p><p class="text-xs uppercase opacity-90 mt-1">Total Sixes</p></div><div onclick="showBreakdown('fours')" class="cursor-pointer hover:bg-black/30 transition-colors bg-black/20 p-4 rounded-xl border border-white/10"><p class="text-4xl font-black" id="rankings-total-boundaries">0</p><p class="text-xs uppercase opacity-90 mt-1">Total Fours</p></div></div>
                 </div>
             </div>
-            <div class="bg-gradient-to-br from-slate-700 to-slate-900 rounded-xl p-4 shadow-lg text-white">
+            <div class="bg-gradient-to-br from-emerald-600 to-teal-800 rounded-xl p-4 shadow-lg text-white">
                 <div class="flex items-center gap-2 border-b border-white/20 pb-2 mb-3"><span class="text-xl">📊</span><h3 class="text-base font-black uppercase tracking-wider">Tournament Overview</h3></div>
                 <div class="grid grid-cols-2 gap-3 text-center">
                     <div class="bg-black/20 p-3 rounded-xl border border-emerald-400/30 bg-emerald-500/10"><p class="text-3xl font-black text-emerald-300" id="rankings-total-runs">0</p><p class="text-[11px] uppercase text-emerald-200 mt-1">Total Runs</p></div>
@@ -3158,7 +3257,7 @@ body.match-result-active nav {
                     <div onclick="showBreakdown('legbyes')" class="cursor-pointer hover:bg-black/30 transition-colors bg-black/20 p-3 rounded-lg border border-white/10"><p class="text-2xl font-black" id="rankings-total-legbyes">0</p><p class="text-[11px] uppercase opacity-80 mt-0.5">Leg Byes</p></div>
                 </div>
             </div>
-            <div class="bg-gradient-to-br from-red-600 to-rose-800 rounded-xl p-4 shadow-lg text-white"><div class="flex items-center gap-2 border-b border-white/20 pb-2 mb-3"><span class="text-xl">💥</span><h3 class="text-base font-black uppercase tracking-wider">Wicket Types</h3></div><div id="rankings-dismissal-breakdown" class="grid grid-cols-2 gap-2"></div></div>
+            <div class="bg-gradient-to-br from-emerald-700 to-teal-900 rounded-xl p-4 shadow-lg text-white"><div class="flex items-center gap-2 border-b border-white/20 pb-2 mb-3"><span class="text-xl">💥</span><h3 class="text-base font-black uppercase tracking-wider">Wicket Types</h3></div><div id="rankings-dismissal-breakdown" class="grid grid-cols-2 gap-2"></div></div>
         </div>
 
         <!-- PAGE: REPORTS
@@ -3370,7 +3469,7 @@ body.match-result-active nav {
                     <button onclick="shareScoreboardToWhatsAppHindi()" class="py-2.5 rounded-xl text-xs font-black uppercase bg-orange-500 hover:bg-orange-600 text-white shadow">📤 हिंदी सारांश</button>
                     <button onclick="shareLastCommentToWhatsAppHindi()" class="py-2.5 rounded-xl text-xs font-black uppercase bg-orange-400 hover:bg-orange-500 text-white shadow">📤 हिंदी अंतिम बॉल</button>
                     <button onclick="copyLiveFeedText()" class="py-2.5 rounded-xl text-xs font-black uppercase bg-slate-700 hover:bg-slate-800 text-white shadow">📋 Copy feed</button>
-                    <button onclick="switchTab('scoring')" class="py-2.5 rounded-xl text-xs font-black uppercase bg-emerald-600 hover:bg-emerald-700 text-white shadow">📊 Score</button>
+                    <button onclick="switchTab('scoring')" class="py-2.5 rounded-xl text-xs font-black uppercase bg-emerald-600 hover:bg-emerald-700 text-white shadow"><span class="block text-base leading-none">🏏</span><span class="block text-[9px] mt-0.5">Score</span></button>
                     <button onclick="clearCommentaryLog()" class="py-2.5 rounded-xl text-xs font-black uppercase bg-red-50 text-red-700 border border-red-200 col-span-2">🗑️ Clear log</button>
                 </div>
                 <p id="wa-status" class="text-[10px] theme-muted text-center"></p>
@@ -3478,11 +3577,11 @@ body.match-result-active nav {
         return true;
     }
 
-    let teamConfig = { A: { name: "Serene Tigers", color: "blue", count: 7 }, B: { name: "Serene Warriors", color: "orange", count: 7 } };
+    let teamConfig = { A: { name: "Serene Tigers", color: "blue", count: 11 }, B: { name: "Serene Warriors", color: "orange", count: 11 } };
     let maxOversAllowed = 8, firstBattingTeam = "A", currentInnings = 1;
     let superOversList = []; // super overs config e.g. [4,6] means super over at over 4 and 6, flash at 3 and 5
     const SUPER_OVERS_KEY = 'cricket_super_overs';
-    let firstInningsScore = null, firstInningsWickets = null, firstInningsOvers = null, targetScore = null, matchEnded = false, tossWinnerTeam = null, tossChoice = null, matchWinner = null;
+    let firstInningsScore = null, firstInningsWickets = null, firstInningsOvers = null, firstInningsBalls = null, targetScore = null, matchEnded = false, tossWinnerTeam = null, tossChoice = null, matchWinner = null;
     let abandonReason = null;
     var dualBattingMode = false; // 2 players batting + auto strike rotate
 
@@ -3698,6 +3797,176 @@ body.match-result-active nav {
     let currentCommentators = '';
     let currentVenue = '';
 
+    
+    var TOURNAMENT_KEY = 'cricket_tournament_v1';
+    function loadTournament() {
+        try {
+            var raw = localStorage.getItem(TOURNAMENT_KEY);
+            if (!raw) return { name: '', start: '', end: '', fixtures: [] };
+            var o = JSON.parse(raw);
+            if (!o || typeof o !== 'object') return { name: '', start: '', end: '', fixtures: [] };
+            if (!Array.isArray(o.fixtures)) o.fixtures = [];
+            return o;
+        } catch(e) { return { name: '', start: '', end: '', fixtures: [] }; }
+    }
+    function saveTournament(data) {
+        try { localStorage.setItem(TOURNAMENT_KEY, JSON.stringify(data || loadTournament())); } catch(e){}
+    }
+    function saveTournamentMeta() {
+        var d = loadTournament();
+        d.name = ((document.getElementById('tour-name')||{}).value || '').trim();
+        d.start = ((document.getElementById('tour-start')||{}).value || '');
+        d.end = ((document.getElementById('tour-end')||{}).value || '');
+        saveTournament(d);
+    }
+    function fillFixtureTeamSelects() {
+        var names = cupTeamNames();
+        ['fix-team-a','fix-team-b'].forEach(function(id){
+            var el = document.getElementById(id);
+            if (!el) return;
+            var cur = el.value;
+            el.innerHTML = names.map(function(n){ return '<option value="'+String(n).replace(/"/g,'&quot;')+'">'+n+'</option>'; }).join('') || '<option value="">Add teams first</option>';
+            if (cur) el.value = cur;
+        });
+    }
+    function addTournamentFixture() {
+        try {
+            fillFixtureTeamSelects();
+            var a = ((document.getElementById('fix-team-a')||{}).value || '').trim();
+            var b = ((document.getElementById('fix-team-b')||{}).value || '').trim();
+            if (!a || !b) { showModal({ title: 'Teams', message: 'Select both teams. Add teams under Cup first.', icon: 'ℹ️' }); return; }
+            if (a === b) { showModal({ title: 'Teams', message: 'Pick two different teams.', icon: 'ℹ️' }); return; }
+            var d = loadTournament();
+            if (!d.name) d.name = ((document.getElementById('tour-name')||{}).value || '').trim() || 'Tournament';
+            d.fixtures = d.fixtures || [];
+            var fx = {
+                id: 'fx-' + Date.now().toString(36),
+                teamA: a, teamB: b,
+                date: ((document.getElementById('fix-date')||{}).value || ''),
+                time: ((document.getElementById('fix-time')||{}).value || ''),
+                type: ((document.getElementById('fix-type')||{}).value || 'group'),
+                venue: ((document.getElementById('fix-venue')||{}).value || '').trim(),
+                status: 'scheduled'
+            };
+            var key = [fx.teamA,fx.teamB,fx.date,fx.time,fx.type].join('|');
+            if (d.fixtures.some(function(f){ return [f.teamA,f.teamB,f.date,f.time,f.type].join('|')===key; })) {
+                showModal({ title: 'Already added', message: a+' vs '+b+' is already on the schedule.', icon: 'ℹ️' }); return;
+            }
+            d.fixtures.push(fx);
+            saveTournament(d);
+            try { saveTournamentMeta(); } catch(eM){}
+            renderTournamentUI();
+            try { if (typeof publishLiveViewerState==='function') publishLiveViewerState(); } catch(eP){}
+            showModal({ title: 'Tournament updated', message: 'Fixture added:\n'+a+' vs '+b+'\n\nTotal: '+d.fixtures.length+'\n\nLive → Schedule tab.', icon: '📅' });
+        } catch(e) { showModal({ title: 'Error', message: String(e&&e.message?e.message:e), icon: '⚠️' }); }
+    }
+    function shareTournamentSchedule() {
+        try {
+            var d = loadTournament();
+            var fx = d.fixtures || [];
+            if (!fx.length) { showModal({ title: 'Schedule', message: 'No fixtures yet.', icon: 'ℹ️' }); return; }
+            var lines = ['🏏 '+(d.name||'Tournament')+' Schedule', ''];
+            fx.forEach(function(f,i){
+                lines.push((i+1)+'. '+f.teamA+' vs '+f.teamB);
+                var when=[f.date,f.time].filter(Boolean).join(' ');
+                lines.push('   '+(f.type||'group')+(when?' · '+when:'')+(f.venue?' · '+f.venue:''));
+            });
+            var text = lines.join('\n');
+            if (navigator.share) navigator.share({ title:(d.name||'Tournament')+' Schedule', text:text }).catch(function(){});
+            else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function(){ showModal({ title:'Copied', message:'Schedule copied.', icon:'📋' }); });
+            else prompt('Copy schedule:', text);
+        } catch(e) { showModal({ title:'Error', message:String(e), icon:'⚠️' }); }
+    }
+    function removeTournamentFixture(id) {
+        var d = loadTournament();
+        d.fixtures = (d.fixtures || []).filter(function(f){ return f.id !== id; });
+        saveTournament(d);
+        renderTournamentUI();
+    }
+    function startFixtureMatch(id) {
+        var d = loadTournament();
+        var fx = (d.fixtures || []).find(function(f){ return f.id === id; });
+        if (!fx) return;
+        try {
+            var selA = document.getElementById('cup-team-a');
+            var selB = document.getElementById('cup-team-b');
+            if (selA) selA.value = fx.teamA;
+            if (selB) selB.value = fx.teamB;
+            var mt = document.getElementById('cup-match-type');
+            if (mt) {
+                if (fx.type === 'final' || fx.type === 'semi' || fx.type === 'quarter') mt.value = 'knockout';
+                else mt.value = 'normal';
+            }
+            var ven = document.getElementById('cup-venue');
+            if (ven && fx.venue) ven.value = fx.venue;
+            var nmA = document.getElementById('cup-cfg-teamA-name');
+            var nmB = document.getElementById('cup-cfg-teamB-name');
+            if (nmA) nmA.value = fx.teamA;
+            if (nmB) nmB.value = fx.teamB;
+            syncCupToScoreboardSettings && syncCupToScoreboardSettings();
+            cupLoadSelectedRosters && cupLoadSelectedRosters();
+            fx.status = 'live';
+            saveTournament(d);
+            setCupSubTab('create');
+            showModal({ title: 'Fixture loaded', message: fx.teamA + ' vs ' + fx.teamB + '\n\nReview squads on Create Match, then tap Start Match.', icon: '🏏' });
+        } catch(e) {
+            showModal({ title: 'Error', message: String(e), icon: '⚠️' });
+        }
+    }
+    function renderTournamentUI() {
+        try {
+            var d = loadTournament();
+            var n = document.getElementById('tour-name');
+            var s = document.getElementById('tour-start');
+            var e = document.getElementById('tour-end');
+            if (n && !n.value) n.value = d.name || '';
+            if (s && !s.value) s.value = d.start || '';
+            if (e && !e.value) e.value = d.end || '';
+            if (n && d.name) n.value = d.name;
+            if (s && d.start) s.value = d.start;
+            if (e && d.end) e.value = d.end;
+            fillFixtureTeamSelects();
+            var list = document.getElementById('tour-fixtures-list');
+            if (!list) return;
+            var fx = d.fixtures || [];
+            if (!fx.length) {
+                list.innerHTML = '<p class="text-xs italic theme-muted text-center py-3">No fixtures yet.</p>';
+                return;
+            }
+            fx = fx.slice().sort(function(a,b){
+                return String(a.date||'').localeCompare(String(b.date||'')) || String(a.time||'').localeCompare(String(b.time||''));
+            });
+            list.innerHTML = fx.map(function(f){
+                var when = [f.date, f.time].filter(Boolean).join(' · ') || 'Date TBD';
+                var st = f.status === 'live' ? '🔴' : (f.status === 'done' ? '✅' : '📅');
+                return '<div class="theme-card border theme-border rounded-lg p-2.5 space-y-1">'
+                    + '<div class="flex justify-between items-start gap-2">'
+                    + '<div><p class="text-sm font-black theme-text">' + st + ' ' + f.teamA + ' vs ' + f.teamB + '</p>'
+                    + '<p class="text-[10px] theme-muted uppercase">' + (f.type||'group') + ' · ' + when + (f.venue ? ' · ' + f.venue : '') + '</p></div>'
+                    + '<button type="button" onclick="removeTournamentFixture(\'' + f.id + '\')" class="text-red-500 text-xs font-bold px-1">✕</button></div>'
+                    + '<button type="button" onclick="startFixtureMatch(\'' + f.id + '\')" class="w-full mt-1 bg-emerald-600 text-white text-[11px] font-black py-1.5 rounded-lg uppercase">Start this match</button>'
+                    + '</div>';
+            }).join('');
+        } catch(err) { console.log(err); }
+    }
+    function cupLoadSelectedRosters() {
+        try {
+            var a = (document.getElementById('cup-team-a')||{}).value || '';
+            var b = (document.getElementById('cup-team-b')||{}).value || '';
+            var tA = findCupTeam(a);
+            var tB = findCupTeam(b);
+            var namesA = (tA && tA.players) ? tA.players.filter(function(n){ return String(n||'').trim() && !/^Player\s*\d+/i.test(String(n)); }) : [];
+            var namesB = (tB && tB.players) ? tB.players.filter(function(n){ return String(n||'').trim() && !/^Player\s*\d+/i.test(String(n)); }) : [];
+            // Default 12 empty slots if squad empty
+            var countElA = document.getElementById('cup-cfg-teamA-count');
+            var countElB = document.getElementById('cup-cfg-teamB-count');
+            if (countElA && !namesA.length) countElA.value = '12';
+            if (countElB && !namesB.length) countElB.value = '12';
+            cupRenderPlayerInputs('A', namesA);
+            cupRenderPlayerInputs('B', namesB);
+        } catch(e) {}
+    }
+
     function saveCupTeams() {
         try { localStorage.setItem(CUP_TEAMS_KEY, JSON.stringify(cupTeams)); } catch(e){}
     }
@@ -3758,12 +4027,14 @@ body.match-result-active nav {
             var create = document.getElementById('cup-sub-create');
             var settings = document.getElementById('cup-match-settings-wrap');
             var ui = document.getElementById('cup-ui-settings-wrap');
+            var tour = document.getElementById('cup-tournament-wrap');
             var btnC = document.getElementById('cup-subtab-create');
             var btnS = document.getElementById('cup-subtab-settings');
             var btnU = document.getElementById('cup-subtab-ui');
+            var btnT = document.getElementById('cup-subtab-tournament');
             var startBtn = document.getElementById('cup-start-match-btn');
-            var inactive = 'flex-1 py-2 px-1 rounded-lg text-[10px] font-black uppercase tracking-wide bg-slate-200 text-slate-700 leading-tight';
-            var active = 'flex-1 py-2 px-1 rounded-lg text-[10px] font-black uppercase tracking-wide bg-emerald-600 text-white shadow leading-tight';
+            var inactive = 'flex-1 py-2 px-0.5 rounded-xl text-[8px] font-black uppercase tracking-wide bg-slate-200 text-slate-700 leading-tight';
+            var active = 'flex-1 py-2 px-0.5 rounded-xl text-[8px] font-black uppercase tracking-wide bg-emerald-600 text-white shadow leading-tight';
             function hideEl(el){
                 if(!el) return;
                 el.classList.add('hidden');
@@ -3774,21 +4045,27 @@ body.match-result-active nav {
                 el.classList.remove('hidden');
                 el.style.display = '';
             }
-            hideEl(create); hideEl(settings); hideEl(ui);
+            hideEl(create); hideEl(settings); hideEl(ui); hideEl(tour);
             if(startBtn){ startBtn.classList.add('hidden'); startBtn.style.display = 'none'; }
             if(btnC) btnC.className = inactive;
             if(btnS) btnS.className = inactive;
             if(btnU) btnU.className = inactive;
+            if(btnT) btnT.className = inactive;
             if(which === 'settings'){
                 showEl(settings);
                 if(btnS) btnS.className = active;
             } else if(which === 'ui'){
                 showEl(ui);
                 if(btnU) btnU.className = active;
+            } else if(which === 'tournament'){
+                showEl(tour);
+                if(btnT) btnT.className = active;
+                try { renderTournamentUI(); } catch(eR) {}
             } else {
                 showEl(create);
                 if(startBtn){ startBtn.classList.remove('hidden'); startBtn.style.display = ''; }
                 if(btnC) btnC.className = active;
+                try { cupLoadSelectedRosters(); } catch(eL) {}
             }
         }catch(e){ try{ console.log('setCupSubTab', e); }catch(e2){} }
     }
@@ -3872,9 +4149,9 @@ body.match-result-active nav {
         var playersStr = (document.getElementById('cup-new-players') || {}).value || '';
         var players = parsePlayerList(playersStr);
         if (!players.length) {
-            // default placeholder squad of 7
-            for (var i = 1; i <= 7; i++) players.push(i === 1 ? 'Player 1 (C)' : ('Player ' + i));
+            for (var i = 1; i <= 11; i++) players.push('');
         }
+        if (players.length > 20) players = players.slice(0, 20);
         cupTeams.push({ name: name, players: players, logo: generateTeamLogo(name, usedLogoColors()) });
         saveCupTeams();
         if (input) input.value = '';
@@ -4037,6 +4314,7 @@ function cupRenameTeam(idx) {
         });
     }
     function renderCupUI() {
+        try { fillFixtureTeamSelects(); } catch(eF) {}
         var list = document.getElementById('cup-teams-list');
         if (list) {
             if (!cupTeams.length) {
@@ -4093,42 +4371,85 @@ function cupRenameTeam(idx) {
         if (!box) return;
         var countEl = document.getElementById(side === 'A' ? 'cup-cfg-teamA-count' : 'cup-cfg-teamB-count');
         var countLabel = document.getElementById(side === 'A' ? 'cup-count-A' : 'cup-count-B');
-        var names = playerNames || [];
-        var count = names.length || (countEl ? parseInt(countEl.value) || 7 : 7);
-        if (countEl) countEl.value = count;
-        if (countLabel) countLabel.innerText = count;
+        // Only real names — never invent Player 1 / Player 7
+        var names = (playerNames || []).filter(function(n) {
+            n = String(n || '').trim();
+            if (!n) return false;
+            if (/^Player\s*\d+/i.test(n)) return false;
+            return true;
+        });
+        if (names.length > 20) names = names.slice(0, 20);
+        // Show up to 12 empty slots for entry (vertical), filled with existing names
+        var slots = Math.max(names.length, 0);
+        // Always show at least one empty row to add, up to 12 visible empty+filled, max 20 via +
+        var showCount = Math.min(20, Math.max(names.length + 1, Math.min(12, names.length + 1)));
+        if (countEl) {
+            var want = parseInt(countEl.value, 10);
+            if (!isNaN(want) && want >= names.length) showCount = Math.min(20, Math.max(want, names.length + (names.length < 20 ? 1 : 0)));
+        }
+        if (showCount < names.length) showCount = names.length;
+        if (showCount > 20) showCount = 20;
+        if (countEl) countEl.value = String(showCount);
+        if (countLabel) countLabel.innerText = String(names.length) + '/' + showCount;
         var html = '';
-        for (var i = 0; i < count; i++) {
-            var val = names[i] || (i === 0 ? 'Player 1 (C)' : ('Player ' + (i + 1)));
-            html += '<input type="text" data-cup-side="' + side + '" data-cup-idx="' + i + '" value="' + String(val).replace(/"/g, '&quot;') + '" class="w-full border theme-border theme-card theme-text p-1.5 rounded text-sm" onchange="cupOnPlayerNameEdit(\'' + side + '\',' + i + ', this.value)">';
+        for (var i = 0; i < showCount; i++) {
+            var val = names[i] || '';
+            html += '<input type="text" data-cup-side="' + side + '" data-cup-idx="' + i + '" value="' + String(val).replace(/"/g, '&quot;') + '" placeholder="Player ' + (i + 1) + ' name" class="w-full border theme-border theme-card theme-text p-2 rounded-lg text-sm mb-1.5" onchange="cupOnPlayerNameEdit(\'' + side + '\',' + i + ', this.value)">';
         }
         box.innerHTML = html;
     }
-    function cupOnPlayerNameEdit(side, idx, value) {
+        function cupOnPlayerNameEdit(side, idx, value) {
         var sel = document.getElementById(side === 'A' ? 'cup-team-a' : 'cup-team-b');
         var teamName = sel ? sel.value : '';
-        var t = findCupTeam(teamName);
-        if (t) {
-            while (t.players.length <= idx) t.players.push('Player ' + (t.players.length + 1));
-            t.players[idx] = (value || '').trim() || ('Player ' + (idx + 1));
-            // trim or keep length matching squad size
-            var countEl = document.getElementById(side === 'A' ? 'cup-cfg-teamA-count' : 'cup-cfg-teamB-count');
-            var count = countEl ? parseInt(countEl.value) || t.players.length : t.players.length;
-            t.players = t.players.slice(0, count);
-            saveCupTeams();
-            renderCupUI();
+        var team = findCupTeam(teamName);
+        if (!team) {
+            // create team shell if selecting name exists
+            return;
         }
-        syncCupPlayersToScoreboard();
+        var box = document.getElementById(side === 'A' ? 'cup-players-list-A' : 'cup-players-list-B');
+        var names = [];
+        if (box) {
+            var inputs = box.querySelectorAll('input[data-cup-side]');
+            inputs.forEach(function(inp) {
+                var v = String(inp.value || '').trim();
+                if (v && !/^Player\s*\d+/i.test(v)) names.push(v);
+            });
+        } else {
+            names = (team.players || []).slice();
+            names[idx] = (value || '').trim();
+            names = names.filter(function(n){ return n && !/^Player\s*\d+/i.test(n); });
+        }
+        team.players = names.slice(0, 20);
+        try {
+            var lab = document.getElementById(side === 'A' ? 'cup-count-A' : 'cup-count-B');
+            if (lab) lab.innerText = String(team.players.length);
+        } catch(eL) {}
+        saveCupTeams();
+        syncCupPlayersToScoreboard && syncCupPlayersToScoreboard();
+    }
+    function cupChangeSquadSize(side, delta) {
+        try {
+            var countEl = document.getElementById(side === 'A' ? 'cup-cfg-teamA-count' : 'cup-cfg-teamB-count');
+            var n = countEl ? (parseInt(countEl.value, 10) || 12) : 12;
+            n = Math.max(1, Math.min(20, n + (delta|0)));
+            if (countEl) countEl.value = String(n);
+            cupResizeSquadDisplay(side);
+            if (typeof syncCupPlayersToScoreboard === 'function') syncCupPlayersToScoreboard();
+        } catch(e) {}
     }
     function cupResizeSquadDisplay(side) {
         var countEl = document.getElementById(side === 'A' ? 'cup-cfg-teamA-count' : 'cup-cfg-teamB-count');
-        var count = countEl ? parseInt(countEl.value) || 7 : 7;
+        var count = countEl ? parseInt(countEl.value) || 11 : 11;
+        if (count > 20) count = 20;
         var sel = document.getElementById(side === 'A' ? 'cup-team-a' : 'cup-team-b');
         var teamName = sel ? sel.value : '';
         var t = findCupTeam(teamName);
         var names = t ? (t.players || []).slice() : [];
-        while (names.length < count) names.push(names.length === 0 ? 'Player 1 (C)' : ('Player ' + (names.length + 1)));
-        names = names.slice(0, count);
+        if (names.length > count && names.length <= 20) count = names.length;
+        while (names.length < count) names.push('');
+        names = names.filter(function(n){ return String(n||'').trim() && !/^Player\s*\d+/i.test(String(n)); }).slice(0, 20);
+        while (names.length < count && names.length < 20) names.push('');
+        names = names.slice(0, Math.min(20, Math.max(count, names.length)));
         if (t) { t.players = names; saveCupTeams(); }
         cupRenderPlayerInputs(side, names);
         syncCupToScoreboardSettings();
@@ -4165,11 +4486,13 @@ function cupRenameTeam(idx) {
             var aNames = (tA && Array.isArray(tA.players) && tA.players.length) ? tA.players.slice() : [];
             var bNames = (tB && Array.isArray(tB.players) && tB.players.length) ? tB.players.slice() : [];
             if (!aNames.length) {
-                for (var ia = 1; ia <= 7; ia++) aNames.push(ia === 1 ? 'Player 1 (C)' : ('Player ' + ia));
+                for (var ia = 1; ia <= 11; ia++) aNames.push(ia === 1 ? 'Player 1 (C)' : ('Player ' + ia));
             }
             if (!bNames.length) {
-                for (var ib = 1; ib <= 7; ib++) bNames.push(ib === 1 ? 'Player 1 (C)' : ('Player ' + ib));
+                for (var ib = 1; ib <= 11; ib++) bNames.push(ib === 1 ? 'Player 1 (C)' : ('Player ' + ib));
             }
+            if (aNames.length > 20) aNames = aNames.slice(0, 20);
+            if (bNames.length > 20) bNames = bNames.slice(0, 20);
             if (document.getElementById('cfg-teamA-count')) {
                 document.getElementById('cfg-teamA-count').value = aNames.length;
                 var ca = document.getElementById('count-A'); if (ca) ca.innerText = aNames.length;
@@ -4267,9 +4590,87 @@ function cupRenameTeam(idx) {
     // --- Themed Modal Helpers (replaces native alert/confirm; supports select lists) ---
     let modalQueue = [];
 
-    function openPlayerPicker(role) {
+    
+    function bindPlayerSelectDoubleTap() {
+        try {
+            if (!window.__pickerTapTs) window.__pickerTapTs = {};
+            var map = [
+                { id: 'select-striker', role: 'striker' },
+                { id: 'select-nonstriker', role: 'nonstriker' },
+                { id: 'select-bowler', role: 'bowler' }
+            ];
+            map.forEach(function(item) {
+                var el = document.getElementById(item.id);
+                if (!el) return;
+                // Always rebind cleanly
+                if (el.__dblHandler) {
+                    try {
+                        el.removeEventListener('mousedown', el.__dblHandler, true);
+                        el.removeEventListener('touchstart', el.__dblHandler, true);
+                        el.removeEventListener('click', el.__dblClick, true);
+                    } catch (eR) {}
+                }
+                function onTap(e) {
+                    try { e.preventDefault(); e.stopPropagation(); } catch (err) {}
+                    openPlayerPicker(item.role, false);
+                }
+                function onClick(e) {
+                    try { e.preventDefault(); e.stopPropagation(); } catch (err) {}
+                }
+                el.__dblHandler = onTap;
+                el.__dblClick = onClick;
+                el.addEventListener('mousedown', onTap, true);
+                el.addEventListener('touchstart', onTap, { passive: false, capture: true });
+                el.addEventListener('click', onClick, true);
+                el.style.cursor = 'pointer';
+                try { el.setAttribute('title', 'Double-tap to change player'); } catch (eT) {}
+            });
+        } catch (e) {}
+    }
+    try { setTimeout(bindPlayerSelectDoubleTap, 600); setInterval(bindPlayerSelectDoubleTap, 4000); } catch (e) {}
+
+    
+    function toggleScoreDashLock() {
+        try {
+            var locked = document.body.classList.toggle('score-dash-locked');
+            localStorage.setItem('cricket_score_dash_lock', locked ? '1' : '0');
+            var btn = document.getElementById('sb-scroll-lock') || document.getElementById('score-dash-lock-btn');
+            if (btn) {
+                btn.textContent = locked ? '🔒' : '🔓';
+                btn.title = locked ? 'Unlock scroll' : 'Lock vertical scroll';
+                btn.style.background = locked ? 'rgba(6,95,70,.95)' : 'rgba(15,23,42,.92)';
+            }
+        } catch (e) {}
+    }
+    (function(){
+        try {
+            if (localStorage.getItem('cricket_score_dash_lock') === '1') document.body.classList.add('score-dash-locked');
+            setTimeout(function(){
+                var btn = document.getElementById('sb-scroll-lock') || document.getElementById('score-dash-lock-btn');
+                if (btn && document.body.classList.contains('score-dash-locked')) {
+                    btn.textContent = '🔒';
+                    btn.title = 'Unlock scroll';
+                    btn.style.background = 'rgba(6,95,70,.95)';
+                }
+                if (btn) {
+                    var lk = document.body.classList.contains('score-dash-locked');
+                    btn.textContent = lk ? '🔒' : '🔓';
+                    btn.title = lk ? 'Unlock scroll' : 'Lock vertical scroll';
+                }
+            }, 400);
+        } catch (e) {}
+    })();
+
+    var __pickerTapTs = {};
+    function openPlayerPicker(role, fromDoubleTap) {
         try {
             role = role || 'bowler';
+            if (!fromDoubleTap) {
+                var now = Date.now();
+                var prev = __pickerTapTs[role] || 0;
+                __pickerTapTs[role] = now;
+                if (now - prev > 650) return; /* double-tap within 650ms */
+            }
             var batT = currentInnings === 1 ? firstBattingTeam : (firstBattingTeam === 'A' ? 'B' : 'A');
             if (!batT) batT = 'A';
             var bowlT = batT === 'A' ? 'B' : 'A';
@@ -4303,12 +4704,13 @@ function cupRenameTeam(idx) {
             }
             showModal({
                 type: 'select',
-                title: role === 'bowler' ? 'Select Bowler' : 'Select Batsman',
-                message: 'Choose a player',
+                title: role === 'bowler' ? 'Select Bowler' : (role === 'nonstriker' ? 'Select Non-striker' : 'Select Batsman'),
+                message: 'Tap a player',
                 icon: role === 'bowler' ? '⚾' : '🏏',
                 options: opts,
                 onSelect: function(val) {
-                    var el = document.getElementById(role === 'bowler' ? 'select-bowler' : 'select-striker');
+                    var elId = role === 'bowler' ? 'select-bowler' : (role === 'nonstriker' ? 'select-nonstriker' : 'select-striker');
+                    var el = document.getElementById(elId);
                     if (el) {
                         // ensure option exists
                         var found = false;
@@ -4400,12 +4802,20 @@ function cupRenameTeam(idx) {
             btnWrap.appendChild(row);
             setTimeout(function(){ try { ta.focus(); } catch(e){} }, 50);
         } else if (opts.type === 'select') {
-            btnWrap.className = "flex flex-col gap-2 pt-1 max-h-72 overflow-y-auto";
+            btnWrap.className = "flex flex-col gap-2 pt-1 overflow-y-auto";
+            btnWrap.style.maxHeight = "70vh";
+            btnWrap.style.webkitOverflowScrolling = "touch";
             (opts.options || []).forEach(o => {
                 const btn = document.createElement('button');
                 btn.className = "modal-option";
+                btn.type = "button";
                 btn.innerText = o.label;
-                btn.onclick = () => { closeModal(); if (opts.onSelect) opts.onSelect(o.value); };
+                btn.style.minHeight = "44px";
+                btn.onclick = function(ev) {
+                    try { if (ev) { ev.preventDefault(); ev.stopPropagation(); } } catch (e) {}
+                    closeModal();
+                    if (opts.onSelect) opts.onSelect(o.value);
+                };
                 btnWrap.appendChild(btn);
             });
             const cancelBtn = document.createElement('button');
@@ -4741,8 +5151,8 @@ function cupRenameTeam(idx) {
 
 function switchTab(tabId) {
         try { showPageTransitionFx(); } catch(eFx){}
-        var pages=['page-toss','page-tournament','page-scoring','page-stats','page-livefeed','page-rankings','page-players','page-history','page-reports','page-quickinfo']; for(var i=0;i<pages.length;i++){ var el=document.getElementById(pages[i]); if(el) el.classList.add('hidden'); }
-        var tabs=['tab-toss','tab-tournament','tab-scoring','tab-livefeed','tab-stats','tab-rankings','tab-history','tab-quickinfo']; for(var ti=0;ti<tabs.length;ti++){ var id=tabs[ti];
+        var pages=['page-toss','page-tournament','page-scoring','page-stats','page-rankings','page-players','page-history','page-reports','page-quickinfo','page-livefeed']; for(var i=0;i<pages.length;i++){ var el=document.getElementById(pages[i]); if(el) el.classList.add('hidden'); }
+        var tabs=['tab-toss','tab-tournament','tab-scoring','tab-stats','tab-rankings','tab-history','tab-quickinfo']; for(var ti=0;ti<tabs.length;ti++){ var id=tabs[ti];
             var btn = document.getElementById(id);
             if(btn) btn.className = "flex-1 py-2 px-0.5 rounded-lg text-center espn-tab-inactive transition-all";
         }
@@ -4762,7 +5172,7 @@ function switchTab(tabId) {
                 activePage.style.pointerEvents = 'auto';
             }
             // Ensure all other pages truly hidden
-            var allPages = ['toss','tournament','scoring','stats','livefeed','rankings','players','history','reports','quickinfo'];
+            var allPages = ['toss','tournament','scoring','stats','rankings','players','history','reports','quickinfo','livefeed'];
             for (var pi = 0; pi < allPages.length; pi++) {
                 if (allPages[pi] === tabId) continue;
                 var op = document.getElementById('page-' + allPages[pi]);
@@ -4885,8 +5295,8 @@ function switchTab(tabId) {
 
         function generateDefaultPlayers() {
         players = [];
-        for(let i = 1; i <= teamConfig.A.count; i++) players.push({ id: `A-${i}`, name: i===1?"Player 1 (C)":`Player ${i}`, team: "A", runs: 0, balls: 0, fours: 0, sixes: 0, bowlBalls: 0, bowlRuns: 0, wickets: 0, dots: 0, isOut: false, entryRank: null, entryScore: null, entryWickets: null, entryOvers: null, entryInnings: null });
-        for(let i = 1; i <= teamConfig.B.count; i++) players.push({ id: `B-${i}`, name: i===1?"Player 1 (C)":`Player ${i}`, team: "B", runs: 0, balls: 0, fours: 0, sixes: 0, bowlBalls: 0, bowlRuns: 0, wickets: 0, dots: 0, isOut: false, entryRank: null, entryScore: null, entryWickets: null, entryOvers: null, entryInnings: null });
+        for(let i = 1; i <= teamConfig.A.count; i++) players.push({ id: `A-${i}`, name: '', team: "A", runs: 0, balls: 0, fours: 0, sixes: 0, bowlBalls: 0, bowlRuns: 0, wickets: 0, dots: 0, isOut: false, entryRank: null, entryScore: null, entryWickets: null, entryOvers: null, entryInnings: null });
+        for(let i = 1; i <= teamConfig.B.count; i++) players.push({ id: `B-${i}`, name: '', team: "B", runs: 0, balls: 0, fours: 0, sixes: 0, bowlBalls: 0, bowlRuns: 0, wickets: 0, dots: 0, isOut: false, entryRank: null, entryScore: null, entryWickets: null, entryOvers: null, entryInnings: null });
         nextBattingRank = 1;
     }
 
@@ -4897,6 +5307,7 @@ function switchTab(tabId) {
 
     function buildPlayerEditorFields() {
         const listA = document.getElementById('players-list-A'); const listB = document.getElementById('players-list-B');
+        if (!listA || !listB) return;
         listA.innerHTML = ''; listB.innerHTML = '';
         players.forEach(p => {
             const rowHTML = `<input type="text" value="${p.name}" class="text-sm border theme-border theme-panel theme-text p-1 mb-1 rounded w-full" onchange="updatePlayerMeta('${p.id}', this.value)">`;
@@ -5052,7 +5463,7 @@ function switchTab(tabId) {
                 } else {
                     next.push({
                         id: side + '-' + (i + 1),
-                        name: 'Player ' + (i + 1) + (i === 0 ? ' (C)' : ''),
+                        name: '',
                         team: side, runs: 0, balls: 0, fours: 0, sixes: 0,
                         bowlBalls: 0, bowlRuns: 0, wickets: 0, dots: 0, isOut: false,
                         entryRank: null, entryScore: null, entryWickets: null, entryOvers: null, entryInnings: null
@@ -6626,6 +7037,20 @@ function placeBoundaryAnimationOnStriker(toast){
                     var r = st.runs|0;
                     if (r === 50 || r === 100) return { type: r===100?'hundred':'fifty', name: st.name, runs: r };
                     return null;
+                } catch(e){ return null; }
+            })(),
+            fixtures: (function(){
+                try {
+                    var d = (typeof loadTournament === 'function') ? loadTournament() : null;
+                    var fx = (d && Array.isArray(d.fixtures)) ? d.fixtures.slice(0,40) : [];
+                    var seen={}; return fx.filter(function(f){ var k=[f.teamA,f.teamB,f.date,f.time,f.type].join('|'); if(seen[k])return false; seen[k]=1; return true; });
+                } catch(e){ return []; }
+            })(),
+            tournament: (function(){
+                try {
+                    var d = (typeof loadTournament === 'function') ? loadTournament() : null;
+                    if (!d) return null;
+                    return { name: d.name||'', start: d.start||'', end: d.end||'', fixtures: (d.fixtures||[]).slice(0,40) };
                 } catch(e){ return null; }
             })()
         };
@@ -9050,8 +9475,6 @@ function updateView() {
                 + '<div style="display:inline-block;margin-top:10px;padding:6px 14px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;font-size:11px;font-weight:700">'
                 + (D.seriesN|0)+' Matches · '+(D.teamA||'')+' '+(D.seriesA|0)+' · '+(D.teamB||'')+' '+(D.seriesB|0)+'</div></div>'
                 + '<table style="width:100%;border-collapse:collapse;font-size:13px">'+rows+'</table>'
-                + '<div style="margin-top:16px;font-size:12px;font-weight:800;letter-spacing:.12em;color:'+accent+'">TOURNAMENT OVERVIEW</div>'
-                + overview
                 + '</div></div>';
 
             // In-page print host (works in mobile WebView; no blank popup)
@@ -10813,7 +11236,7 @@ function printHistoryMatch(){
             });
             players.forEach(p => {
                 if (!p.name || !p.name.trim()) return;
-                if (!tempStats[p.name]) tempStats[p.name] = { r:0, b:0, w:0, br:0, bb:0, fours:0, sixes:0, dots:0, wides:0, noballs:0, dismissalsAsBowler:{}, outsAsBatsman:{} };
+                if (!tempStats[p.name]) tempStats[p.name] = { r:0, b:0, w:0, br:0, bb:0, fours:0, sixes:0, dots:0, wides:0, noballs:0, legbyes:0, dismissalsAsBowler:{}, outsAsBatsman:{} };
                 tempStats[p.name].dots = tempStats[p.name].dots || 0;
                 tempStats[p.name].wides = tempStats[p.name].wides || 0;
                 tempStats[p.name].noballs = tempStats[p.name].noballs || 0;
@@ -10822,9 +11245,10 @@ function printHistoryMatch(){
                 tempStats[p.name].fours = (tempStats[p.name].fours||0)+(p.fours||0);
                 tempStats[p.name].sixes = (tempStats[p.name].sixes||0)+(p.sixes||0);
                 tempStats[p.name].dots = (tempStats[p.name].dots||0)+(p.dots||0);
-                let ex = bowlerExtraMapLive[p.name] || {wides:0, noballs:0};
+                let ex = bowlerExtraMapLive[p.name] || {wides:0, noballs:0, legbyes:0};
                 tempStats[p.name].wides += ex.wides;
                 tempStats[p.name].noballs += ex.noballs;
+                tempStats[p.name].legbyes = (tempStats[p.name].legbyes || 0) + (ex.legbyes || 0);
             });
             fallOfWickets.forEach(w => {
                 let bName = w.bowler, batName = w.batsman, type = w.dismissal || 'Other';
@@ -10912,7 +11336,7 @@ function printHistoryMatch(){
         if(list.length===0){ list = Object.keys(tempStats).map(k=>({name:k, ...tempStats[k]})); }
         let orangeAll = [...list].sort((a,b) => (b.r||0) - (a.r||0));
         let orHtml = orangeAll.map((x, i) => `
-            <div onclick="showPlayerDetail('${x.name.replace(/'/g,"\\'")}')" class="cursor-pointer flex justify-between items-center bg-white/10 backdrop-blur p-3 rounded-xl border ${i===0 ? 'border-amber-300 bg-amber-500/20' : 'border-white/10'}">
+            <div onclick="showPlayerDetail('${x.name.replace(/'/g,"\\'")}')" class="cursor-pointer flex justify-between items-center p-3 rounded-xl border ${i===0 ? 'border-amber-500 bg-amber-50' : 'border-amber-200 bg-orange-50'}" style="color:#1c1917">
                 <div class="flex items-center gap-2"><span class="w-7 h-7 rounded-full ${i===0?'bg-amber-400 text-slate-900':'bg-white/20 text-white'} flex items-center justify-center text-xs font-black">#${i+1}</span><div><span class="font-bold text-sm block">${x.name} ${x.r>=100?'👑':x.r>=50?'🧢':''}</span><span class="text-[10px] opacity-70">${x.b||0} balls • 4s:${x.fours||0} 6s:${x.sixes||0}</span></div></div>
                 <div class="text-right"><span class="font-black text-base">${x.r||0} Runs</span><br><span class="text-[11px] opacity-80">SR: ${x.b? ((x.r/x.b)*100).toFixed(1) : '0.0'}</span><button onclick="event.stopPropagation();downloadPlayerCard('${x.name.replace(/'/g,"\\'")}')" class="ml-2 text-[10px] bg-white/20 px-2 py-0.5 rounded-full">⬇️</button></div>
             </div>
@@ -10926,7 +11350,7 @@ function printHistoryMatch(){
             return econA - econB;
         });
         let purpHtml = purpleAll.map((x, i) => `
-            <div onclick="showPlayerDetail('${x.name.replace(/'/g,"\\'")}')" class="cursor-pointer flex justify-between items-center bg-white/10 backdrop-blur p-3 rounded-xl border ${i===0 ? 'border-violet-300 bg-violet-500/20' : 'border-white/10'}">
+            <div onclick="showPlayerDetail('${x.name.replace(/'/g,"\\'")}')" class="cursor-pointer flex justify-between items-center p-3 rounded-xl border ${i===0 ? 'border-violet-500 bg-violet-50' : 'border-violet-200 bg-purple-50'}" style="color:#1e1b4b">
                 <div class="flex items-center gap-2"><span class="w-7 h-7 rounded-full ${i===0?'bg-violet-400 text-white':'bg-white/20 text-white'} flex items-center justify-center text-xs font-black">#${i+1}</span><div><span class="font-bold text-sm block">${x.name}</span><span class="text-[10px] opacity-70">${x.bb||0} balls bowled</span></div></div>
                 <div class="text-right"><span class="font-black text-base">${x.w||0} Wkts</span><br><span class="text-[11px] opacity-80">Econ: ${x.bb? ((x.br/x.bb)*6).toFixed(2) : '0.00'} • Dots:${x.dots||0}</span><button onclick="event.stopPropagation();downloadPlayerCard('${x.name.replace(/'/g,"\\'")}')" class="ml-2 text-[10px] bg-white/20 px-2 py-0.5 rounded-full">⬇️</button></div>
             </div>
@@ -11020,6 +11444,10 @@ function printHistoryMatch(){
             title = "No Balls by Bowler";
             let sorted = [...all].filter(x => x.noballs > 0).sort((a,b) => b.noballs - a.noballs);
             html = sorted.length ? sorted.map(x => row(x.name, x.noballs + " no-balls")).join('') : "<p class='text-sm text-slate-400'>No no-balls yet.</p>";
+        } else if (type === 'legbyes') {
+            title = "Leg Byes by Bowler";
+            let sorted = [...all].filter(x => (x.legbyes|0) > 0).sort((a,b) => (b.legbyes|0) - (a.legbyes|0));
+            html = sorted.length ? sorted.map(x => row(x.name, (x.legbyes|0) + " leg byes")).join('') : "<p class='text-sm text-slate-400'>No leg byes yet.</p>";
         } else if (type === 'extras') {
             title = "Extras by Bowler";
             let sorted = [...all].filter(x => (x.wides + x.noballs) > 0).sort((a,b) => (b.wides + b.noballs) - (a.wides + a.noballs));
@@ -14264,8 +14692,8 @@ function updateVoiceToggleBtn() {
         <input type="text" id="cfg-teamB-name" value="Serene Warriors" />
         <select id="cfg-teamA-color"><option value="blue" selected>Blue</option></select>
         <select id="cfg-teamB-color"><option value="orange" selected>Orange</option></select>
-        <input type="range" id="cfg-teamA-count" min="1" max="15" value="7" />
-        <input type="range" id="cfg-teamB-count" min="1" max="15" value="7" />
+        <input type="range" id="cfg-teamA-count" min="1" max="20" value="11" />
+        <input type="range" id="cfg-teamB-count" min="1" max="20" value="11" />
         <div id="players-list-A"></div>
         <div id="players-list-B"></div>
         <span id="count-A">7</span>
@@ -14568,5 +14996,314 @@ body.scoring-active {
 }
 </style>
 
+
+<style id="dash-lock-css">
+body.score-dash-locked #sb-swipe-inner { pointer-events: auto; }
+body.score-dash-locked #sb-swipe-track { touch-action: pan-y !important; }
+body.score-dash-locked #scoring-controls-panel {
+  position: fixed !important; left: 50% !important; transform: translateX(-50%) !important; bottom: 0 !important;
+}
+</style>
+
+<style id="compact-top-css">
+.app-shell { padding-top: 0 !important; }
+.espn-header { margin-top: 0 !important; }
+.espn-tabbar {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 50 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0.35rem !important;
+}
+#page-toss:not(.hidden), #page-tournament:not(.hidden), #page-stats:not(.hidden),
+#page-scoring:not(.hidden), #page-livefeed:not(.hidden), #page-history:not(.hidden),
+#page-rankings:not(.hidden), #page-quickinfo:not(.hidden) {
+  margin-top: 0 !important;
+  padding-top: 0.25rem !important;
+}
+</style>
+
+<style id="sb-lock-scroll-css">
+#scoreboard-card { position: relative !important; }
+#sb-scroll-lock { position: absolute !important; right: 8px !important; bottom: 8px !important; z-index: 25 !important; }
+body.score-dash-locked #page-scoring {
+  overflow: hidden !important;
+  touch-action: none !important;
+  overscroll-behavior: none !important;
+}
+body.score-dash-locked #sb-result-wrap,
+body.score-dash-locked #scoreboard-card {
+  overflow: hidden !important;
+  touch-action: none !important;
+}
+body:not(.score-dash-locked) #page-scoring {
+  overflow-y: auto !important;
+  touch-action: pan-y !important;
+}
+</style>
+
+<style id="pro-level-theme">
+/* ========== MySportzStats PRO theme ========== */
+:root {
+  --pro-bg: #070b12;
+  --pro-surface: #0f1623;
+  --pro-card: #141c2b;
+  --pro-card2: #1a2436;
+  --pro-border: rgba(148,163,184,.14);
+  --pro-border-strong: rgba(148,163,184,.28);
+  --pro-text: #f1f5f9;
+  --pro-muted: #94a3b8;
+  --pro-accent: #38bdf8;
+  --pro-accent2: #34d399;
+  --pro-warn: #fbbf24;
+  --pro-danger: #f43f5e;
+  --pro-live: #ef4444;
+  --pro-radius: 14px;
+  --pro-font: "Segoe UI", Inter, system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+}
+html, body {
+  background: var(--pro-bg) !important;
+  color: var(--pro-text) !important;
+  font-family: var(--pro-font) !important;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: 0.01em;
+}
+.app-shell {
+  background: transparent !important;
+  box-shadow: none !important;
+  max-width: 28rem !important;
+  padding-left: 0.55rem !important;
+  padding-right: 0.55rem !important;
+}
+/* Header — broadcast bar */
+.espn-header {
+  background: linear-gradient(165deg, #121a28 0%, #0a101a 100%) !important;
+  border: 1px solid var(--pro-border) !important;
+  border-radius: var(--pro-radius) !important;
+  padding: 0.55rem 0.75rem 0.6rem !important;
+  margin-bottom: 0.35rem !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,.35);
+}
+#header-match-desc {
+  color: var(--pro-warn) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+}
+#innings-banner {
+  background: rgba(56,189,248,.1) !important;
+  border: 1px solid rgba(56,189,248,.25) !important;
+  color: #e0f2fe !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+}
+/* Tabs — pro pill rail */
+.espn-tabbar {
+  background: var(--pro-surface) !important;
+  border: 1px solid var(--pro-border) !important;
+  border-radius: 12px !important;
+  padding: 4px !important;
+  gap: 2px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,.25);
+}
+.espn-tab-active {
+  background: linear-gradient(180deg, #1e3a5f 0%, #0f2744 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 0 0 1px rgba(56,189,248,.35), 0 4px 12px rgba(0,0,0,.3) !important;
+  border-radius: 9px !important;
+}
+.espn-tab-inactive {
+  background: transparent !important;
+  color: var(--pro-muted) !important;
+  border-radius: 9px !important;
+}
+.espn-tab-inactive:active { background: rgba(255,255,255,.04) !important; }
+
+/* Cards / panels */
+.theme-panel, .theme-card, [class*="theme-panel"] {
+  background: var(--pro-card) !important;
+  border-color: var(--pro-border) !important;
+  color: var(--pro-text) !important;
+  border-radius: var(--pro-radius) !important;
+}
+.theme-text { color: var(--pro-text) !important; }
+.theme-muted { color: var(--pro-muted) !important; }
+.theme-border { border-color: var(--pro-border) !important; }
+
+/* Scoreboard pro */
+#scoreboard-card {
+  background: linear-gradient(165deg, #0c1422 0%, #121c2e 45%, #0a1220 100%) !important;
+  border: 1px solid var(--pro-border-strong) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.04) !important;
+  overflow: hidden !important;
+}
+#scoreboard-card .team-header-score,
+#scoreboard-card [class*="score"] {
+  font-variant-numeric: tabular-nums;
+}
+#sb-scroll-lock {
+  position: absolute !important;
+  right: 10px !important;
+  bottom: 10px !important;
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--pro-border-strong) !important;
+  background: rgba(7,11,18,.9) !important;
+  backdrop-filter: blur(8px);
+  font-size: 14px !important;
+  z-index: 30 !important;
+}
+body.score-dash-locked #sb-scroll-lock {
+  background: rgba(6,95,70,.95) !important;
+  border-color: #34d399 !important;
+}
+
+/* Run pad — pro keypad */
+#scoring-controls-panel,
+body.scoring-active #scoring-controls-panel {
+  background: linear-gradient(180deg, #121a28 0%, #0a1018 100%) !important;
+  border-top: 1px solid var(--pro-border-strong) !important;
+  box-shadow: 0 -8px 32px rgba(0,0,0,.5) !important;
+  border-radius: 16px 16px 0 0 !important;
+}
+#scoring-controls-panel .score-btn,
+#scoring-controls-panel button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: .02em !important;
+  box-shadow: 0 2px 0 rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.12) !important;
+  border: none !important;
+}
+#scoring-tools-panel {
+  background: var(--pro-card) !important;
+  border: 1px solid var(--pro-border) !important;
+  border-radius: 12px !important;
+}
+
+/* Cup subtabs */
+.cup-subtab {
+  border-radius: 10px !important;
+  transition: all .15s ease !important;
+}
+#cup-sub-create, #cup-match-settings-wrap, #cup-ui-settings-wrap, #cup-tournament-wrap {
+  background: var(--pro-card) !important;
+  border: 1px solid var(--pro-border) !important;
+  border-radius: 14px !important;
+  padding: 0.85rem !important;
+}
+#cup-players-list-A input, #cup-players-list-B input,
+input.theme-card, select.theme-card, textarea.theme-card {
+  background: var(--pro-card2) !important;
+  border: 1px solid var(--pro-border) !important;
+  color: var(--pro-text) !important;
+  border-radius: 10px !important;
+}
+#cup-players-list-A input:focus, #cup-players-list-B input:focus {
+  outline: none !important;
+  border-color: var(--pro-accent) !important;
+  box-shadow: 0 0 0 3px rgba(56,189,248,.15) !important;
+}
+#cup-start-match-btn, button.bg-emerald-600 {
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 14px rgba(16,185,129,.35) !important;
+  letter-spacing: .06em !important;
+}
+
+/* Stats tables */
+.stats-table, table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+.stats-table th, table thead th {
+  font-size: 10px !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  color: var(--pro-muted) !important;
+}
+
+/* Modals */
+.modal-backdrop, [class*="modal"] {
+  backdrop-filter: blur(6px);
+}
+
+/* Force dark even if light theme selected in settings for pro look on scoring */
+body.scoring-active {
+  background: var(--pro-bg) !important;
+}
+
+/* Subtle live pulse */
+@keyframes pro-live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .45; }
+}
+.pro-live-dot, #live-indicator, .live-badge {
+  animation: pro-live-pulse 1.6s ease-in-out infinite;
+}
+
+/* Tournament fixtures cards */
+#tour-fixtures-list > div {
+  background: var(--pro-card2) !important;
+  border: 1px solid var(--pro-border) !important;
+  border-radius: 12px !important;
+}
+
+/* Reduce “template” feel of Tailwind light panels on cup */
+#page-tournament .bg-slate-50\/50,
+#page-tournament .bg-sky-50\/40,
+#page-tournament .bg-amber-50\/40,
+#page-tournament .bg-white\/60 {
+  background: var(--pro-card2) !important;
+}
+#page-tournament .text-slate-700 {
+  color: var(--pro-muted) !important;
+}
+</style>
+
+
+
+<style id="ui-fix-final-v5">
+button, .cup-subtab, .score-btn, .espn-tabbar button { border-radius: 12px !important; }
+.cup-subtab { font-size: 8px !important; line-height: 1.15 !important; }
+#page-stats { background: transparent !important; }
+#page-stats .theme-card, #page-stats .theme-panel, #page-stats table,
+#card-teamA, #card-teamB {
+  background: var(--bg-card, #0f172a) !important;
+  color: var(--text-main, #f8fafc) !important;
+  border-color: var(--border-c, #334155) !important;
+}
+body[data-theme="light"] {
+  --bg-body: #f8fafc; --bg-card: #ffffff; --bg-panel: #ffffff;
+  --text-main: #0f172a; --text-muted: #64748b; --border-c: #e2e8f0;
+}
+body[data-theme="light"] #page-stats .theme-card,
+body[data-theme="light"] #page-stats table,
+body[data-theme="light"] #card-teamA, body[data-theme="light"] #card-teamB {
+  background: #ffffff !important; color: #0f172a !important; border-color: #e2e8f0 !important;
+}
+body[data-theme="light"] #page-stats th { color: #64748b !important; }
+body[data-theme="light"] #page-stats td { color: #0f172a !important; }
+body:not([data-theme="light"]) #scoring-controls-panel {
+  background: linear-gradient(180deg,#121212 0%,#000 100%) !important;
+  border-top: 1px solid #a1a1aa !important;
+}
+#scoring-controls-panel .score-btn { color:#fff !important; border-radius:12px !important; }
+#rankings-orange-cap > div { background: #fff7ed !important; color: #1c1917 !important; border-color: #fdba74 !important; }
+#rankings-purple-cap > div { background: #f5f3ff !important; color: #1e1b4b !important; border-color: #c4b5fd !important; }
+</style>
+<script id="pro-level-boot">
+(function(){
+  try {
+    document.documentElement.setAttribute('data-pro','1');
+    var saved = null;
+    try { saved = localStorage.getItem('cricket_theme') || localStorage.getItem('theme'); } catch(e){}
+    if (saved && typeof setTheme === 'function') { try { setTheme(saved); } catch(e){} }
+    else if (typeof applyTheme === 'function') { try { applyTheme(); } catch(e){} }
+  } catch(e) {}
+})();
+</script>
 </body>
 </html>

@@ -49,7 +49,8 @@
     window.addEventListener('load', function () {
       var sw = 'sw.js';
       try { sw = new URL('sw.js', location.href).href; } catch (e) {}
-      navigator.serviceWorker.register(new URL('/sw-live.js', location.origin).href, {scope: '/live'});
+      navigator.serviceWorker.register(new URL('/sw-live.js', location.origin).href, {scope: '/live'})
+        .catch(function (err) { console.warn('SW register skipped:', err && err.message); });
     });
   }
   window.__pwaDeferredPrompt = null;
@@ -1327,6 +1328,189 @@ input, select, textarea {
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
 <body>
+
+<style id="live-pro-v2">
+:root {
+  --ci-bg: #070b12;
+  --ci-card: #121a28;
+  --ci-border: rgba(148,163,184,.16);
+  --ci-text: #f8fafc;
+  --ci-muted: #94a3b8;
+  --ci-accent: #38bdf8;
+  --ci-live: #ef4444;
+}
+html, body {
+  background: var(--ci-bg) !important;
+  color: var(--ci-text) !important;
+  font-family: "Segoe UI", Inter, system-ui, sans-serif !important;
+  font-size: 15px !important;
+}
+#live-main-tabs {
+  display: flex !important;
+  background: #0c1220 !important;
+  border-bottom: 1px solid var(--ci-border) !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 50 !important;
+}
+#live-main-tabs button {
+  flex: 1;
+  padding: 13px 8px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: .07em !important;
+  text-transform: uppercase !important;
+  color: var(--ci-muted) !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 3px solid transparent !important;
+}
+#live-main-tabs button.active {
+  color: #fff !important;
+  border-bottom-color: var(--ci-accent) !important;
+}
+.squad-team-title {
+  font-size: 12px; font-weight: 800; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ci-accent);
+  padding: 14px 16px 8px;
+}
+.squad-player-row {
+  display: flex; justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ci-border);
+  font-size: 14px; font-weight: 600;
+}
+/* Score hero */
+.live-score-hero, #score-hero, .main-score {
+  font-size: 2rem !important;
+  font-weight: 800 !important;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+</style>
+
+
+<style id="cricinfo-live-theme">
+/* Cricinfo / Cricbuzz inspired dark live viewer */
+:root {
+  --ci-bg: #0b0e13;
+  --ci-card: #151a22;
+  --ci-card2: #1a2130;
+  --ci-border: #2a3344;
+  --ci-text: #f1f5f9;
+  --ci-muted: #94a3b8;
+  --ci-accent: #03a9f4;
+  --ci-live: #ef4444;
+  --ci-good: #22c55e;
+  --ci-warn: #fbbf24;
+}
+html, body {
+  background: var(--ci-bg) !important;
+  color: var(--ci-text) !important;
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 15px !important;
+  line-height: 1.45 !important;
+  -webkit-font-smoothing: antialiased;
+}
+.theme-panel, .card, .score-card, .viewer-panel, [class*="panel"] {
+  background: var(--ci-card) !important;
+  border-color: var(--ci-border) !important;
+  color: var(--ci-text) !important;
+}
+/* Top match bar */
+.live-ci-header, #match-header, .espn-header, header, .viewer-header {
+  background: linear-gradient(180deg, #121820 0%, #0b0e13 100%) !important;
+  border-bottom: 1px solid var(--ci-border) !important;
+}
+/* Tab bar — Cricinfo style */
+#live-main-tabs, .live-tabs, .viewer-tabs {
+  display: flex !important;
+  gap: 0 !important;
+  background: var(--ci-card) !important;
+  border-bottom: 2px solid var(--ci-border) !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+#live-main-tabs button, .live-tabs button, .viewer-tabs button {
+  flex: 1 0 auto;
+  min-width: 4.5rem;
+  padding: 12px 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--ci-muted) !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 3px solid transparent !important;
+  border-radius: 0 !important;
+}
+#live-main-tabs button.active, .live-tabs button.active, .viewer-tabs button.active,
+#live-main-tabs button[aria-selected="true"] {
+  color: #fff !important;
+  border-bottom-color: var(--ci-accent) !important;
+}
+/* Score emphasis */
+.score-main, .team-score, .runs-display {
+  font-size: 1.75rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em;
+}
+/* Squad list */
+.squad-team-title {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ci-accent);
+  padding: 10px 12px 6px;
+}
+.squad-player-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--ci-border);
+  font-size: 14px;
+}
+/* Commentary */
+.commentary-line, .feed-line {
+  font-size: 14px !important;
+  padding: 10px 12px !important;
+  border-bottom: 1px solid rgba(42,51,68,.8);
+}
+/* Hide light-theme leftovers */
+body.light, body[data-theme="light"] {
+  background: var(--ci-bg) !important;
+  color: var(--ci-text) !important;
+}
+</style>
+<nav id="live-main-tabs" class="live-tabs" role="tablist">
+  <button type="button" class="active" data-live-tab="live" onclick="switchLiveTab('live')">Live</button>
+  <button type="button" data-live-tab="scorecard" onclick="switchLiveTab('scorecard')">Scorecard</button>
+  <button type="button" data-live-tab="squad" onclick="switchLiveTab('squad')">Squad</button>
+  <button type="button" data-live-tab="stats" onclick="switchLiveTab('stats')">Stats</button>
+  <button type="button" data-live-tab="schedule" onclick="switchLiveTab('schedule')">📅 Schedule</button>
+</nav>
+<div id="live-tab-squad" class="live-tab-panel hidden" style="display:none;padding:12px 12px 100px">
+  <div id="squad-team-a"></div>
+  <div id="squad-team-b" style="margin-top:12px"></div>
+</div>
+<div id="live-tab-schedule" class="live-tab-panel hidden" style="display:none;padding:12px 12px 100px">
+  <div style="text-align:center;margin-bottom:12px">
+    <div style="font-size:12px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#fbbf24">Match Schedule</div>
+    <p style="font-size:11px;color:#94a3b8;margin:4px 0 0">Tournament fixtures from scorer</p>
+  </div>
+  <div id="live-schedule-list"><p style="text-align:center;color:#64748b;font-size:13px;padding:20px 0">No schedule published yet</p></div>
+</div>
+<div id="live-tab-stats-panel" class="live-tab-panel hidden" style="display:none;padding:12px 12px 100px">
+  <div style="text-align:center;margin-bottom:10px;font-size:12px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#34d399">Match Stats</div>
+  <div id="live-stats-body"><p style="text-align:center;color:#64748b;font-size:13px;padding:16px 0">Stats appear when match data is available</p></div>
+</div>
+
+
 
 <style id="platform-ad-css">
 .platform-ad { margin: 8px 12px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(251,191,36,.35); background: linear-gradient(135deg,#1e293b,#0f172a); }
@@ -5934,5 +6118,121 @@ try{mountDashboards()}catch(e){}
 })();
 </script>
 
+
+<script id="live-tabs-cricinfo">
+(function(){
+  function $(id){ return document.getElementById(id); }
+  window.switchLiveTab = function(name) {
+    try {
+      var tabs = document.querySelectorAll('#live-main-tabs button');
+      tabs.forEach(function(b){
+        b.classList.toggle('active', b.getAttribute('data-live-tab') === name);
+      });
+      var showLive = (name === 'live' || name === 'scorecard' || name === 'feed');
+      var liveRoot = $('live-root');
+      if (liveRoot) {
+        if (showLive) { liveRoot.classList.remove('hidden'); liveRoot.style.display = ''; }
+        else { liveRoot.classList.add('hidden'); liveRoot.style.display = 'none'; }
+      }
+      ['live-tab-squad','live-tab-schedule','live-tab-stats-panel'].forEach(function(id){
+        var el = $(id);
+        if (!el) return;
+        var on = (id === 'live-tab-squad' && name === 'squad')
+              || (id === 'live-tab-schedule' && name === 'schedule')
+              || (id === 'live-tab-stats-panel' && name === 'stats');
+        el.style.display = on ? 'block' : 'none';
+        el.classList.toggle('hidden', !on);
+      });
+      if (name === 'squad') renderLiveSquad();
+      if (name === 'schedule') renderLiveSchedule();
+      if (name === 'stats') renderLiveStatsPanel();
+    } catch(e) {}
+  };
+  function renderLiveSchedule() {
+    try {
+      var list = document.getElementById('live-schedule-list');
+      if (!list) return;
+      var data = window.__lastLiveData || window.liveData || {};
+      var fx = data.fixtures || (data.tournament && data.tournament.fixtures) || [];
+      if (!fx.length) {
+        try {
+          var raw = localStorage.getItem('cricket_tournament_v1');
+          if (raw) { var t = JSON.parse(raw); if (t && t.fixtures) fx = t.fixtures; }
+        } catch(eL){}
+      }
+      var seen = {};
+      fx = (fx || []).filter(function(f){
+        var k = [f.teamA,f.teamB,f.date,f.time,f.type].join('|');
+        if (seen[k]) return false; seen[k] = 1; return true;
+      });
+      if (!fx.length) {
+        list.innerHTML = '<p style="text-align:center;color:#64748b;font-size:13px;padding:20px 0">No schedule published yet</p>';
+        return;
+      }
+      var html = '';
+      fx.forEach(function(f) {
+        var when = [f.date, f.time].filter(Boolean).join(' ');
+        var st = f.status || 'scheduled';
+        var badge = st === 'live' ? '#ef4444' : '#34d399';
+        html += '<div style="background:rgba(15,23,42,.75);border:1px solid rgba(148,163,184,.2);border-radius:12px;padding:12px;margin-bottom:8px">'
+          + '<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
+          + '<span style="font-size:10px;font-weight:800;text-transform:uppercase;color:#94a3b8">'+(f.type||'group')+'</span>'
+          + '<span style="font-size:10px;font-weight:800;color:'+badge+'">'+st+'</span></div>'
+          + '<div style="font-size:15px;font-weight:900;color:#f8fafc;text-align:center">'+(f.teamA||'?')+' <span style="color:#fbbf24;font-size:12px">vs</span> '+(f.teamB||'?')+'</div>'
+          + (when ? '<div style="font-size:12px;color:#94a3b8;text-align:center;margin-top:4px">'+when+'</div>' : '')
+          + (f.venue ? '<div style="font-size:11px;color:#64748b;text-align:center;margin-top:2px">📍 '+f.venue+'</div>' : '')
+          + '</div>';
+      });
+      list.innerHTML = html;
+    } catch(e) {}
+  }
+  function renderLiveStatsPanel() {
+    try {
+      var body = document.getElementById('live-stats-body');
+      if (!body) return;
+      var d = window.__lastLiveData || window.liveData || {};
+      var runs = d.runs|0, wkts = d.wickets|0, balls = d.balls|0;
+      var ov = (Math.floor(balls/6)+'.'+(balls%6));
+      body.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+        + '<div style="background:#151a22;border-radius:12px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:900;color:#34d399">'+runs+'/'+wkts+'</div><div style="font-size:10px;color:#94a3b8">SCORE</div></div>'
+        + '<div style="background:#151a22;border-radius:12px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:900;color:#38bdf8">'+ov+'</div><div style="font-size:10px;color:#94a3b8">OVERS</div></div>'
+        + '</div>';
+    } catch(e) {}
+  }
+  function renderLiveSquad() {
+    try {
+      var data = window.__lastLiveData || window.liveData || {};
+      var teamA = data.teamA || data.team_a || {};
+      var teamB = data.teamB || data.team_b || {};
+      var nameA = teamA.name || data.teamAName || 'Team A';
+      var nameB = teamB.name || data.teamBName || 'Team B';
+      var listA = data.squadA || data.teamAPlayers || teamA.players || data.playersA || [];
+      var listB = data.squadB || data.teamBPlayers || teamB.players || data.playersB || [];
+      if ((!listA || !listA.length) && Array.isArray(data.players)) {
+        listA = data.players.filter(function(p){ return p.team==='A' || p.side==='A'; });
+        listB = data.players.filter(function(p){ return p.team==='B' || p.side==='B'; });
+      }
+      function row(p) {
+        var n = (typeof p === 'string') ? p : (p.name || p.player || '');
+        if (!n || /^Player\s*\d+/i.test(n)) return '';
+        return '<div class="squad-player-row"><span>'+n+'</span><span style="color:#64748b;font-size:11px">'+(p.role||'')+'</span></div>';
+      }
+      function block(title, list) {
+        var rows = (list||[]).map(row).filter(Boolean).join('');
+        if (!rows) rows = '<div class="squad-player-row" style="color:#64748b">No players listed yet</div>';
+        return '<div class="squad-team-title">'+title+'</div><div style="background:#151a22;border-top:1px solid #2a3344">'+rows+'</div>';
+      }
+      var a = $('squad-team-a'); var b = $('squad-team-b');
+      if (a) a.innerHTML = block(nameA, listA);
+      if (b) b.innerHTML = block(nameB, listB);
+    } catch(e) {}
+  }
+  // Hook live data updates
+  var _orig = window.applyLiveData || window.onLiveUpdate;
+  window.__liveSquadHook = function(data) {
+    window.__lastLiveData = data;
+  };
+})();
+</script>
 </body>
 </html>
