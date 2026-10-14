@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, user-scalable=yes">
     <title>My Cricket Scorer</title>
     <meta name="description" content="Live cricket scoring, commentary and stats">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#009270">
     <link rel="manifest" href="/manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2315,14 +2315,14 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
         </div>
 
         <!-- Navigation Tabs -->
-        <div class="flex espn-tabbar p-1 rounded-xl mb-1 text-[11px] font-bold gap-0.5 shadow-sm items-stretch">
-            <button id="tab-tournament" onclick="switchTab('tournament')" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-active transition-all"><span class="block text-base leading-none">🏆</span><span class="block text-[9px] mt-0.5">Cup</span></button>
-            <button id="tab-toss" onclick="switchTab('toss')" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all"><span class="block text-base leading-none">🎲</span><span class="block text-[9px] mt-0.5">Toss</span></button>
-            <button id="tab-scoring" onclick="switchTab('scoring')" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all"><span class="block text-base leading-none">🏏</span><span class="block text-[9px] mt-0.5">Score</span></button>
-            <button id="tab-stats" onclick="switchTab('stats')" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all"><span class="block text-base leading-none">⏱️</span><span class="block text-[9px] mt-0.5">Stats</span></button>
-            <button id="tab-rankings" onclick="switchTab('rankings')" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all"><span class="block text-base leading-none">🔥</span><span class="block text-[9px] mt-0.5">Rank</span></button>
-            <button id="tab-history" onclick="switchTab('history')" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all"><span class="block text-base leading-none">🗂️</span><span class="block text-[9px] mt-0.5">Hist</span></button>
-            <button id="tab-quickinfo" onclick="switchTab('quickinfo')" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all"><span class="block text-base leading-none">⚡</span><span class="block text-[9px] mt-0.5">Dash</span></button>
+        <div id="main-tabbar" class="flex espn-tabbar p-1 rounded-xl mb-1 text-[11px] font-bold gap-0.5 shadow-sm items-stretch" role="tablist" style="position:relative;z-index:99999;pointer-events:auto!important">
+            <button type="button" id="tab-tournament" data-tab="tournament" onclick=\"try{event.preventDefault();event.stopPropagation();}catch(e){};(window.goTab||window.switchTab||function(t){})('tournament')\" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-active transition-all" style="pointer-events:auto!important;touch-action:manipulation;cursor:pointer"><span class="block text-base leading-none">🏆</span><span class="block text-[9px] mt-0.5">Cup</span></button>
+            <button type="button" id="tab-toss" data-tab="toss" onclick=\"try{event.preventDefault();event.stopPropagation();}catch(e){};(window.goTab||window.switchTab||function(t){})('toss')\" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all" style="pointer-events:auto!important;touch-action:manipulation;cursor:pointer"><span class="block text-base leading-none">🎲</span><span class="block text-[9px] mt-0.5">Toss</span></button>
+            <button type="button" id="tab-scoring" data-tab="scoring" onclick=\"try{event.preventDefault();event.stopPropagation();}catch(e){};(window.goTab||window.switchTab||function(t){})('scoring')\" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all" style="pointer-events:auto!important;touch-action:manipulation;cursor:pointer"><span class="block text-base leading-none">🏏</span><span class="block text-[9px] mt-0.5">Score</span></button>
+            <button type="button" id="tab-stats" data-tab="stats" onclick=\"try{event.preventDefault();event.stopPropagation();}catch(e){};(window.goTab||window.switchTab||function(t){})('stats')\" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all" style="pointer-events:auto!important;touch-action:manipulation;cursor:pointer"><span class="block text-base leading-none">📊</span><span class="block text-[9px] mt-0.5">Stats</span></button>
+            <button type="button" id="tab-rankings" data-tab="rankings" onclick=\"try{event.preventDefault();event.stopPropagation();}catch(e){};(window.goTab||window.switchTab||function(t){})('rankings')\" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all" style="pointer-events:auto!important;touch-action:manipulation;cursor:pointer"><span class="block text-base leading-none">🥇</span><span class="block text-[9px] mt-0.5">Rank</span></button>
+            <button type="button" id="tab-history" data-tab="history" onclick=\"try{event.preventDefault();event.stopPropagation();}catch(e){};(window.goTab||window.switchTab||function(t){})('history')\" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all" style="pointer-events:auto!important;touch-action:manipulation;cursor:pointer"><span class="block text-base leading-none">🗓️</span><span class="block text-[9px] mt-0.5">Hist</span></button>
+            <button type="button" id="tab-quickinfo" data-tab="quickinfo" onclick=\"try{event.preventDefault();event.stopPropagation();}catch(e){};(window.goTab||window.switchTab||function(t){})('quickinfo')\" class="flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all" style="pointer-events:auto!important;touch-action:manipulation;cursor:pointer"><span class="block text-base leading-none">⚡</span><span class="block text-[9px] mt-0.5">Dash</span></button>
         </div>
 
         <!-- PAGE: CUP — simple teams + create match (first page) -->
@@ -2335,7 +2335,7 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
                 <h3 class="text-sm font-black theme-text uppercase tracking-wider border-b theme-border pb-2">Teams & Squad</h3>
                 <div class="flex gap-2">
                     <input type="text" id="cup-new-team" placeholder="New team name" class="flex-1 border theme-border theme-card theme-text p-2 rounded text-sm font-bold" onkeydown="if(event.key==='Enter')cupAddTeam()">
-                    <button onclick="cupAddTeam()" class="px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-sm">+ Add</button>
+                    <button onclick="try{(window.cupAddTeam||cupAddTeam)()}catch(e){console.log(e)}" class="px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-sm">+ Add</button>
                 </div>
                 <div>
                     <label class="text-xs theme-muted font-semibold block mb-1">Players for new team <span class="font-normal">(comma-separated)</span></label>
@@ -2347,11 +2347,14 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
             </div>
 
             <div class="theme-panel border theme-border rounded-xl p-4 space-y-3">
-                <div class="flex gap-1.5 border-b theme-border pb-2">
-                    <button type="button" id="cup-subtab-create" onclick="window.setCupSubTab&&window.setCupSubTab('create')" class="cup-subtab flex-1 py-2 px-0.5 rounded-xl text-[8px] font-black uppercase tracking-wide bg-emerald-600 text-white shadow leading-tight" style="touch-action:manipulation;-webkit-tap-highlight-color:transparent">Create Match</button>
-                    <button type="button" id="cup-subtab-settings" onclick="window.setCupSubTab&&window.setCupSubTab('settings')" class="cup-subtab flex-1 py-2 px-0.5 rounded-xl text-[8px] font-black uppercase tracking-wide bg-slate-200 text-slate-700 leading-tight" style="touch-action:manipulation;-webkit-tap-highlight-color:transparent">Match Settings</button>
-                    <button type="button" id="cup-subtab-ui" onclick="window.setCupSubTab&&window.setCupSubTab('ui')" class="cup-subtab flex-1 py-2 px-0.5 rounded-xl text-[8px] font-black uppercase tracking-wide bg-slate-200 text-slate-700 leading-tight" style="touch-action:manipulation;-webkit-tap-highlight-color:transparent">UI Settings</button>
-                    <button type="button" id="cup-subtab-tournament" onclick="window.setCupSubTab&&window.setCupSubTab('tournament')" class="cup-subtab flex-1 py-2 px-0.5 rounded-xl text-[8px] font-black uppercase tracking-wide bg-slate-200 text-slate-700 leading-tight" style="touch-action:manipulation;-webkit-tap-highlight-color:transparent">Tournament</button>
+                
+                
+                
+                <div class="cup-subtab-bar">
+                    <button type="button" id="cup-subtab-create" onclick="try{(window.setCupSubTab||setCupSubTab)('create')}catch(e){console.log(e)}" class="cup-subtab is-active">Create Match</button>
+                    <button type="button" id="cup-subtab-settings" onclick="try{(window.setCupSubTab||setCupSubTab)('settings')}catch(e){console.log(e)}" class="cup-subtab">Settings</button>
+                    <button type="button" id="cup-subtab-ui" onclick="try{(window.setCupSubTab||setCupSubTab)('ui')}catch(e){console.log(e)}" class="cup-subtab">UI</button>
+                    <button type="button" id="cup-subtab-tournament" onclick="try{(window.setCupSubTab||setCupSubTab)('tournament')}catch(e){console.log(e)}" class="cup-subtab">Tournament</button>
                 </div>
                 <div id="cup-sub-create" class="space-y-3">
                 <h3 class="text-sm font-black theme-text uppercase tracking-wider">Create Match</h3>
@@ -2393,11 +2396,16 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
                     <label class="text-xs theme-muted font-semibold block mb-1">Venue <span class="font-normal">(optional)</span></label>
                     <input type="text" id="cup-venue" placeholder="e.g. Lords, Wankhede, Local ground" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm">
                 </div>
-                <button onclick="cupStartMatch()" id="cup-start-match-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl text-sm uppercase tracking-wider shadow">▶ Start Match</button>
+                <button onclick="try{(window.cupStartMatch||cupStartMatch)()}catch(e){console.log(e)}" id="cup-start-match-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl text-sm uppercase tracking-wider shadow">▶ Start Match</button>
                 </div><!-- /cup-sub-create -->
 
                 <!-- Tournament schedule -->
                 <div id="cup-tournament-wrap" class="hidden border theme-border rounded-xl p-3 space-y-3" style="background:rgba(99,102,241,0.08)">
+                    <div class="space-y-1 mb-2">
+                        <label class="text-[10px] font-black theme-text uppercase">Tournament poster / image URL</label>
+                        <input type="url" id="tour-image" placeholder="https://.../tournament.png" class="w-full border theme-border theme-card theme-text p-2 rounded-xl text-sm" onchange="saveTournamentImage()"/>
+                        <div id="tour-image-preview" class="hidden mt-1"><img alt="Tournament" class="max-h-28 rounded-xl border theme-border mx-auto"/></div>
+                    </div>
                     <h3 class="text-sm font-black theme-text uppercase tracking-wider">Tournament schedule</h3>
                     <p class="text-[11px] theme-muted">Schedule fixtures across teams. Start a match from any fixture.</p>
                     <div>
@@ -2424,6 +2432,7 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
                             <input type="time" id="fix-time" class="border theme-border theme-card theme-text p-2 rounded text-sm"/>
                         </div>
                         <select id="fix-type" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm">
+                            <option value="knockout">Knockout</option>
                             <option value="group">Group</option>
                             <option value="quarter">Quarter-final</option>
                             <option value="semi">Semi-final</option>
@@ -2504,13 +2513,36 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
                         <label class="text-xs theme-muted font-semibold block mb-1">UI Theme</label>
                         <select id="cup-theme" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm font-bold" onchange="syncCupToScoreboardSettings(); applyTheme();">
                             <option value="light" selected>Light</option>
+                            <option value="amazon">Amazon Light</option>
                             <option value="dark">Dark</option>
-                            <option value="navy">Navy Matte</option>
-                            <option value="amazon">Amazon</option>
-                            <option value="sports">Sports</option>
-                            <option value="league">League Pro (Dark Glass)</option>
-                            <option value="glass">Light Glass</option>
                         </select>
+                    </div>
+
+                
+                    <div class="border theme-border rounded-xl p-3 space-y-2 mt-2" style="background:rgba(15,23,42,0.04)">
+                        <label class="text-xs font-black theme-text uppercase tracking-wider block">📢 Floating Ads</label>
+                        <label class="flex items-center gap-2 text-sm theme-text"><input type="checkbox" id="ad-float-enabled" onchange="saveAdSettings()"/> Enable floating ads</label>
+                        <label class="text-[10px] theme-muted font-semibold block">Show when</label>
+                        <select id="ad-float-trigger" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
+                            <option value="over">After each over</option>
+                            <option value="innings">After innings</option>
+                            <option value="boundary">On boundaries (4/6)</option>
+                            <option value="wicket">On wickets</option>
+                            <option value="random">Random</option>
+                        </select>
+                        <label class="text-[10px] theme-muted font-semibold block">Shape</label>
+                        <select id="ad-float-shape" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
+                            <option value="rect">Rectangular banner</option>
+                            <option value="vertical">Vertical OOH</option>
+                        </select>
+                        <label class="text-[10px] theme-muted font-semibold block">Image URL or text</label>
+                        <input type="url" id="ad-float-image" placeholder="https://.../banner.png" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
+                        <input type="text" id="ad-float-text" placeholder="Ad headline / sponsor" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
+                        <input type="url" id="ad-float-link" placeholder="https://click-through-link" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="previewFloatAd()" class="flex-1 bg-indigo-600 text-white text-xs font-bold py-2 rounded-lg">Preview 5s</button>
+                            <button type="button" onclick="clearAdSettings()" class="flex-1 bg-red-500 text-white text-xs font-bold py-2 rounded-lg">Delete ad</button>
+                        </div>
                     </div>
 
                 <div class="border theme-border rounded-xl p-3 space-y-2 bg-sky-50/50">
@@ -3231,7 +3263,6 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
             <div id="rankings-orange-full" class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 shadow-lg text-white">
                 <div class="flex items-center gap-2 border-b border-white/20 pb-2 mb-3"><span class="text-xl">🏏</span><h3 class="text-base font-black uppercase tracking-wider">Orange Cap - All Batsmen</h3></div>
                 <div id="rankings-orange-cap" class="space-y-2 max-h-[60vh] overflow-y-auto pr-1"></div>
-                <div class="mt-4 grid grid-cols-2 gap-2 text-center"><div class="bg-black/20 p-2.5 rounded-lg border border-white/10"><p class="text-lg font-black" id="rankings-orange-total-runs">0</p><p class="text-[10px] uppercase opacity-80">Total Runs</p></div><div class="bg-black/20 p-2.5 rounded-lg border border-white/10"><p class="text-lg font-black" id="rankings-orange-avg-sr">0</p><p class="text-[10px] uppercase opacity-80">Avg SR</p></div></div>
             </div>
             <div id="rankings-purple-full" class="hidden bg-gradient-to-br from-purple-600 to-indigo-700 rounded-xl p-4 shadow-lg text-white">
                 <div class="flex items-center gap-2 border-b border-white/20 pb-2 mb-3"><span class="text-xl">🎯</span><h3 class="text-base font-black uppercase tracking-wider">Purple Cap - All Bowlers</h3></div>
@@ -3243,7 +3274,7 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
                     <div class="grid grid-cols-2 gap-3 text-center"><div onclick="showBreakdown('sixes')" class="cursor-pointer hover:bg-black/30 transition-colors bg-black/20 p-4 rounded-xl border border-white/10"><p class="text-4xl font-black" id="rankings-total-sixes">0</p><p class="text-xs uppercase opacity-90 mt-1">Total Sixes</p></div><div onclick="showBreakdown('fours')" class="cursor-pointer hover:bg-black/30 transition-colors bg-black/20 p-4 rounded-xl border border-white/10"><p class="text-4xl font-black" id="rankings-total-boundaries">0</p><p class="text-xs uppercase opacity-90 mt-1">Total Fours</p></div></div>
                 </div>
             </div>
-            <div class="bg-gradient-to-br from-emerald-600 to-teal-800 rounded-xl p-4 shadow-lg text-white">
+            <div id="rankings-tournament-overview" class="hidden bg-gradient-to-br from-emerald-600 to-teal-800 rounded-xl p-4 shadow-lg text-white">
                 <div class="flex items-center gap-2 border-b border-white/20 pb-2 mb-3"><span class="text-xl">📊</span><h3 class="text-base font-black uppercase tracking-wider">Tournament Overview</h3></div>
                 <div class="grid grid-cols-2 gap-3 text-center">
                     <div class="bg-black/20 p-3 rounded-xl border border-emerald-400/30 bg-emerald-500/10"><p class="text-3xl font-black text-emerald-300" id="rankings-total-runs">0</p><p class="text-[11px] uppercase text-emerald-200 mt-1">Total Runs</p></div>
@@ -3852,7 +3883,14 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
             if (d.fixtures.some(function(f){ return [f.teamA,f.teamB,f.date,f.time,f.type].join('|')===key; })) {
                 showModal({ title: 'Already added', message: a+' vs '+b+' is already on the schedule.', icon: 'ℹ️' }); return;
             }
-            d.fixtures.push(fx);
+            if (window.__editingFixtureId) {
+                d.fixtures = (d.fixtures || []).map(function(f){ return f.id === window.__editingFixtureId ? Object.assign({}, f, fx, { id: f.id }) : f; });
+                window.__editingFixtureId = null;
+                var btn = document.querySelector('#cup-tournament-wrap button[onclick="addTournamentFixture()"]');
+                if (btn) { btn.textContent = '+ Add to schedule'; btn.removeAttribute('data-edit-mode'); }
+            } else {
+                d.fixtures.push(fx);
+            }
             saveTournament(d);
             try { saveTournamentMeta(); } catch(eM){}
             renderTournamentUI();
@@ -3877,6 +3915,53 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
             else prompt('Copy schedule:', text);
         } catch(e) { showModal({ title:'Error', message:String(e), icon:'⚠️' }); }
     }
+    
+    function editTournamentFixture(id) {
+        try {
+            var d = loadTournament();
+            var fx = (d.fixtures || []).find(function(f){ return f.id === id; });
+            if (!fx) return;
+            var a = document.getElementById('fix-team-a');
+            var b = document.getElementById('fix-team-b');
+            var dt = document.getElementById('fix-date');
+            var tm = document.getElementById('fix-time');
+            var ty = document.getElementById('fix-type');
+            var vn = document.getElementById('fix-venue');
+            fillFixtureTeamSelects();
+            if (a) a.value = fx.teamA || '';
+            if (b) b.value = fx.teamB || '';
+            if (dt) dt.value = fx.date || '';
+            if (tm) tm.value = fx.time || '';
+            if (ty) ty.value = fx.type || 'group';
+            if (vn) vn.value = fx.venue || '';
+            window.__editingFixtureId = id;
+            showModal({ title: 'Edit fixture', message: 'Update fields above, then tap "Save fixture edit".', icon: '✏️' });
+            var btn = document.querySelector('#cup-tournament-wrap button[onclick="addTournamentFixture()"]');
+            if (btn) { btn.textContent = 'Save fixture edit'; btn.setAttribute('data-edit-mode','1'); }
+        } catch(e) { console.log(e); }
+    }
+    window.editTournamentFixture = editTournamentFixture;
+
+    
+    function saveTournamentImage() {
+        try {
+            var d = loadTournament();
+            var el = document.getElementById('tour-image');
+            d.image = el ? (el.value || '').trim() : '';
+            saveTournament(d);
+            var prev = document.getElementById('tour-image-preview');
+            if (prev) {
+                if (d.image) {
+                    prev.classList.remove('hidden');
+                    var img = prev.querySelector('img');
+                    if (img) img.src = d.image;
+                } else prev.classList.add('hidden');
+            }
+            try { if (typeof publishLiveViewerState==='function') publishLiveViewerState(); } catch(eP){}
+        } catch(e) { console.log(e); }
+    }
+    window.saveTournamentImage = saveTournamentImage;
+
     function removeTournamentFixture(id) {
         var d = loadTournament();
         d.fixtures = (d.fixtures || []).filter(function(f){ return f.id !== id; });
@@ -3923,6 +4008,16 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
             if (s && !s.value) s.value = d.start || '';
             if (e && !e.value) e.value = d.end || '';
             if (n && d.name) n.value = d.name;
+            try {
+                var imgEl = document.getElementById('tour-image');
+                if (imgEl) imgEl.value = d.image || '';
+                var prev = document.getElementById('tour-image-preview');
+                if (prev) {
+                    if (d.image) { prev.classList.remove('hidden'); var im=prev.querySelector('img'); if(im) im.src=d.image; }
+                    else prev.classList.add('hidden');
+                }
+            } catch(eImg){}
+
             if (s && d.start) s.value = d.start;
             if (e && d.end) e.value = d.end;
             fillFixtureTeamSelects();
@@ -3939,11 +4034,12 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
             list.innerHTML = fx.map(function(f){
                 var when = [f.date, f.time].filter(Boolean).join(' · ') || 'Date TBD';
                 var st = f.status === 'live' ? '🔴' : (f.status === 'done' ? '✅' : '📅');
-                return '<div class="theme-card border theme-border rounded-lg p-2.5 space-y-1">'
+                return '<div class="theme-card border theme-border rounded-lg p-2.5 space-y-1" style="max-width:100%;overflow:hidden">'
                     + '<div class="flex justify-between items-start gap-2">'
-                    + '<div><p class="text-sm font-black theme-text">' + st + ' ' + f.teamA + ' vs ' + f.teamB + '</p>'
+                    + '<div style="min-width:0;flex:1"><p class="text-sm font-black theme-text" style="word-break:break-word">' + st + ' ' + f.teamA + ' vs ' + f.teamB + '</p>'
                     + '<p class="text-[10px] theme-muted uppercase">' + (f.type||'group') + ' · ' + when + (f.venue ? ' · ' + f.venue : '') + '</p></div>'
-                    + '<button type="button" onclick="removeTournamentFixture(\'' + f.id + '\')" class="text-red-500 text-xs font-bold px-1">✕</button></div>'
+                    + '<div class="flex gap-1 shrink-0"><button type="button" onclick="editTournamentFixture(\'' + f.id + '\')" class="text-indigo-600 text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50">Edit</button>'
+                    + '<button type="button" onclick="removeTournamentFixture(\'' + f.id + '\')" class="text-red-500 text-xs font-bold px-1">✕</button></div></div>'
                     + '<button type="button" onclick="startFixtureMatch(\'' + f.id + '\')" class="w-full mt-1 bg-emerald-600 text-white text-[11px] font-black py-1.5 rounded-lg uppercase">Start this match</button>'
                     + '</div>';
             }).join('');
@@ -4033,8 +4129,6 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
             var btnU = document.getElementById('cup-subtab-ui');
             var btnT = document.getElementById('cup-subtab-tournament');
             var startBtn = document.getElementById('cup-start-match-btn');
-            var inactive = 'flex-1 py-2 px-0.5 rounded-xl text-[8px] font-black uppercase tracking-wide bg-slate-200 text-slate-700 leading-tight';
-            var active = 'flex-1 py-2 px-0.5 rounded-xl text-[8px] font-black uppercase tracking-wide bg-emerald-600 text-white shadow leading-tight';
             function hideEl(el){
                 if(!el) return;
                 el.classList.add('hidden');
@@ -4047,29 +4141,27 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
             }
             hideEl(create); hideEl(settings); hideEl(ui); hideEl(tour);
             if(startBtn){ startBtn.classList.add('hidden'); startBtn.style.display = 'none'; }
-            if(btnC) btnC.className = inactive;
-            if(btnS) btnS.className = inactive;
-            if(btnU) btnU.className = inactive;
-            if(btnT) btnT.className = inactive;
+            [btnC,btnS,btnU,btnT].forEach(function(b){ if(b) b.className = 'cup-subtab'; });
             if(which === 'settings'){
                 showEl(settings);
-                if(btnS) btnS.className = active;
+                if(btnS) btnS.className = 'cup-subtab is-active';
             } else if(which === 'ui'){
                 showEl(ui);
-                if(btnU) btnU.className = active;
+                if(btnU) btnU.className = 'cup-subtab is-active';
             } else if(which === 'tournament'){
                 showEl(tour);
-                if(btnT) btnT.className = active;
+                if(btnT) btnT.className = 'cup-subtab is-active';
                 try { renderTournamentUI(); } catch(eR) {}
             } else {
                 showEl(create);
                 if(startBtn){ startBtn.classList.remove('hidden'); startBtn.style.display = ''; }
-                if(btnC) btnC.className = active;
+                if(btnC) btnC.className = 'cup-subtab is-active';
                 try { cupLoadSelectedRosters(); } catch(eL) {}
             }
         }catch(e){ try{ console.log('setCupSubTab', e); }catch(e2){} }
     }
     try{ window.setCupSubTab = setCupSubTab; }catch(eW){}
+
 
 
     function toggleCupMatchSettings() {
@@ -4735,6 +4827,15 @@ function cupRenameTeam(idx) {
 
     function showModal(opts) {
         const modal = document.getElementById('app-modal');
+        try {
+          if (modal) {
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            modal.style.padding = '16px';
+            modal.classList.remove('hidden');
+          }
+        } catch(eC){}
         // GLITCH-FIX: if a modal is already open and awaiting a user choice, never overwrite it —
         // that would silently discard whatever the user was about to select (e.g. a wicket's
         // dismissal type), which is what caused "Re-Bat empty the 1st time, fine the 2nd time".
@@ -5150,11 +5251,12 @@ function cupRenameTeam(idx) {
     }
 
 function switchTab(tabId) {
+        try { window.switchTab = switchTab; } catch(eW){}
         try { showPageTransitionFx(); } catch(eFx){}
         var pages=['page-toss','page-tournament','page-scoring','page-stats','page-rankings','page-players','page-history','page-reports','page-quickinfo','page-livefeed']; for(var i=0;i<pages.length;i++){ var el=document.getElementById(pages[i]); if(el) el.classList.add('hidden'); }
         var tabs=['tab-toss','tab-tournament','tab-scoring','tab-stats','tab-rankings','tab-history','tab-quickinfo']; for(var ti=0;ti<tabs.length;ti++){ var id=tabs[ti];
             var btn = document.getElementById(id);
-            if(btn) btn.className = "flex-1 py-2 px-0.5 rounded-lg text-center espn-tab-inactive transition-all";
+            if(btn){ btn.className = "flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all"; btn.style.pointerEvents="auto"; }
         }
 
         toggleHidden('page-' + tabId, true);
@@ -5182,7 +5284,7 @@ function switchTab(tabId) {
             }
         } catch (eForce) {}
         var tabBtn = document.getElementById('tab-' + tabId);
-        if (tabBtn) tabBtn.className = "flex-1 py-2 px-0.5 rounded-lg text-center espn-tab-active transition-all";
+        if (tabBtn){ tabBtn.className = "flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-active transition-all"; tabBtn.style.pointerEvents="auto"; }
         try {
             if (tabId === 'tournament') {
                 try { var _sp=document.getElementById('cfg-share-poster'); var _sd=document.getElementById('cfg-share-desc'); if(_sp)_sp.value=localStorage.getItem('cricket_share_poster_url')||''; if(_sd)_sd.value=localStorage.getItem('cricket_share_desc')||''; } catch(eShareCfg){}
@@ -5235,6 +5337,33 @@ function switchTab(tabId) {
                 } catch(e) {}
             }
         }
+        
+        try {
+            // Unlock UI after tab change — clear stuck overlays / pointer blocks
+            var fx = document.getElementById('page-transition-fx');
+            if (fx) { fx.classList.remove('show'); fx.style.pointerEvents = 'none'; fx.style.opacity = '0'; }
+            var anim = document.getElementById('animation-overlay');
+            if (anim) { anim.classList.add('hidden'); anim.style.pointerEvents = 'none'; }
+            document.body.classList.remove('modal-open');
+            var modal = document.getElementById('app-modal');
+            if (modal && !modal.classList.contains('hidden') && modal.style.display === 'none') {
+                /* leave as-is */
+            }
+            // Force interactive children on active page
+            var ap = document.getElementById('page-' + tabId);
+            if (ap) {
+                ap.style.pointerEvents = 'auto';
+                var interactives = ap.querySelectorAll('button, a, input, select, textarea, [onclick], [role="button"]');
+                for (var qi = 0; qi < interactives.length; qi++) {
+                    interactives[qi].style.pointerEvents = 'auto';
+                    interactives[qi].style.touchAction = 'manipulation';
+                }
+            }
+            // App shell
+            var shell = document.querySelector('.app-shell') || document.body;
+            if (shell) shell.style.pointerEvents = 'auto';
+        } catch(eUnlock) {}
+
         if (tabId === 'tournament') {
             try { renderCupUI(); } catch(e){}
             try {
@@ -5265,6 +5394,18 @@ function switchTab(tabId) {
     }
 
     function applyTheme() {
+        try {
+            var _thEl = document.getElementById('cup-theme');
+            var _th = (_thEl && _thEl.value) || document.body.getAttribute('data-theme') || 'light';
+            if (['navy','sports','league','glass'].indexOf(_th) >= 0) {
+                _th = 'light';
+                if (_thEl) _thEl.value = 'light';
+            }
+            if (['light','amazon','dark'].indexOf(_th) < 0) _th = 'light';
+            document.body.setAttribute('data-theme', _th);
+            try { localStorage.setItem('cup-theme', _th); localStorage.setItem('cricket_theme', _th); } catch(eT){}
+        } catch(eMig){}
+
         var el = (document.getElementById('cup-theme')||document.getElementById('cfg-theme')) || document.getElementById('cup-theme');
         var theme = (el && el.value) ? el.value : 'light';
         // Keep both selects in sync
@@ -7222,17 +7363,28 @@ function placeBoundaryAnimationOnStriker(toast){
         var desc = 'Follow ' + title + ' and stay updated with every ball — live scores & commentary on MySportzStats.';
         function finish(url) {
             url = url || longUrl;
-            // WhatsApp message body (this is the green bubble text)
             var msg = title + '\n\n' + desc + '\n\n' + url;
             try {
                 if (navigator.share) {
-                    navigator.share({
-                        title: title,
-                        text: desc,
-                        url: url
-                    }).catch(function(){
-                        openWhatsAppWithText(msg);
-                    });
+                    var sharePayload = { title: title, text: desc + '\n' + url, url: url };
+                    var posterUrl = '';
+                    try { posterUrl = (localStorage.getItem('cricket_share_poster_url') || '').trim(); } catch(eP){}
+                    if (posterUrl && navigator.canShare) {
+                        fetch(posterUrl).then(function(r){ return r.blob(); }).then(function(blob){
+                            var file = new File([blob], 'match-poster.png', { type: blob.type || 'image/png' });
+                            var withFile = { title: title, text: desc + '\n' + url, files: [file] };
+                            if (navigator.canShare(withFile)) {
+                                return navigator.share(withFile);
+                            }
+                            return navigator.share(sharePayload);
+                        }).catch(function(){
+                            navigator.share(sharePayload).catch(function(){ openWhatsAppWithText(msg); });
+                        });
+                    } else {
+                        navigator.share(sharePayload).catch(function(){
+                            openWhatsAppWithText(msg);
+                        });
+                    }
                 } else if (typeof openWhatsAppWithText === 'function') {
                     openWhatsAppWithText(msg);
                 } else if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -9246,6 +9398,7 @@ function updateView() {
         var orangeFull = document.getElementById('rankings-orange-full');
         var purpleFull = document.getElementById('rankings-purple-full');
         var boundariesFull = document.getElementById('rankings-boundaries-full');
+        var overview = document.getElementById('rankings-tournament-overview');
         var btnOrange = document.getElementById('rank-tab-orange');
         var btnPurple = document.getElementById('rank-tab-purple');
         var btnBound = document.getElementById('rank-tab-boundaries');
@@ -9255,6 +9408,11 @@ function updateView() {
         if(btnOrange) btnOrange.className='flex-1 py-2.5 rounded-lg text-xs font-black uppercase rank-tab-inactive';
         if(btnPurple) btnPurple.className='flex-1 py-2.5 rounded-lg text-xs font-black uppercase rank-tab-inactive';
         if(btnBound) btnBound.className='flex-1 py-2.5 rounded-lg text-xs font-black uppercase rank-tab-inactive';
+        // Never show Tournament Overview under Orange / Purple caps
+        if(overview) {
+            if(tab==='boundaries') overview.classList.remove('hidden');
+            else overview.classList.add('hidden');
+        }
         if(tab==='orange'){ if(orangeFull) orangeFull.classList.remove('hidden'); if(btnOrange) btnOrange.className='flex-1 py-2.5 rounded-lg text-xs font-black uppercase rank-tab-active'; }
         else if(tab==='purple'){ if(purpleFull) purpleFull.classList.remove('hidden'); if(btnPurple) btnPurple.className='flex-1 py-2.5 rounded-lg text-xs font-black uppercase rank-tab-active'; }
         else if(tab==='boundaries'){ if(boundariesFull) boundariesFull.classList.remove('hidden'); if(btnBound) btnBound.className='flex-1 py-2.5 rounded-lg text-xs font-black uppercase rank-tab-active'; }
@@ -15297,13 +15455,737 @@ body:not([data-theme="light"]) #scoring-controls-panel {
 <script id="pro-level-boot">
 (function(){
   try {
-    document.documentElement.setAttribute('data-pro','1');
     var saved = null;
-    try { saved = localStorage.getItem('cricket_theme') || localStorage.getItem('theme'); } catch(e){}
-    if (saved && typeof setTheme === 'function') { try { setTheme(saved); } catch(e){} }
-    else if (typeof applyTheme === 'function') { try { applyTheme(); } catch(e){} }
+    try { saved = localStorage.getItem('cup-theme') || localStorage.getItem('cricket_theme'); } catch(e){}
+    if (!saved || saved === 'light') {
+      try { document.body.removeAttribute('data-theme'); } catch(e){}
+    } else {
+      try { document.body.setAttribute('data-theme', saved); } catch(e){}
+    }
   } catch(e) {}
 })();
 </script>
+
+<style id="sports-app-revamp">
+:root {
+  --sa-green:#009270; --sa-green2:#00b386; --sa-navy:#0b1623; --sa-navy2:#132033;
+  --sa-card:#fff; --sa-bg:#e8eef4; --sa-text:#122033; --sa-muted:#5b6b7c;
+  --sa-line:#d5dee8; --sa-amber:#f5a623; --sa-red:#e23d28;
+  --sa-font:"Segoe UI",Inter,system-ui,-apple-system,Roboto,Arial,sans-serif;
+}
+html,body{background:var(--sa-bg)!important;color:var(--sa-text)!important;font-family:var(--sa-font)!important;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+.app-shell{max-width:28rem!important;margin:0 auto!important;padding:.35rem .5rem 1.25rem!important;background:var(--sa-bg)!important;min-height:100vh!important}
+.espn-header{background:linear-gradient(180deg,#142033 0%,var(--sa-navy) 100%)!important;color:#fff!important;border:none!important;border-radius:0 0 14px 14px!important;padding:.6rem .8rem!important;margin:0 0 .4rem!important;box-shadow:0 4px 16px rgba(11,22,35,.28)!important}
+#header-match-desc{color:var(--sa-amber)!important;font-size:11px!important;font-weight:800!important;letter-spacing:.07em!important;text-transform:uppercase!important}
+#innings-banner{background:rgba(0,146,112,.22)!important;border:1px solid rgba(0,146,112,.5)!important;color:#9cf0d6!important;border-radius:999px!important;font-size:10px!important;font-weight:700!important}
+#main-tabbar,.espn-tabbar{position:sticky!important;top:0!important;z-index:9999!important;pointer-events:auto!important;display:flex!important;background:#fff!important;border:1px solid var(--sa-line)!important;border-radius:12px!important;padding:3px!important;gap:2px!important;margin-bottom:.5rem!important;box-shadow:0 2px 8px rgba(11,22,35,.07)!important}
+#main-tabbar button,.espn-tabbar button{pointer-events:auto!important;touch-action:manipulation!important;cursor:pointer!important;flex:1 1 0%!important;border:0!important;background:transparent!important;color:var(--sa-muted)!important;font-weight:700!important;font-size:10px!important;padding:.5rem .1rem!important;border-radius:9px!important;-webkit-tap-highlight-color:transparent}
+.espn-tab-active{background:var(--sa-green)!important;color:#fff!important;box-shadow:0 2px 8px rgba(0,146,112,.28)!important}
+.espn-tab-inactive{background:transparent!important;color:var(--sa-muted)!important}
+.theme-panel,.theme-card{background:var(--sa-card)!important;border:1px solid var(--sa-line)!important;color:var(--sa-text)!important;border-radius:12px!important;box-shadow:0 1px 3px rgba(11,22,35,.04)!important}
+.theme-text{color:var(--sa-text)!important}.theme-muted{color:var(--sa-muted)!important}.theme-border{border-color:var(--sa-line)!important}
+#scoreboard-card{background:linear-gradient(160deg,#0e1a28 0%,#162636 45%,#0b1520 100%)!important;color:#f4f7fb!important;border:1px solid rgba(255,255,255,.07)!important;border-radius:16px!important;box-shadow:0 10px 32px rgba(0,0,0,.35)!important}
+#scoreboard-card *{color:#eef3f9}
+#scoreboard-card .text-slate-400,#scoreboard-card .text-slate-500{color:#8fa0b5!important}
+#scoreboard-card .text-emerald-300,#scoreboard-card .text-emerald-400{color:#3ddc97!important}
+#scoreboard-card .text-amber-200,#scoreboard-card .text-amber-300{color:#ffc857!important}
+#sb-match-type,#sb-innings-line{color:var(--sa-amber)!important;font-weight:800!important;letter-spacing:.06em!important}
+#dual-team-scores>div{background:rgba(0,0,0,.3)!important;border:1px solid rgba(255,255,255,.06)!important;border-radius:12px!important}
+#striker-card,#bowler-card{background:rgba(10,20,32,.9)!important;border:1px solid rgba(143,160,181,.15)!important;border-radius:12px!important}
+#select-striker,#select-bowler,#select-nonstriker{background:#0b1520!important;color:#fff!important;border:1px solid #2a3d55!important;border-radius:8px!important}
+#scoring-controls-panel,body.scoring-active #scoring-controls-panel{background:#fff!important;color:var(--sa-text)!important;border-top:3px solid var(--sa-green)!important;border-radius:18px 18px 0 0!important;box-shadow:0 -8px 28px rgba(11,22,35,.14)!important;z-index:60!important}
+#scoring-controls-panel .score-btn,#scoring-controls-panel button{border-radius:11px!important;font-weight:800!important}
+#scoring-tools-panel{background:#fff!important;border:1px solid var(--sa-line)!important;border-radius:12px!important}
+.cup-subtab{border-radius:9px!important;font-size:9px!important;font-weight:800!important}
+#cup-start-match-btn,button.bg-emerald-600{background:linear-gradient(180deg,var(--sa-green2),var(--sa-green))!important;border-radius:11px!important;box-shadow:0 4px 12px rgba(0,146,112,.28)!important}
+#page-stats th,#card-teamA th,#card-teamB th{background:#f0f5f9!important;color:var(--sa-muted)!important;font-size:10px!important;font-weight:800!important;letter-spacing:.05em!important;text-transform:uppercase!important;border-bottom:2px solid var(--sa-green)!important;padding:8px 6px!important}
+#page-stats td,#card-teamA td,#card-teamB td{padding:7px 6px!important;border-bottom:1px solid var(--sa-line)!important;color:var(--sa-text)!important}
+#card-teamA,#card-teamB{background:#fff!important;border:1px solid var(--sa-line)!important;border-radius:12px!important;overflow:hidden!important}
+#rankings-orange-full{background:linear-gradient(145deg,#ff9800,#e65100)!important;border-radius:14px!important}
+#rankings-purple-full{background:linear-gradient(145deg,#7c4dff,#4527a0)!important;border-radius:14px!important}
+#rankings-orange-cap>div,#rankings-purple-cap>div{background:rgba(255,255,255,.96)!important;border-radius:10px!important;color:#1a1a1a!important}
+input.theme-card,select.theme-card,#page-tournament input,#page-tournament select,#page-toss input,#page-toss select{background:#fff!important;border:1px solid var(--sa-line)!important;color:var(--sa-text)!important;border-radius:9px!important}
+input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(--sa-green)!important;box-shadow:0 0 0 3px rgba(0,146,112,.14)!important}
+#page-transition-fx,#animation-overlay{pointer-events:none!important}
+#main-tabbar,#main-tabbar *{pointer-events:auto!important}
+body[data-theme="dark"],body[data-theme="navy"],body[data-theme="sports"],body[data-theme="league"],body[data-theme="glass"]{--sa-bg:#0b1520;--sa-card:#152033;--sa-text:#eef3f9;--sa-muted:#8fa0b5;--sa-line:#243447}
+body[data-theme="dark"] .espn-tabbar,body[data-theme="navy"] .espn-tabbar,body[data-theme="sports"] .espn-tabbar,body[data-theme="league"] .espn-tabbar,body[data-theme="glass"] .espn-tabbar{background:#132033!important;border-color:#243447!important}
+body[data-theme="dark"] #scoring-controls-panel,body[data-theme="navy"] #scoring-controls-panel,body[data-theme="sports"] #scoring-controls-panel,body[data-theme="league"] #scoring-controls-panel,body[data-theme="glass"] #scoring-controls-panel{background:#121c2a!important;color:#f4f7fb!important}
+button{border-radius:10px!important}
+</style>
+
+
+
+
+
+<style id="app-interaction-fix">
+/* Never block page controls */
+.app-shell, .app-shell * { pointer-events: auto; }
+#main-tabbar, .espn-tabbar { position: relative !important; z-index: 99999 !important; pointer-events: auto !important; }
+#main-tabbar button, .espn-tabbar button { pointer-events: auto !important; touch-action: manipulation !important; cursor: pointer !important; }
+#page-transition-fx, #animation-overlay, #helmet-container, .boundary-toast-container { pointer-events: none !important; }
+#page-tournament, #page-toss, #page-scoring, #page-stats, #page-rankings, #page-history, #page-quickinfo {
+  pointer-events: auto !important;
+}
+#page-tournament button, #page-toss button, #page-scoring button, #page-stats button,
+#page-rankings button, #page-history button, #page-quickinfo button,
+#page-tournament select, #page-tournament input,
+.cup-subtab, #cup-start-match-btn, #scoring-controls-panel button {
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+  cursor: pointer !important;
+  position: relative;
+  z-index: 2;
+}
+/* Scoring pad only when active */
+body:not(.scoring-active) #scoring-controls-panel {
+  display: none !important;
+  pointer-events: none !important;
+}
+</style>
+<script id="app-interaction-fix">
+(function(){
+  // ---- Export key handlers to window (onclick safety) ----
+  function exportFns(){
+    var names = [
+      'switchTab','setCupSubTab','cupAddTeam','cupStartMatch','cupRemoveTeam',
+      'addTournamentFixture','renderTournamentUI','renderCupUI','shareTournamentSchedule',
+      'removeTournamentFixture','syncCupToScoreboardSettings','renameCupTeamFromSettings',
+      'showModal','closeModal','toggleHidden','updateView','saveMatchState',
+      'pinScoringPad','showPageTransitionFx','cupLoadSelectedRosters'
+    ];
+    for (var i = 0; i < names.length; i++) {
+      try {
+        var n = names[i];
+        if (typeof window[n] !== 'function' && typeof eval('typeof '+n) === 'function') {
+          window[n] = eval(n);
+        }
+      } catch(e){}
+    }
+    // Prefer real switchTab
+    try { if (typeof switchTab === 'function') window.switchTab = switchTab; } catch(e){}
+    try { if (typeof setCupSubTab === 'function') window.setCupSubTab = setCupSubTab; } catch(e){}
+    try { if (typeof cupStartMatch === 'function') window.cupStartMatch = cupStartMatch; } catch(e){}
+    try { if (typeof cupAddTeam === 'function') window.cupAddTeam = cupAddTeam; } catch(e){}
+  }
+
+  // ---- Tab navigation (scoped to tab bar only — never steals page clicks) ----
+  function goTab(tabId){
+    if (!tabId || tabId === 'livefeed') return;
+    try {
+      if (typeof window.switchTab === 'function') { window.switchTab(tabId); return; }
+      if (typeof switchTab === 'function') { switchTab(tabId); return; }
+    } catch(e) { console.log('switchTab err', e); }
+    // Hard fallback
+    try {
+      var pages = ['toss','tournament','scoring','stats','rankings','history','quickinfo','livefeed','players','reports'];
+      pages.forEach(function(p){
+        var el = document.getElementById('page-'+p);
+        if (!el) return;
+        if (p === tabId) {
+          el.classList.remove('hidden');
+          el.style.display = (p==='scoring') ? 'flex' : 'block';
+          el.style.visibility = 'visible';
+          el.style.opacity = '1';
+          el.style.pointerEvents = 'auto';
+        } else {
+          el.classList.add('hidden');
+          el.style.display = 'none';
+        }
+      });
+      document.querySelectorAll('#main-tabbar button').forEach(function(b){
+        var id = b.getAttribute('data-tab') || (b.id||'').replace(/^tab-/,'');
+        b.classList.toggle('espn-tab-active', id===tabId);
+        b.classList.toggle('espn-tab-inactive', id!==tabId);
+      });
+      if (tabId === 'scoring') document.body.classList.add('scoring-active');
+      else {
+        document.body.classList.remove('scoring-active');
+        try { if (typeof pinScoringPad === 'function') pinScoringPad(false); } catch(e){}
+      }
+      if (tabId === 'tournament') {
+        try { if (window.setCupSubTab) window.setCupSubTab('create'); } catch(e){}
+        try { if (typeof renderCupUI === 'function') renderCupUI(); } catch(e){}
+      }
+    } catch(e2) { console.log('goTab fallback', e2); }
+  }
+  window.goTab = goTab;
+
+  function bindTabBar(){
+    var bar = document.getElementById('main-tabbar') || document.querySelector('.espn-tabbar');
+    if (!bar || bar._tabsBound) return;
+    bar._tabsBound = true;
+    bar.addEventListener('click', function(ev){
+      var btn = ev.target && ev.target.closest ? ev.target.closest('button[data-tab], button[id^="tab-"]') : null;
+      if (!btn || !bar.contains(btn)) return;
+      var id = btn.getAttribute('data-tab') || (btn.id||'').replace(/^tab-/,'');
+      if (!id) return;
+      ev.preventDefault();
+      goTab(id);
+    }, false);
+  }
+
+  // ---- Ensure page buttons fire (delegate for common Cup actions) ----
+  function bindPageActions(){
+    if (document._pageActionsBound) return;
+    document._pageActionsBound = true;
+    document.addEventListener('click', function(ev){
+      var t = ev.target;
+      if (!t || !t.closest) return;
+      // Cup sub-tabs
+      var sub = t.closest('#cup-subtab-create, #cup-subtab-settings, #cup-subtab-ui, #cup-subtab-tournament');
+      if (sub) {
+        var map = {
+          'cup-subtab-create': 'create',
+          'cup-subtab-settings': 'settings',
+          'cup-subtab-ui': 'ui',
+          'cup-subtab-tournament': 'tournament'
+        };
+        var which = map[sub.id];
+        if (which) {
+          try { (window.setCupSubTab || setCupSubTab)(which); } catch(e) { console.log(e); }
+        }
+        return;
+      }
+      // Start match
+      if (t.closest('#cup-start-match-btn')) {
+        try { (window.cupStartMatch || cupStartMatch)(); } catch(e) { console.log(e); }
+        return;
+      }
+    }, false);
+  }
+
+  function clearStuckOverlays(){
+    try {
+      var fx = document.getElementById('page-transition-fx');
+      if (fx) { fx.classList.remove('show'); fx.innerHTML = ''; fx.style.pointerEvents = 'none'; fx.style.opacity = '0'; }
+      var anim = document.getElementById('animation-overlay');
+      if (anim) { anim.classList.add('hidden'); }
+    } catch(e){}
+  }
+
+  function boot(){
+    exportFns();
+    bindTabBar();
+    bindPageActions();
+    clearStuckOverlays();
+    // Default: show Cup tab content interactive
+    try {
+      var pt = document.getElementById('page-tournament');
+      if (pt && !pt.classList.contains('hidden')) {
+        pt.style.pointerEvents = 'auto';
+      }
+    } catch(e){}
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+  setTimeout(boot, 300);
+  setTimeout(exportFns, 1000);
+  setTimeout(exportFns, 2500);
+})();
+</script>
+
+
+<div id="float-ad-overlay" class="rect" onclick="if(event.target===this)hideFloatAd()">
+  <div id="float-ad-card">
+    <button type="button" id="float-ad-close" onclick="hideFloatAd()">✕</button>
+    <div id="float-ad-body"></div>
+  </div>
+</div>
+
+<style id="theme-tabs-ads-fix">
+/* Light theme: dark tab bar for visibility */
+body[data-theme="light"] #main-tabbar,
+body[data-theme="light"] .espn-tabbar,
+body:not([data-theme]) #main-tabbar,
+body:not([data-theme]) .espn-tabbar {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+}
+body[data-theme="light"] #main-tabbar button,
+body[data-theme="light"] .espn-tabbar button,
+body:not([data-theme]) #main-tabbar button {
+  color: #94a3b8 !important;
+}
+body[data-theme="light"] .espn-tab-active,
+body:not([data-theme]) .espn-tab-active {
+  background: #009270 !important;
+  color: #fff !important;
+}
+body[data-theme="amazon"] #main-tabbar,
+body[data-theme="amazon"] .espn-tabbar {
+  background: #232f3e !important;
+  border-color: #37475a !important;
+}
+body[data-theme="amazon"] #main-tabbar button { color: #ddd !important; }
+body[data-theme="amazon"] .espn-tab-active { background: #ff9900 !important; color: #111 !important; }
+body[data-theme="dark"] #main-tabbar,
+body[data-theme="dark"] .espn-tabbar {
+  background: #0b1220 !important;
+  border-color: #1e293b !important;
+}
+body[data-theme="dark"] .espn-tab-active { background: #009270 !important; color: #fff !important; }
+
+/* Cup subtabs: equal size, readable labels */
+#cup-subtab-create, #cup-subtab-settings, #cup-subtab-ui, #cup-subtab-tournament,
+button.cup-subtab {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  min-height: 42px !important;
+  font-size: 9px !important;
+  line-height: 1.2 !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: uppercase !important;
+  white-space: normal !important;
+  padding: 6px 4px !important;
+  border-radius: 10px !important;
+  overflow: visible !important;
+}
+#cup-subtab-create, button.cup-subtab.bg-emerald-600 {
+  background: #059669 !important;
+  color: #fff !important;
+}
+#cup-subtab-settings, #cup-subtab-ui, #cup-subtab-tournament {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+body[data-theme="dark"] #cup-subtab-settings,
+body[data-theme="dark"] #cup-subtab-ui,
+body[data-theme="dark"] #cup-subtab-tournament {
+  background: #334155 !important;
+  color: #f1f5f9 !important;
+}
+/* Active subtab override via class from setCupSubTab */
+button.cup-subtab.bg-emerald-600, #cup-subtab-create.bg-emerald-600 {
+  background: #059669 !important;
+  color: #fff !important;
+}
+
+/* Tournament schedule form - stay in layout */
+#cup-tournament-wrap {
+  max-width: 100% !important;
+  overflow: visible !important;
+}
+#cup-tournament-wrap input[type="date"],
+#cup-tournament-wrap input[type="time"],
+#cup-tournament-wrap select,
+#cup-tournament-wrap input[type="text"] {
+  max-width: 100% !important;
+  font-size: 13px !important;
+}
+#tour-fixtures-list {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+/* Modal stays on screen */
+#app-modal .modal-panel, #app-modal > div {
+  max-height: 85vh !important;
+  overflow-y: auto !important;
+  margin: auto !important;
+}
+
+/* Hide match detail grids under orange/purple lists */
+#rankings-orange-full > .mt-4.grid,
+#rankings-purple-full > .mt-4.grid {
+  display: none !important;
+}
+
+/* Floating ad */
+#float-ad-overlay {
+  position: fixed;
+  z-index: 100000;
+  pointer-events: auto;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+}
+#float-ad-overlay.show { display: flex !important; }
+#float-ad-overlay.rect { inset: auto 12px 90px 12px; top: auto; }
+#float-ad-overlay.vertical { top: 50%; left: 50%; transform: translate(-50%,-50%); width: min(280px, 86vw); }
+#float-ad-card {
+  background: #0f172a;
+  color: #fff;
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  position: relative;
+  max-width: 100%;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+#float-ad-card img { max-width: 100%; max-height: 180px; border-radius: 8px; display: block; margin: 0 auto 8px; }
+#float-ad-close {
+  position: absolute; top: 6px; right: 8px;
+  background: #ef4444; color: #fff; border: 0; border-radius: 999px;
+  width: 26px; height: 26px; font-weight: 900; cursor: pointer;
+}
+</style>
+
+<script id="float-ad-system">
+(function(){
+  var AD_KEY = 'cricket_float_ad_v1';
+  var _timer = null;
+  function loadAd(){
+    try { return JSON.parse(localStorage.getItem(AD_KEY) || '{}') || {}; } catch(e){ return {}; }
+  }
+  function saveAdSettings(){
+    var o = {
+      enabled: !!(document.getElementById('ad-float-enabled')||{}).checked,
+      trigger: (document.getElementById('ad-float-trigger')||{}).value || 'over',
+      shape: (document.getElementById('ad-float-shape')||{}).value || 'rect',
+      image: ((document.getElementById('ad-float-image')||{}).value || '').trim(),
+      text: ((document.getElementById('ad-float-text')||{}).value || '').trim(),
+      link: ((document.getElementById('ad-float-link')||{}).value || '').trim()
+    };
+    try { localStorage.setItem(AD_KEY, JSON.stringify(o)); } catch(e){}
+  }
+  function clearAdSettings(){
+    try { localStorage.removeItem(AD_KEY); } catch(e){}
+    ['ad-float-enabled','ad-float-image','ad-float-text','ad-float-link'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (el.type === 'checkbox') el.checked = false; else el.value = '';
+    });
+    hideFloatAd();
+  }
+  function hydrateAdForm(){
+    var o = loadAd();
+    var en = document.getElementById('ad-float-enabled'); if (en) en.checked = !!o.enabled;
+    var tr = document.getElementById('ad-float-trigger'); if (tr && o.trigger) tr.value = o.trigger;
+    var sh = document.getElementById('ad-float-shape'); if (sh && o.shape) sh.value = o.shape;
+    var im = document.getElementById('ad-float-image'); if (im) im.value = o.image || '';
+    var tx = document.getElementById('ad-float-text'); if (tx) tx.value = o.text || '';
+    var lk = document.getElementById('ad-float-link'); if (lk) lk.value = o.link || '';
+  }
+  function hideFloatAd(){
+    var ov = document.getElementById('float-ad-overlay');
+    if (ov) ov.classList.remove('show');
+    if (_timer) { clearTimeout(_timer); _timer = null; }
+  }
+  function showFloatAd(force){
+    var o = loadAd();
+    if (!force && !o.enabled) return;
+    if (!o.text && !o.image) return;
+    var ov = document.getElementById('float-ad-overlay');
+    var body = document.getElementById('float-ad-body');
+    if (!ov || !body) return;
+    ov.classList.remove('rect','vertical');
+    ov.classList.add(o.shape === 'vertical' ? 'vertical' : 'rect');
+    var html = '';
+    if (o.image) html += '<img src="'+o.image.replace(/"/g,'')+'" alt="ad"/>';
+    if (o.text) html += '<p style="font-weight:800;font-size:14px;margin:0 0 6px;text-align:center">'+o.text.replace(/</g,'&lt;')+'</p>';
+    if (o.link) html += '<p style="text-align:center;margin:0"><a href="'+o.link.replace(/"/g,'')+'" target="_blank" rel="noopener" style="color:#38bdf8;font-size:12px;font-weight:700">Learn more</a></p>';
+    body.innerHTML = html;
+    ov.classList.add('show');
+    if (_timer) clearTimeout(_timer);
+    _timer = setTimeout(hideFloatAd, 5000);
+  }
+  function previewFloatAd(){ saveAdSettings(); showFloatAd(true); }
+  function maybeShowAd(eventType){
+    var o = loadAd();
+    if (!o.enabled) return;
+    var t = o.trigger || 'over';
+    if (t === 'random') {
+      if (Math.random() < 0.18) showFloatAd(false);
+      return;
+    }
+    if (t === eventType) showFloatAd(false);
+  }
+  window.saveAdSettings = saveAdSettings;
+  window.clearAdSettings = clearAdSettings;
+  window.previewFloatAd = previewFloatAd;
+  window.hideFloatAd = hideFloatAd;
+  window.showFloatAd = showFloatAd;
+  window.maybeShowAd = maybeShowAd;
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hydrateAdForm);
+  else setTimeout(hydrateAdForm, 200);
+  setTimeout(hydrateAdForm, 1200);
+})();
+</script>
+
+<style id="modal-center-fix">
+#app-modal {
+  display: none;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10050 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
+  background: rgba(15,23,42,0.55) !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+#app-modal:not(.hidden) {
+  display: flex !important;
+}
+#app-modal .modal-panel,
+#app-modal > div.theme-panel,
+#app-modal > div[class*="rounded"] {
+  margin: auto !important;
+  max-width: min(420px, 100%) !important;
+  max-height: min(85vh, 640px) !important;
+  overflow-y: auto !important;
+  width: 100% !important;
+  position: relative !important;
+}
+/* Schedule form stays in view */
+#cup-tournament-wrap {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+#cup-tournament-wrap input,
+#cup-tournament-wrap select {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+/* Subtabs match team action buttons */
+.cup-subtab {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  border-radius: 12px !important;
+  min-height: 40px !important;
+  line-height: 1.2 !important;
+  white-space: normal !important;
+}
+</style>
+
+<style id="rank-overview-hide">
+#rankings-orange-full:not(.hidden) ~ #rankings-tournament-overview,
+#rankings-purple-full:not(.hidden) ~ #rankings-tournament-overview {
+  display: none !important;
+}
+/* Default: hide overview until Boundaries tab */
+#rankings-tournament-overview { display: none !important; }
+#rankings-boundaries-full:not(.hidden) ~ #rankings-tournament-overview,
+body.show-rank-overview #rankings-tournament-overview {
+  display: block !important;
+}
+</style>
+
+<style id="elegant-subtabs-modals">
+/* Cup subtabs — equal cells, text never overflows */
+.cup-subtab-bar { display:grid!important; grid-template-columns:1fr 1fr!important; gap:10px!important; }
+button.cup-subtab,
+.cup-subtab {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: 40px !important;
+  padding: 8px 4px !important;
+  margin: 0 !important;
+  border-radius: 12px !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #f8fafc !important;
+  color: #334155 !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.03em !important;
+  text-transform: uppercase !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  box-sizing: border-box !important;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04) !important;
+  transition: background .15s, color .15s, border-color .15s, box-shadow .15s;
+}
+button.cup-subtab.is-active,
+.cup-subtab.is-active {
+  background: linear-gradient(180deg, #4f46e5, #4338ca) !important;
+  border-color: #4338ca !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(67,56,202,0.28) !important;
+}
+body[data-theme="dark"] button.cup-subtab,
+body[data-theme="dark"] .cup-subtab {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+body[data-theme="dark"] button.cup-subtab.is-active,
+body[data-theme="dark"] .cup-subtab.is-active {
+  background: linear-gradient(180deg, #6366f1, #4f46e5) !important;
+  border-color: #6366f1 !important;
+  color: #fff !important;
+}
+body[data-theme="amazon"] button.cup-subtab.is-active,
+body[data-theme="amazon"] .cup-subtab.is-active {
+  background: linear-gradient(180deg, #ff9900, #e47911) !important;
+  border-color: #e47911 !important;
+  color: #111 !important;
+}
+
+/* Popups gel with app UI */
+#app-modal {
+  background: rgba(15, 23, 42, 0.55) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+#app-modal .modal-panel,
+#app-modal > div.theme-panel,
+#app-modal > div[class*="rounded"] {
+  background: var(--sa-card, #ffffff) !important;
+  color: var(--sa-text, #0f172a) !important;
+  border: 1px solid var(--sa-line, #e2e8f0) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 50px rgba(15,23,42,0.25) !important;
+  max-width: min(400px, 92vw) !important;
+  max-height: min(82vh, 620px) !important;
+  overflow-y: auto !important;
+  padding: 16px !important;
+}
+body[data-theme="dark"] #app-modal .modal-panel,
+body[data-theme="dark"] #app-modal > div[class*="rounded"] {
+  background: #132033 !important;
+  color: #eef3f9 !important;
+  border-color: #243447 !important;
+}
+body[data-theme="amazon"] #app-modal .modal-panel,
+body[data-theme="amazon"] #app-modal > div[class*="rounded"] {
+  background: #ffffff !important;
+  color: #0f1111 !important;
+  border-color: #d5d9d9 !important;
+}
+#app-modal h2, #app-modal h3, #app-modal .modal-title {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  margin: 0 0 8px !important;
+}
+#app-modal p, #app-modal .modal-message {
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+  color: inherit !important;
+  opacity: 0.9;
+}
+#app-modal button {
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  text-transform: uppercase !important;
+  padding: 10px 14px !important;
+}
+#app-modal input, #app-modal select, #app-modal textarea {
+  border-radius: 10px !important;
+  border: 1px solid var(--sa-line, #e2e8f0) !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  padding: 8px 10px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+body[data-theme="dark"] #app-modal input,
+body[data-theme="dark"] #app-modal select,
+body[data-theme="dark"] #app-modal textarea {
+  background: #0b1520 !important;
+  color: #eef3f9 !important;
+  border-color: #243447 !important;
+}
+</style>
+
+<style id="cup-subtab-final">
+/* 2×2 grid so full titles always fit */
+.cup-subtab-bar {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 0 0 12px 0 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  margin-bottom: 4px !important;
+}
+button.cup-subtab,
+.cup-subtab-bar > button,
+#cup-subtab-create,
+#cup-subtab-settings,
+#cup-subtab-ui,
+#cup-subtab-tournament {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  padding: 8px 10px !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  border-radius: 14px !important;
+  border: 1px solid #c7d2fe !important;
+  background: #eef2ff !important;
+  color: #3730a3 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: clip !important;
+  box-shadow: none !important;
+  flex: none !important;
+}
+#cup-subtab-settings {
+  border-color: #fde68a !important;
+  background: #fffbeb !important;
+  color: #92400e !important;
+}
+#cup-subtab-ui {
+  border-color: #bae6fd !important;
+  background: #f0f9ff !important;
+  color: #0c4a6e !important;
+}
+#cup-subtab-tournament {
+  border-color: #ddd6fe !important;
+  background: #f5f3ff !important;
+  color: #5b21b6 !important;
+}
+/* Active state */
+#cup-subtab-create.is-active,
+#cup-subtab-settings.is-active,
+#cup-subtab-ui.is-active,
+#cup-subtab-tournament.is-active,
+button.cup-subtab.is-active {
+  background: #4f46e5 !important;
+  border-color: #4338ca !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(79,70,229,0.3) !important;
+}
+body[data-theme="dark"] #cup-subtab-create,
+body[data-theme="dark"] #cup-subtab-settings,
+body[data-theme="dark"] #cup-subtab-ui,
+body[data-theme="dark"] #cup-subtab-tournament {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+body[data-theme="dark"] button.cup-subtab.is-active {
+  background: #6366f1 !important;
+  border-color: #818cf8 !important;
+  color: #fff !important;
+}
+/* Kill any old green pill styles on these ids */
+#cup-subtab-create.bg-emerald-600,
+#cup-subtab-create[class*="bg-emerald"] {
+  background: #eef2ff !important;
+  color: #3730a3 !important;
+}
+#cup-subtab-create.is-active.bg-emerald-600,
+#cup-subtab-create.is-active {
+  background: #4f46e5 !important;
+  color: #fff !important;
+}
+</style>
 </body>
 </html>
