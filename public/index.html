@@ -4005,6 +4005,7 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
             showModal({ title: 'Error', message: String(e), icon: '⚠️' });
         }
     }
+    try{ window.editTournamentFixture = editTournamentFixture; window.removeTournamentFixture = removeTournamentFixture; }catch(eEx){}
     function renderTournamentUI() {
         try {
             var d = loadTournament();
@@ -4683,6 +4684,7 @@ function cupRenameTeam(idx) {
             icon: '🏏'
         });
     }
+    try{ window.editTournamentFixture = editTournamentFixture; window.removeTournamentFixture = removeTournamentFixture; }catch(eEx){}
     function renderTournamentUI() { renderCupUI(); }
     function onTournamentMatchComplete(winnerSide) { /* no bracket advance in simple cup mode */ }
 
@@ -16485,7 +16487,18 @@ body[data-theme="dark"] button.cup-subtab.is-active {
     }
     var ov = document.getElementById('float-ad-overlay');
     var body = document.getElementById('float-ad-body');
-    if (!ov || !body) return;
+    if (!ov || !body) {
+      // auto-create overlay if missing from DOM
+      if (!ov) {
+        ov = document.createElement('div');
+        ov.id = 'float-ad-overlay';
+        ov.className = 'rect';
+        ov.innerHTML = '<div id="float-ad-card"><button type="button" id="float-ad-close" onclick="hideFloatAd()">✕</button><div id="float-ad-body"></div></div>';
+        document.body.appendChild(ov);
+        body = document.getElementById('float-ad-body');
+      }
+      if (!body) return;
+    }
     ov.classList.remove('rect','vertical');
     ov.classList.add(o.shape === 'vertical' ? 'vertical' : 'rect');
     var imgUrl = resolveImageUrl(o.image);

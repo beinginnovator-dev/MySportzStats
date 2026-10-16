@@ -188,11 +188,16 @@
     .over-box{margin-top:12px;padding-top:10px;border-top:1px solid rgba(148,163,184,.12)}
     .over-box .lbl{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;text-align:center}
     .over-balls{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;justify-content:center}
-    .ob{min-width:28px;height:28px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;background:#1e293b;color:#e2e8f0;border:1px solid rgba(148,163,184,.2)}
-    .ob.w{background:#7f1d1d;color:#fecaca;border-color:#ef4444}
-    .ob.lb{background:#86198f;color:#f5d0fe;border-color:#d946ef}
-    .ob.b4{background:#065f46;color:#a7f3d0;border-color:#34d399}
-    .ob.b6{background:#0f766e;color:#99f6e4;border-color:#2dd4bf}
+    .ob{min-width:28px;height:28px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;background:#f1f5f9;color:#334155;border:1px solid #cbd5e1}
+    .ob.dot,.ob.b0{background:#f8fafc;color:#64748b;border-color:#e2e8f0}
+    .ob.b1{background:#dbeafe;color:#1d4ed8;border-color:#93c5fd}
+    .ob.b2{background:#d1fae5;color:#047857;border-color:#6ee7b7}
+    .ob.b3{background:#ffedd5;color:#c2410c;border-color:#fdba74}
+    .ob.b4{background:#ede9fe;color:#6d28d9;border-color:#c4b5fd}
+    .ob.b5{background:#fce7f3;color:#be185d;border-color:#f9a8d4}
+    .ob.b6{background:#fef3c7;color:#b45309;border-color:#fcd34d}
+    .ob.w{background:#fee2e2;color:#b91c1c;border-color:#fca5a5}
+    .ob.lb,.ob.wd,.ob.nb{background:#f3e8ff;color:#7e22ce;border-color:#d8b4fe}
     .over-msg{font-size:12px;color:#94a3b8;font-style:italic;text-align:center}
     .viewer-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px;padding:8px 10px;background:rgba(15,23,42,.7);border:1px solid rgba(148,163,184,.15);border-radius:.75rem;font-size:12px}
     .viewer-bar .count{font-weight:800;color:#34d399}
@@ -656,6 +661,11 @@
     #comm-list .feed-item .t{font-size:10px;font-weight:900;letter-spacing:.1em;color:#34d399;margin-bottom:4px}
     #comm-list .feed-item .title{font-weight:900;color:#f8fafc;font-size:14px;margin-bottom:2px}
     #comm-list .feed-item .body{font-size:13px;color:#cbd5e1;line-height:1.4}
+    #comm-list .comm-row{display:flex;gap:10px;align-items:flex-start}
+    #comm-list .comm-row .ob{flex-shrink:0;margin-top:2px}
+    #comm-list .comm-text{flex:1;min-width:0}
+    body.theme-sports #comm-list .feed-item .title,body[data-theme="sports"] #comm-list .feed-item .title{color:#0f172a}
+    body.theme-sports #comm-list .feed-item .body,body[data-theme="sports"] #comm-list .feed-item .body{color:#334155}
     .fow-match-row{
       display:flex;justify-content:space-between;gap:8px;padding:8px 10px;
       border-bottom:1px solid rgba(148,163,184,.1);font-size:12px;
@@ -3370,6 +3380,24 @@ body.light, body[data-theme="light"] {
       out=out.replace(/\b([012])\s*रन\b/g,function(m,n){return'<span class="hl run'+n+'">'+n+' रन</span>'});
       return out;
     }
+    function ballStampFromLine(line){
+      try{
+        var s=String(line||'');
+        var u=s.toUpperCase();
+        if(/\bOUT\b|\bWICKET\b|\bCAUGHT\b|\bBOWLED\b|\bLBW\b|\bSTUMPED\b|\bRUN OUT\b/.test(u)) return {label:'W', cls:'w'};
+        if(/\bSIX\b|\b6 RUNS\b|— 6\b|\b6\s*RUNS/.test(u) || /\b6\b/.test(s) && /boundary|maximum|over the|into the crowd/i.test(s)) return {label:'6', cls:'b6'};
+        if(/\bFOUR\b|\b4 RUNS\b|— 4\b|\b4\s*RUNS/.test(u) || (/\b4\b/.test(s) && /boundary|rope|cover drive|square cut/i.test(s))) return {label:'4', cls:'b4'};
+        if(/\bWIDE\b|\bWD\b/.test(u)) return {label:'Wd', cls:'wd'};
+        if(/\bNO[- ]?BALL\b|\bNB\b/.test(u)) return {label:'Nb', cls:'nb'};
+        var m=s.match(/(?:—|–|-)?\s*(\d)\s*runs?/i) || s.match(/\b(\d)\s*run\b/i);
+        if(m){
+          var n=m[1];
+          return {label:n, cls:'b'+n};
+        }
+        if(/\bDOT\b|no run|defended|left alone/i.test(s)) return {label:'0', cls:'b0'};
+        return null;
+      }catch(e){ return null; }
+    }
     function formatCommentaryLine(line){line=String(line||'').trim();if(!line)return{title:'',body:''};var dash=line.split(/\s+[—–]\s+/);if(dash.length>=2&&dash[0].length<100)return{title:dash[0].replace(/^\*+/,'').trim(),body:dash.slice(1).join(' — ').replace(/^\*+\s*/,'').trim()};var m=line.match(/^(.+?(?:\d+(?:st|nd|rd|th)\s+ball))[.\s*—–-]*(.*)$/i);if(m)return{title:m[1].replace(/^\*+/,'').trim(),body:(m[2]||'').replace(/^\*+\s*/,'').trim()};return{title:line.replace(/^\*+/,'').trim(),body:''}}
     function batTable(rows,currentName){
       if(!rows||!rows.length)return'<tr><td colspan="6" class="empty">No batting yet</td></tr>';
@@ -3573,7 +3601,7 @@ body.light, body[data-theme="light"] {
       if(typeof __idleMuted!=='undefined' && __idleMuted) return; // respect 5-min idle
       try{
         if(__stadAmbientAudio){
-          try{ __stadAmbientAudio.volume = 0.028; }catch(eV){}
+          try{ __stadAmbientAudio.volume = 0.012; }catch(eV){}
           try{
             var p0 = __stadAmbientAudio.play();
             if(p0 && p0.catch) p0.catch(function(){
@@ -3588,7 +3616,7 @@ body.light, body[data-theme="light"] {
         try{ a.setAttribute('playsinline',''); a.setAttribute('webkit-playsinline',''); }catch(e0){}
         a.preload = 'auto';
         a.loop = true;
-        a.volume = 0.028;
+        a.volume = 0.012;
         a.src = STAD_SFX.short + (STAD_SFX.short.indexOf('?')>=0 ? '&' : '?') + 'r=' + Date.now();
         var p = a.play();
         if(p && p.catch) p.catch(function(err){
@@ -3608,12 +3636,22 @@ body.light, body[data-theme="light"] {
     }
     function stadSetEnabled(on){
       stadiumOn=!!on;
+      __userStadiumPref = stadiumOn;
       try{ localStorage.setItem('cricket_stadium_on', stadiumOn?'1':'0'); }catch(e){}
       if(stadiumOn){
+        try{ __idleMuted = false; }catch(eI){}
         stadStartAmbient();
       } else {
-        stadStopAmbient();
-        stadStopAllSamples();
+        try{ stadStopAllSamples(); }catch(e0){}
+        try{ stadStopAmbient(); }catch(e1){}
+        try{
+          if(__stadAmbientAudio){
+            try{ __stadAmbientAudio.pause(); }catch(e2){}
+            try{ __stadAmbientAudio.loop = false; }catch(e3){}
+            try{ __stadAmbientAudio.src = ''; }catch(e4){}
+            __stadAmbientAudio = null;
+          }
+        }catch(e5){}
       }
       try{ updateStadBtn(); }catch(e2){}
       try{ updateCommToolsLabel(); }catch(e3){}
@@ -3692,10 +3730,10 @@ body.light, body[data-theme="light"] {
       try{
         if(__idleMuted) return; // must exitIdleMute first
         __pendingStadResume = false;
-        if(!stadiumOn && __userStadiumPref){
-          stadiumOn = true;
-          try{ localStorage.setItem('cricket_stadium_on', '1'); }catch(eL){}
-        }
+        try{
+          var pref = localStorage.getItem('cricket_stadium_on');
+          if(pref === '0'){ stadiumOn = false; return; }
+        }catch(ePref){}
         if(!stadiumOn) return;
         try{
           if(__stadAmbientAudio){
@@ -3708,7 +3746,7 @@ body.light, body[data-theme="light"] {
           try{
             if(__idleMuted || !stadiumOn) return;
             if(__stadAmbientAudio){
-              __stadAmbientAudio.volume = 0.028;
+              __stadAmbientAudio.volume = 0.012;
               var p = __stadAmbientAudio.play();
               if(p && p.catch) p.catch(function(){ __pendingStadResume = true; });
             } else {
@@ -4053,6 +4091,7 @@ body.light, body[data-theme="light"] {
         try{ speak(ttsLang==='hi'?'कमेंट्री चालू। Four!':'Commentary on. Four! What a shot!', true); }catch(e2){}
       } else {
         try{ stopAllSpeech(); }catch(e3){}
+        try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e4){}
       }
     }
 
@@ -4997,7 +5036,7 @@ body.light, body[data-theme="light"] {
       var overRuns=0,overLegal=0;
       balls.forEach(function(b){var s=String(b).toLowerCase();if(s==='w'){overLegal++}else if(s==='wd'||s==='nb'||s==='wide'){overRuns+=1}else{var n=parseInt(s,10);if(!isNaN(n)){overRuns+=n;overLegal++}}});
       ov.runs=overRuns;ov.legal=overLegal;
-      $('v-over-balls').innerHTML=balls.length?balls.map(function(b){var cls='ob';var s=String(b);if(s==='W'||s==='w')cls+=' w';else if(s==='4')cls+=' b4';else if(s==='6')cls+=' b6';return'<span class="'+cls+'">'+esc(s)+'</span>'}).join(''):'<span class="over-msg">No balls yet this over</span>';
+      $('v-over-balls').innerHTML=balls.length?balls.map(function(b){var cls='ob';var s=String(b);var u=s.toUpperCase();if(u==='W')cls+=' w';else if(u==='WD'||u.indexOf('WD')===0)cls+=' wd';else if(u==='NB'||u.indexOf('NB')===0)cls+=' nb';else if(u==='LB'||u==='B')cls+=' lb';else if(s==='0'||s==='•'||s==='.')cls+=' b0';else if(s==='1')cls+=' b1';else if(s==='2')cls+=' b2';else if(s==='3')cls+=' b3';else if(s==='4')cls+=' b4';else if(s==='5')cls+=' b5';else if(s==='6')cls+=' b6';return'<span class="'+cls+'">'+esc(s)+'</span>'}).join(''):'<span class="over-msg">No balls yet this over</span>';
       (function(){
         var msg='';
         if(balls.length){
@@ -5032,7 +5071,20 @@ body.light, body[data-theme="light"] {
         window.__lastBallsForGlow = nowB;
       }catch(eG){}
       var lines=((ttsLang==='hi')?(data.commentaryHi||data.commentary):data.commentary||[]).slice().filter(Boolean).reverse();
-      $('comm-list').innerHTML=lines.length?lines.map(function(line,i){var parts=formatCommentaryLine(line);var html='';if(i===0)html+='<div class="t">LATEST</div>';if(parts.title)html+='<div class="title">'+highlightEventWords(parts.title)+'</div>';if(parts.body)html+='<div class="body">'+highlightEventWords(parts.body)+'</div>';if(!parts.title&&!parts.body)html+=highlightEventWords(line);return'<div class="feed-item">'+html+'</div>'}).join(''):'<div class="empty">No commentary yet</div>';
+      $('comm-list').innerHTML=lines.length?lines.map(function(line,i){
+        var parts=formatCommentaryLine(line);
+        var stamp=ballStampFromLine(line);
+        var html='';
+        if(i===0)html+='<div class="t">LATEST</div>';
+        html+='<div class="comm-row">';
+        if(stamp)html+='<span class="ob '+stamp.cls+'">'+esc(stamp.label)+'</span>';
+        html+='<div class="comm-text">';
+        if(parts.title)html+='<div class="title">'+highlightEventWords(parts.title)+'</div>';
+        if(parts.body)html+='<div class="body">'+highlightEventWords(parts.body)+'</div>';
+        if(!parts.title&&!parts.body)html+=highlightEventWords(line);
+        html+='</div></div>';
+        return'<div class="feed-item">'+html+'</div>';
+      }).join(''):'<div class="empty">No commentary yet</div>';
       speakNewCommentary(data);
       var i1Bat=data.innings1Batters||(data.innings===1?data.batters:[]);var i1Bowl=data.innings1Bowlers||(data.innings===1?data.bowlers:[]);
       var i2Bat=data.innings2Batters||(data.innings>=2?data.batters:[]);var i2Bowl=data.innings2Bowlers||(data.innings>=2?data.bowlers:[]);
@@ -5956,7 +6008,7 @@ try{mountDashboards()}catch(e){}
     }
     function restoreLiveTheme(){
       var n='default';
-      try{ n=localStorage.getItem(LIVE_THEME_KEY)||'default'; }catch(e){}
+      try{ n=localStorage.getItem(LIVE_THEME_KEY)||'sports'; }catch(e){}
       setLiveTheme(n);
     }
     try{ restoreLiveTheme(); }catch(eTh){}
@@ -6038,10 +6090,8 @@ try{updateTtsBtn()}catch(eTts){}
             if(sg === 'male' || sg === 'female') ttsGender = sg;
             else { ttsGender = 'female'; localStorage.setItem('cricket_tts_gender', 'female'); }
           }catch(e1){ ttsGender = 'female'; }
-          ttsOn = true;
-          try{ localStorage.setItem('cricket_tts_on', '1'); }catch(e2){}
-          stadiumOn = true;
-          try{ localStorage.setItem('cricket_stadium_on', '1'); }catch(e3){}
+          try{ ttsOn = localStorage.getItem('cricket_tts_on') !== '0'; }catch(e2){ ttsOn = !!ttsOn; }
+          try{ stadiumOn = localStorage.getItem('cricket_stadium_on') !== '0'; }catch(e3){ stadiumOn = !!stadiumOn; }
           if(from === 'banner' || from === 'ui' || from === 'gate' || from === 'score'){
             try{ __idleMuted = false; }catch(e4){}
           }
@@ -9738,6 +9788,194 @@ html body[data-theme="sports"] .pbox .st {
   }
   setInterval(paint, 700);
   paint();
+})();
+</script>
+
+
+<style id="live-v48-audio-comm">
+/* Colorful light over-balls already in main CSS */
+body.theme-sports #comm-list .feed-item,
+body[data-theme="sports"] #comm-list .feed-item {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+body.theme-sports #comm-list .comm-row .ob,
+body[data-theme="sports"] #comm-list .comm-row .ob {
+  min-width: 28px; height: 28px;
+}
+</style>
+<script id="live-v48-audio-comm">
+(function(){
+  // Ensure default theme is white/sports on first visit
+  try {
+    var k = 'cricket_live_theme_v1';
+    if (!localStorage.getItem(k)) {
+      localStorage.setItem(k, 'sports');
+      if (typeof setLiveTheme === 'function') setLiveTheme('sports');
+      else {
+        document.body.classList.add('theme-sports');
+        document.body.setAttribute('data-theme', 'sports');
+      }
+    }
+  } catch(e){}
+
+  // Hard mute helper used by idle + toggles
+  window.__hardMuteAll = function(){
+    try {
+      if (typeof stadStopAllSamples === 'function') stadStopAllSamples();
+      if (typeof stadStopAmbient === 'function') stadStopAmbient();
+      if (typeof stopAllSpeech === 'function') stopAllSpeech();
+      if (window.speechSynthesis) speechSynthesis.cancel();
+      if (typeof __stadAmbientAudio !== 'undefined' && __stadAmbientAudio) {
+        try { __stadAmbientAudio.pause(); } catch(e){}
+        try { __stadAmbientAudio.src = ''; } catch(e){}
+        try { __stadAmbientAudio = null; } catch(e){}
+      }
+    } catch(e){}
+  };
+
+  // Watchdog: if stadium marked off in storage, keep killing audio
+  setInterval(function(){
+    try {
+      var st = localStorage.getItem('cricket_stadium_on');
+      var tt = localStorage.getItem('cricket_tts_on');
+      if (st === '0') {
+        if (typeof stadiumOn !== 'undefined') stadiumOn = false;
+        window.__hardMuteAll && window.__hardMuteAll();
+      }
+      if (tt === '0') {
+        if (typeof ttsOn !== 'undefined') ttsOn = false;
+        try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch(e){}
+        try { if (typeof stopAllSpeech === 'function') stopAllSpeech(); } catch(e){}
+      }
+      // idle 5 min
+      if (typeof __lastScoreActivityAt !== 'undefined' && typeof IDLE_MS !== 'undefined') {
+        if (Date.now() - __lastScoreActivityAt >= IDLE_MS) {
+          if (typeof __idleMuted !== 'undefined' && !__idleMuted && typeof enterIdleMute === 'function') {
+            enterIdleMute();
+          }
+          window.__hardMuteAll && window.__hardMuteAll();
+        }
+      }
+    } catch(e){}
+  }, 4000);
+})();
+</script>
+
+
+<script id="live-v49-float-ads">
+(function(){
+  var _adTimer = null;
+  var _lastShown = 0;
+
+  function ensureOverlay(){
+    var ov = document.getElementById('live-float-ad');
+    if (ov) return ov;
+    ov = document.createElement('div');
+    ov.id = 'live-float-ad';
+    ov.style.cssText = 'position:fixed;z-index:99999;left:0;right:0;bottom:0;top:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);padding:16px;';
+    ov.innerHTML = '<div id="live-float-ad-card" style="background:#0f172a;color:#fff;border-radius:14px;padding:16px;border:1px solid rgba(255,255,255,.12);max-width:360px;width:100%;position:relative;box-shadow:0 12px 40px rgba(0,0,0,.45)"><button type="button" id="live-float-ad-x" style="position:absolute;top:8px;right:8px;background:#ef4444;color:#fff;border:0;border-radius:999px;width:28px;height:28px;font-weight:900;cursor:pointer">✕</button><div id="live-float-ad-body"></div></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function(e){ if(e.target===ov) hideFloat(); });
+    document.getElementById('live-float-ad-x').onclick = hideFloat;
+    return ov;
+  }
+
+  function hideFloat(){
+    var ov = document.getElementById('live-float-ad');
+    if (ov) ov.style.display = 'none';
+    if (_adTimer) { clearTimeout(_adTimer); _adTimer = null; }
+  }
+
+  function showFloat(o){
+    if (!o || (!o.text && !o.image && !o.imageUrl)) return;
+    if (Date.now() - _lastShown < 8000) return; // debounce
+    var ov = ensureOverlay();
+    var body = document.getElementById('live-float-ad-body');
+    var img = o.image || o.imageUrl || '';
+    var h = '';
+    if (img && /^https?:\/\//i.test(img)) {
+      h += '<img src="'+img.replace(/"/g,'')+'" alt="ad" style="max-width:100%;max-height:160px;border-radius:8px;display:block;margin:0 auto 10px" onerror="this.style.display=\'none\'"/>';
+    }
+    if (o.text) h += '<p style="font-weight:800;font-size:15px;margin:0 0 8px;text-align:center">'+String(o.text).replace(/</g,'&lt;')+'</p>';
+    if (o.link || o.linkUrl) {
+      var href = (o.link || o.linkUrl).replace(/"/g,'');
+      h += '<p style="text-align:center;margin:0"><a href="'+href+'" target="_blank" rel="noopener" style="color:#38bdf8;font-weight:700;font-size:13px">Open offer</a></p>';
+    }
+    body.innerHTML = h;
+    ov.style.display = 'flex';
+    _lastShown = Date.now();
+    if (_adTimer) clearTimeout(_adTimer);
+    _adTimer = setTimeout(hideFloat, 5000); // 5s preview
+  }
+
+  window.__showLiveFloatAd = showFloat;
+  window.__hideLiveFloatAd = hideFloat;
+
+  function cfgFrom(data){
+    return (data && data.floatAd) || window.__liveFloatAd || null;
+  }
+
+  function onEvent(ev, data){
+    var o = cfgFrom(data);
+    if (!o || !o.enabled) return;
+    var t = (o.trigger || 'random').toLowerCase();
+    var e = String(ev||'').toLowerCase();
+    var fire = false;
+    if (t === 'random' && Math.random() < 0.15) fire = true;
+    if (t === 'boundary' && (e==='4'||e==='6'||e==='four'||e==='six'||e==='boundary')) fire = true;
+    if (t === 'wicket' && (e==='w'||e==='wicket'||e==='out')) fire = true;
+    if (t === 'over' && (e==='over'||e==='over_end'||e==='end_of_over')) fire = true;
+    if (t === 'innings' && (e==='innings'||e==='innings_end')) fire = true;
+    if (fire) showFloat(o);
+  }
+
+  // Hook live updates
+  function wrap(fn){
+    return function(data){
+      try {
+        if (data && data.floatAd) window.__liveFloatAd = data.floatAd;
+        if (data && data.lastEvent) onEvent(data.lastEvent, data);
+        // over change
+        if (data && data.thisOver && data.thisOver.balls) {
+          var key = (data.overs||'') + '|' + (data.thisOver.balls||[]).join(',');
+          if (window.__adOverKey && window.__adOverKey !== key) {
+            var prev = window.__adOverKey;
+            window.__adOverKey = key;
+            if (String(prev).split('|')[0] !== String(key).split('|')[0]) onEvent('over', data);
+            var last = (data.thisOver.balls.slice(-1)[0]||'')+'';
+            if (last==='4'||last==='6') onEvent(last, data);
+            if (last==='W'||last==='w') onEvent('wicket', data);
+          } else {
+            window.__adOverKey = key;
+          }
+        }
+      } catch(e){}
+      if (typeof fn === 'function') return fn.apply(this, arguments);
+    };
+  }
+  ['applyLiveData','onLiveUpdate','renderLive'].forEach(function(n){
+    try {
+      if (typeof window[n]==='function' && !window[n]._v49ad) {
+        var p = window[n];
+        window[n] = wrap(p);
+        window[n]._v49ad = true;
+      }
+    } catch(e){}
+  });
+
+  // Platform banners (admin) — clearable
+  async function loadPlatformAds(){
+    try {
+      var r = await fetch('/api/ads', { cache: 'no-store' });
+      var j = await r.json();
+      if (j && Array.isArray(j.banners) && j.banners.length) {
+        // store but user asked to remove current — skip auto-show sticky if empty after clear
+        window.__platformBanners = j.banners;
+      }
+    } catch(e){}
+  }
+  loadPlatformAds();
 })();
 </script>
 
