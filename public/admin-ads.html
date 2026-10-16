@@ -16,8 +16,12 @@ h1{font-size:1.2rem}
 <body>
 <h1>📢 Platform Ad Banners</h1>
 <p style="opacity:.8;font-size:14px">App creator only. Banners appear on <b>all</b> viewer links.</p>
+<p style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px;font-size:13px;line-height:1.5">
+  <b>Admin key:</b> <code style="color:#34d399;font-size:14px">mysportz-admin-2024</code><br/>
+  <span style="opacity:.75">Set in <code>wrangler.toml</code> → <code>ADMIN_KEY</code>. Send as header <code>X-Admin-Key</code>.</span>
+</p>
 <label>Admin key</label>
-<input id="key" type="password" placeholder="ADMIN_KEY from wrangler.toml"/>
+<input id="key" type="password" placeholder="mysportz-admin-2024" value="mysportz-admin-2024"/>
 <label>Ad text</label>
 <textarea id="text" rows="2" placeholder="Try Premium Scorer — free this week"></textarea>
 <label>Image URL (optional)</label>
