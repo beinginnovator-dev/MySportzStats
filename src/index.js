@@ -223,15 +223,13 @@ async function handleShortPage(request, env, url) {
   const teamB = data.teamB || "Team B";
   const desc = data.desc || (teamA + " vs " + teamB + " — live ball-by-ball scores, commentary & stats");
   const liveUrl = new URL("/live.html?match=" + encodeURIComponent(matchId), url.origin).toString();
-  // Prefer custom image (JPG/PNG). Fallback poster endpoint (PNG).
-  const customImg = data.imageUrl ? String(data.imageUrl) : "";
-  const posterUrl = customImg || new URL(
-    "/api/poster.png?title=" + encodeURIComponent(title) +
-    "&a=" + encodeURIComponent(teamA) +
-    "&b=" + encodeURIComponent(teamB) +
-    "&desc=" + encodeURIComponent(String(desc).slice(0, 80)),
-    url.origin
-  ).toString();
+  // WhatsApp/Telegram need absolute HTTPS JPEG/PNG — SVG is ignored.
+  // Prefer custom raster image; else use placehold.co PNG (works in WA scrapers).
+  let customImg = data.imageUrl ? String(data.imageUrl).trim() : "";
+  if (customImg && !/^https:\/\//i.test(customImg)) customImg = ""; // reject relative/content/data
+  const label = encodeURIComponent((teamA + " VS " + teamB).slice(0, 40));
+  const posterUrl = customImg || ("https://placehold.co/1200x630/0f766e/ecfdf5/png?text=" + label);
+  // Keep local SVG poster available for browsers (not used as og:image)
   const ua = (request.headers.get("User-Agent") || "").toLowerCase();
   const isBot = /bot|crawl|slurp|facebookexternalhit|whatsapp|telegram|twitter|linkedin|discord|preview|skypeuri/i.test(ua);
 
@@ -337,8 +335,15 @@ export default {
     }
 
     // Match poster SVG for OG / WhatsApp
-    if (url.pathname === "/api/poster" || url.pathname === "/api/poster.png") {
+    if (url.pathname === "/api/poster" || url.pathname === "/api/poster.svg") {
       return handlePoster(url);
+    }
+    if (url.pathname === "/api/poster.png") {
+      // Raster redirect for crawlers that hit this path directly
+      const a = url.searchParams.get("a") || "Team A";
+      const b = url.searchParams.get("b") || "Team B";
+      const label = encodeURIComponent((a + " VS " + b).slice(0, 40));
+      return Response.redirect("https://placehold.co/1200x630/0f766e/ecfdf5/png?text=" + label, 302);
     }
 
     // Short share links /m/CODE
