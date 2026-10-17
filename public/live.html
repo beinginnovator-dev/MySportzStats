@@ -9083,11 +9083,7 @@ body.viewer-on-live .live-match-info-below {
   display: none !important;
 }
 /* When score-tabs is on LIVE, hide trailing MATCH info cards inside score-card after emoji */
-.score-card .match-info-block,
-#panel-live + .info-body,
-.score-card > .info-body {
-  display: none !important;
-}
+/* info visible */
 
 /* Schedule tiles: light red + DARK readable text */
 body[data-theme="sports"] #live-tab-schedule [class*="card"],
@@ -10242,127 +10238,114 @@ body[data-theme="sports"] #comm-list .comm-row .ob {
 </script>
 
 
-<script id="live-v53-stable">
+<script id="v53f-live">
 (function(){
-  // ---- Stable paint: only write DOM when content hash changes ----
-  var _hash = {};
-  function setHTML(el, html, key){
-    if (!el) return;
-    key = key || el.id || 'x';
-    var h = String(html||'');
-    if (_hash[key] === h) return; // no flash
-    _hash[key] = h;
-    el.innerHTML = h;
-  }
-  window.__stableSetHTML = setHTML;
-
-  // Patch common body paints
-  function wrapPaint(name, getElId){
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+  function getData(){ return window.__lastLiveData || window.lastData || {}; }
+  window.__paintSquadOnce = function(){
+    var d = getData();
+    var nameA = d.teamA || "Team A", nameB = d.teamB || "Team B";
+    var listA = d.squadA || d.teamAPlayers || [];
+    var listB = d.squadB || d.teamBPlayers || [];
+    if (Array.isArray(d.players)) {
+      if (!listA.length) listA = d.players.filter(function(p){ return p.team==="A"; });
+      if (!listB.length) listB = d.players.filter(function(p){ return p.team==="B"; });
+    }
+    function cell(p){
+      if (!p) return "<td style=\"padding:10px;width:50%;border-bottom:1px solid #eee\"></td>";
+      var n = typeof p === "string" ? p : (p.name || "-");
+      if (!n || /^player\s*\d*$/i.test(n)) n = "-";
+      var role = (p && p.isOut) ? "Out" : ((p && ((p.runs|0)+(p.balls|0))) ? "Batting" : "In XI");
+      return "<td style=\"padding:10px;width:50%;border-bottom:1px solid #eee\"><div style=\"font-weight:800;color:#0f172a\">"+esc(n)+"</div><div style=\"font-size:11px;color:#64748b\">"+role+"</div></td>";
+    }
+    var max = Math.max(listA.length, listB.length, 1), rows = "";
+    for (var i = 0; i < max; i++) rows += "<tr>"+cell(listA[i])+cell(listB[i])+"</tr>";
+    var h = "<div style=\"padding:8px 12px\"><table style=\"width:100%;border-collapse:collapse;background:#fff;border-radius:12px;border:1px solid #e5e7eb\"><thead><tr><th style=\"background:#dc2626;color:#fff;padding:10px\">"+esc(nameA)+"</th><th style=\"background:#dc2626;color:#fff;padding:10px\">"+esc(nameB)+"</th></tr></thead><tbody>"+rows+"</tbody></table></div>";
+    ["live-tab-squad","squads-body"].forEach(function(id){
+      var el = $(id); if (!el) return;
+      var key = nameA+"|"+nameB+"|"+listA.length+"|"+listB.length;
+      if (el.getAttribute("data-k") === key) return;
+      el.setAttribute("data-k", key);
+      el.innerHTML = h;
+    });
+  };
+  var prevSquad = window.renderLiveSquads;
+  window.renderLiveSquads = function(){
+    try { window.__paintSquadOnce(); } catch (e) { if (typeof prevSquad === "function") prevSquad.apply(this, arguments); }
+  };
+  window.renderLiveSquad = function(){ window.__paintSquadOnce(); };
+  var prevInfo = window.renderLiveInfo;
+  window.renderLiveInfo = function(){
+    try { if (typeof prevInfo === "function") prevInfo(); } catch (e) {}
     try {
-      var fn = window[name];
-      if (typeof fn !== 'function' || fn._v53) return;
-      window[name] = function(){
-        var el = document.getElementById(getElId);
-        var prev = el ? el.innerHTML : '';
-        var r = fn.apply(this, arguments);
-        // if function cleared then filled, that's ok; prevent empty flash by restoring if empty briefly
-        return r;
-      };
-      window[name]._v53 = true;
-    } catch(e){}
-  }
-
-  // Debounced single apply
-  var _t = null, _last = null, _lastKey = '';
-  function stableApply(data){
-    if (!data) return;
-    _last = data;
-    var key = [
-      data.runs, data.wickets, data.overs, data.balls,
-      data.teamA, data.teamB, data.strikerName, data.bowlerName,
-      (data.commentary&&data.commentary.length),
-      (data.squadA&&data.squadA.length), (data.squadB&&data.squadB.length),
-      (data.batters&&data.batters.length), (data.innings1Batters&&data.innings1Batters.length),
-      (data.fixtures&&data.fixtures.length)
-    ].join('|');
-    if (key === _lastKey && _hash['boot']) return;
-    _lastKey = key;
-    _hash['boot'] = '1';
-  }
-
-  ['applyLiveData','onLiveUpdate','renderLive'].forEach(function(n){
+      var body = $("info-body"); if (!body) return;
+      body.style.display = "block";
+      var d = getData();
+      function row(k,v){ return "<div style=\"display:flex;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #f1f5f9\"><span style=\"color:#64748b;font-weight:700;font-size:12px\">"+esc(k)+"</span><span style=\"color:#0f172a;font-weight:800;font-size:13px\">"+esc(v||"-")+"</span></div>"; }
+      var toss = d.tossText || "-";
+      var started = "-";
+      try { if (d.matchStartedAt) started = new Date(d.matchStartedAt).toLocaleString(); } catch (e) {}
+      if (!(body.innerHTML || "").trim() || body.innerHTML.indexOf("Match") < 0) {
+        body.innerHTML = row("Match",(d.teamA||"A")+" vs "+(d.teamB||"B"))+row("Toss",toss)+row("Overs",d.maxOvers||d.oversLimit||"-")+row("Started",started)+row("Venue",d.venue||d.location||"-");
+      }
+    } catch (e2) {}
+  };
+  var prevSw = window.switchLiveTab;
+  window.switchLiveTab = function(name){
+    name = name || "live";
+    if (name === "comm") name = "commentary";
     try {
-      if (typeof window[n]==='function' && !window[n]._v53s) {
+      document.querySelectorAll("#live-main-tabs button").forEach(function(b){
+        b.classList.toggle("active", b.getAttribute("data-live-tab") === name);
+      });
+    } catch (e) {}
+    if (name === "commentary") {
+      ["live-tab-scorecard","live-tab-squad","live-tab-schedule","live-tab-stats"].forEach(function(id){
+        var el = $(id); if (el) { el.style.display = "none"; el.classList.add("hidden"); }
+      });
+      var t = $("live-tab-commentary");
+      if (!t) {
+        t = document.createElement("div");
+        t.id = "live-tab-commentary";
+        t.style.padding = "8px 0 80px";
+        var nav = $("live-main-tabs");
+        if (nav && nav.parentNode) nav.parentNode.insertBefore(t, nav.nextSibling);
+      }
+      t.style.display = "block";
+      t.classList.remove("hidden");
+      var src = $("panel-comm") || $("comm-list");
+      if (src) {
+        src.style.display = "block";
+        src.classList.remove("hidden");
+        if (src.parentNode !== t) t.appendChild(src);
+      }
+      return;
+    }
+    if (name === "squad") {
+      if (typeof prevSw === "function") try { prevSw("squad"); } catch (e) {}
+      window.__paintSquadOnce();
+      return;
+    }
+    if (name === "stats") {
+      if (typeof prevSw === "function") try { prevSw("stats"); } catch (e) {}
+      try { window.renderLiveInfo(); } catch (e) {}
+      return;
+    }
+    if (typeof prevSw === "function") return prevSw(name);
+  };
+  ["applyLiveData","onLiveUpdate"].forEach(function(n){
+    try {
+      if (typeof window[n] === "function" && !window[n]._v53f) {
         var p = window[n];
-        window[n] = function(data){
-          try { stableApply(data||arguments[0]); } catch(e){}
+        window[n] = function(d){
+          if (d) { window.__lastLiveData = d; window.lastData = d; }
           return p.apply(this, arguments);
         };
-        window[n]._v53s = true;
+        window[n]._v53f = true;
       }
-    } catch(e){}
+    } catch (e) {}
   });
-
-  // switchLiveTab: support commentary + no blank flash
-  var prevSwitch = window.switchLiveTab;
-  window.switchLiveTab = function(name){
-    try {
-      if (name === 'commentary' || name === 'comm') {
-        name = 'live';
-        // show commentary section inside live
-        try {
-          var pc = document.getElementById('panel-comm') || document.getElementById('comm-list');
-          if (pc) pc.scrollIntoView({behavior:'smooth', block:'start'});
-        } catch(e){}
-      }
-    } catch(e){}
-    if (typeof prevSwitch === 'function') return prevSwitch.apply(this, arguments);
-  };
-
-  // Reduce squad flicker: if renderLiveSquads clears, skip empty when we had content
-  var prevSquad = window.renderLiveSquads;
-  if (typeof prevSquad === 'function' && !prevSquad._v53) {
-    window.renderLiveSquads = function(d){
-      try {
-        var body = document.getElementById('squads-body');
-        var before = body ? body.innerHTML : '';
-        var r = prevSquad.apply(this, arguments);
-        if (body) {
-          var after = body.innerHTML || '';
-          if ((!after || /PLAYING XI[\s\S]*^\s*$/m.test(after) || after.length < 40) && before && before.length > 80) {
-            body.innerHTML = before; // restore — avoid blank flash
-          }
-        }
-        return r;
-      } catch(e){ return prevSquad.apply(this, arguments); }
-    };
-    window.renderLiveSquads._v53 = true;
-  }
-
-  // Scorecard: don't leave "all yet to bat" when runs > 0 — prefer live batters list
-  var prevSC = window.renderLiveScorecard;
-  if (typeof prevSC === 'function' && !prevSC._v53) {
-    window.renderLiveScorecard = function(){
-      try {
-        var d = (typeof data==='function'?data():null) || window.__lastLiveData || window.lastData;
-        if (d) {
-          // Ensure current innings batters surface
-          if ((!d.innings1Batters || !d.innings1Batters.length) && d.batters && d.batters.length) {
-            d.innings1Batters = d.batters;
-          }
-        }
-      } catch(e){}
-      return prevSC.apply(this, arguments);
-    };
-    window.renderLiveScorecard._v53 = true;
-  }
-
-  // CSS: kill transition flash on panels
-  var st = document.createElement('style');
-  st.id = 'v53-stable-css';
-  st.textContent = '.live-tab-panel,.panel,#squads-body,#scorecard-body,#comm-list{min-height:120px}'
-    + '.live-tabs button{white-space:nowrap}';
-  document.head.appendChild(st);
 })();
 </script>
 

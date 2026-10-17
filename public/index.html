@@ -2523,15 +2523,7 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
 
                 
                     
-                    <div class="border theme-border rounded-xl p-3 space-y-2 mt-2" 
-                    <div class="border theme-border rounded-xl p-3 space-y-2 mt-2" id="share-poster-settings" style="background:rgba(15,23,42,0.04)">
-                        <label class="text-xs font-black theme-text uppercase tracking-wider block">📤 WhatsApp share image</label>
-                        <p class="text-[10px] theme-muted">Use a <b>direct</b> image URL ending in .jpg/.png (ImgBB → “Direct link”). Gallery pages like ibb.co/xxx will not preview.</p>
-                        <input id="share-poster-url" type="url" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" placeholder="https://i.ibb.co/…/poster.jpg" onchange="try{localStorage.setItem('cricket_share_poster_url',this.value.trim())}catch(e){}"/>
-                        <input id="share-desc" type="text" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" placeholder="Optional share caption" onchange="try{localStorage.setItem('cricket_share_desc',this.value.trim())}catch(e){}"/>
-                    </div>
-
-                    id="float-ads-settings" style="background:rgba(15,23,42,0.04)">
+                    <div class="border theme-border rounded-xl p-3 space-y-2 mt-2" id="float-ads-settings" style="background:rgba(15,23,42,0.04)">
                         <label class="text-xs font-black theme-text uppercase tracking-wider block">📢 Floating Ads</label>
                         <label class="flex items-center gap-2 text-sm theme-text"><input type="checkbox" id="ad-float-enabled" onchange="saveAdSettings()"/> Enable floating ads</label>
                         <label class="text-[10px] theme-muted font-semibold block">Show when</label>
@@ -2804,7 +2796,7 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
                         <div class="w-1/2 flex-shrink-0 px-0.5">
             <div id="scoreboard-card" class="bg-slate-900 text-white rounded-2xl p-3 shadow-md relative overflow-hidden">
             <button type="button" id="sb-scroll-lock" onclick="toggleScoreDashLock()" title="Lock vertical scroll"
-              style="position:absolute;right:8px;bottom:8px;z-index:25;width:36px;height:36px;border-radius:999px;border:1px solid rgba(148,163,184,.45);background:rgba(15,23,42,.92);color:#e2e8f0;font-size:16px;line-height:1;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.35)">🔓</button
+              style="position:absolute;right:8px;bottom:8px;z-index:25;width:36px;height:36px;border-radius:999px;border:1px solid rgba(148,163,184,.45);background:rgba(15,23,42,.92);color:#e2e8f0;font-size:16px;line-height:1;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.35)">🔓</button>
                 <!-- Both team scores belong INSIDE the scoreboard panel. No score is shown above this panel. -->
                 <!-- Team names removed from scoreboard top; scores only -->
                 <!-- Dual team score chips removed from scoreboard top; keep hidden nodes for JS -->
@@ -5330,36 +5322,10 @@ function cupRenameTeam(idx) {
 
     
     function showPageTransitionFx() {
-        var box = document.getElementById('page-transition-fx');
-        if (!box) return;
-        box.innerHTML = '';
-        // Lightweight inline logo graphic (no image load — always works)
-        var wrap = document.createElement('div');
-        wrap.className = 'fx-logo';
-        wrap.innerHTML = ''
-            + '<svg viewBox="0 0 120 120" width="140" height="140" xmlns="http://www.w3.org/2000/svg" aria-label="My Cricket Scorer">'
-            + '<circle cx="60" cy="60" r="56" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>'
-            + '<circle cx="60" cy="60" r="52" fill="#f8fafc"/>'
-            // stumps
-            + '<rect x="48" y="28" width="5" height="42" rx="1.5" fill="#92400e"/>'
-            + '<rect x="57" y="28" width="5" height="42" rx="1.5" fill="#92400e"/>'
-            + '<rect x="66" y="28" width="5" height="42" rx="1.5" fill="#92400e"/>'
-            + '<rect x="46" y="26" width="27" height="4" rx="1" fill="#b45309"/>'
-            // bat
-            + '<g transform="translate(22,48) rotate(-35)">'
-            + '<rect x="0" y="8" width="10" height="36" rx="2" fill="#c4a574"/>'
-            + '<rect x="2" y="0" width="6" height="12" rx="1" fill="#1e293b"/>'
-            + '<rect x="1" y="14" width="8" height="3" fill="#94a3b8"/>'
-            + '</g>'
-            // ball
-            + '<circle cx="82" cy="78" r="14" fill="#dc2626"/>'
-            + '<path d="M72 74 Q82 78 92 74" fill="none" stroke="#fff" stroke-width="1.5"/>'
-            + '<path d="M72 82 Q82 78 92 82" fill="none" stroke="#fff" stroke-width="1.5"/>'
-            + '</svg>';
-        box.appendChild(wrap);
-        box.style.pointerEvents = 'none';
-        box.classList.add('show');
-        setTimeout(function(){ try { box.classList.remove('show'); box.innerHTML=''; } catch(e){} }, 350);
+        try {
+          var box = document.getElementById('page-transition-fx');
+          if (box) { box.classList.remove('show'); box.innerHTML = ''; box.style.display = 'none'; }
+        } catch (e) {}
     }
 
 
@@ -7652,12 +7618,6 @@ function placeBoundaryAnimationOnStriker(toast){
             if (!base || base.indexOf('http') !== 0) { finish(longUrl); return; }
             var customImage = '';
             try { customImage = (localStorage.getItem('cricket_share_poster_url') || '').trim(); } catch(eI) {}
-            // Prefer direct image URL (jpg/png). Gallery links (ibb.co/page) often fail in WhatsApp.
-            if (customImage && !/^https:\/\//i.test(customImage)) customImage = '';
-            if (customImage && /ibb\.co\//i.test(customImage) && !/i\.ibb\.co\//i.test(customImage)) {
-              // warn once — user needs ImgBB "Direct link"
-              try { console.warn('[share] Use ImgBB Direct link (i.ibb.co/...), not gallery page'); } catch(eW){}
-            }
             var customDesc = '';
             try { customDesc = (localStorage.getItem('cricket_share_desc') || '').trim(); } catch(eD) {}
             fetch(base + '/api/short', {
@@ -11036,7 +10996,7 @@ function computeManOfTheMatch(plist) {
                 'header{border-bottom:2px solid #22c55e;padding-bottom:12px;margin-bottom:12px}</style></head><body>' +
                 '<header><h1>🎙️ ' + esc(title) + '</h1><div class="meta-line">' + esc(meta) + '</div></header>\n' +
                 bodyLines +
-                '\n<p style="margin-top:24px;color:#64748b;font-size:12px">Rich commentary export · icons &amp; smileys preserved · UTF-8</p>\n</body></html>';
+                '\n<p style="margin-top:24px;color:#64748b;font-size:12px">Rich commentary export · icons &amp; smileys preserved · UTF-8</p>\n</' + 'body></' + 'html>';
             var blob = new Blob([rich], { type: 'text/html;charset=utf-8' });
             var url = URL.createObjectURL(blob);
             var a = document.createElement('a');
@@ -11086,7 +11046,7 @@ function computeManOfTheMatch(plist) {
             if (m) {
                 m.classList.add('hidden');
                 m.style.display = 'none';
-                setTimeout(function(){ try { m.style.display = ''; } catch(e){} }, 50);
+                /* keep display:none */
             }
             window._openHistoryMatchNo = null;
             try { document.body.classList.remove('modal-open'); } catch(e2){}
@@ -16485,15 +16445,6 @@ body[data-theme="dark"] button.cup-subtab.is-active {
     hideFloatAd();
     try { if (typeof publishLiveViewerState === 'function') publishLiveViewerState(); } catch(eP){}
   }
-  function hydrateSharePoster(){
-    try {
-      var el = document.getElementById('share-poster-url');
-      if (el) el.value = localStorage.getItem('cricket_share_poster_url') || '';
-      var d = document.getElementById('share-desc');
-      if (d) d.value = localStorage.getItem('cricket_share_desc') || '';
-    } catch(e){}
-  }
-  try { if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', hydrateSharePoster); else hydrateSharePoster(); } catch(eH){}
   function hydrateAdForm(){
     var o = loadAd();
     var en = document.getElementById('ad-float-enabled'); if (en) en.checked = !!o.enabled;
@@ -17619,6 +17570,34 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
   setInterval(ensureFlags, 2000);
   document.addEventListener('DOMContentLoaded', ensureFlags);
   setTimeout(ensureFlags, 500);
+})();
+</script>
+
+
+<style id="v53f-safe">
+#page-transition-fx,#page-transition-fx.show{display:none!important;opacity:0!important;height:0!important;pointer-events:none!important}
+#history-detail-modal.hidden{display:none!important;visibility:hidden!important;pointer-events:none!important}
+#history-detail-modal:not(.hidden){display:flex!important}
+#float-ad-overlay:not(.show){display:none!important}
+#app-modal.hidden{display:none!important}
+</style>
+<script id="v53f-safe">
+(function(){
+  window.showPageTransitionFx = function(){
+    try {
+      var box = document.getElementById("page-transition-fx");
+      if (box) { box.classList.remove("show"); box.innerHTML = ""; box.style.display = "none"; }
+    } catch (e) {}
+  };
+  var prev = window.closeHistoryDetail;
+  window.closeHistoryDetail = function(){
+    try { if (typeof prev === "function") prev(); } catch (e) {}
+    try {
+      document.body.classList.remove("printing-history-detail");
+      var m = document.getElementById("history-detail-modal");
+      if (m) { m.classList.add("hidden"); m.style.display = "none"; }
+    } catch (e2) {}
+  };
 })();
 </script>
 
