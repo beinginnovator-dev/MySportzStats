@@ -1596,18 +1596,18 @@ body.light, body[data-theme="light"] {
           <div class="g-team g-left" onclick="openTeamModal('A')">
             <div class="g-flag" id="v-flag-a">🏳️</div>
             <div class="g-meta">
+              <div class="g-name" id="v-team-a">Team A</div>
               <div class="g-score" id="v-score-a">0/0</div>
               <div class="g-overs" id="v-overs-a"></div>
-              <div class="g-name" id="v-team-a">Team A</div>
               <div class="g-role" id="v-role-a">—</div>
             </div>
           </div>
           <div class="g-vs" id="g-vs-mid">vs</div>
           <div class="g-team g-right" onclick="openTeamModal('B')">
             <div class="g-meta g-meta-r">
-              <div class="g-score" id="v-score-b">—</div>
+              <div class="g-name" id="v-team-b">Team B</div><div class="g-score" id="v-score-b">—</div>
               <div class="g-overs" id="v-overs-b"></div>
-              <div class="g-name" id="v-team-b">Team B</div>
+              
               <div class="g-role" id="v-role-b">—</div>
             </div>
             <div class="g-flag" id="v-flag-b">🏳️</div>
@@ -1644,7 +1644,7 @@ body.light, body[data-theme="light"] {
                 <colgroup><col class="c-name"/><col class="c-r"/><col class="c-b"/><col class="c-x"/><col class="c-y"/></colgroup>
                 <thead><tr>
                   <th><span class="sb-ico">🏏</span>Batsman</th>
-                  <th class="n">R</th><th class="n">B</th><th class="n">4/6</th><th class="n">SR</th>
+                  <th class="n">R</th><th class="n">B</th><th class="n">4/6</th><th class="n">Avg</th><th class="n">SR</th>
                 </tr></thead>
                 <tbody>
                   <tr>
@@ -1652,6 +1652,7 @@ body.light, body[data-theme="light"] {
                     <td class="n" id="v-str-r">0</td>
                     <td class="n" id="v-str-b">0</td>
                     <td class="n" id="v-str-46">0/0</td>
+                    <td class="n" id="v-str-avg">—</td>
                     <td class="n" id="v-str-sr">0.0</td>
                   </tr>
                   <tr id="v-nonstrike-row" style="opacity:.8">
@@ -3399,8 +3400,16 @@ body.light, body[data-theme="light"] {
       }catch(e){ return null; }
     }
     function formatCommentaryLine(line){line=String(line||'').trim();if(!line)return{title:'',body:''};var dash=line.split(/\s+[—–]\s+/);if(dash.length>=2&&dash[0].length<100)return{title:dash[0].replace(/^\*+/,'').trim(),body:dash.slice(1).join(' — ').replace(/^\*+\s*/,'').trim()};var m=line.match(/^(.+?(?:\d+(?:st|nd|rd|th)\s+ball))[.\s*—–-]*(.*)$/i);if(m)return{title:m[1].replace(/^\*+/,'').trim(),body:(m[2]||'').replace(/^\*+\s*/,'').trim()};return{title:line.replace(/^\*+/,'').trim(),body:''}}
+    function batAvg(p){
+      if(!p) return '—';
+      if(p.avg!=null && p.avg!=='') return p.avg;
+      // Cricket: runs / dismissals; match innings → out = runs, not out = —
+      if(p.isOut) return (p.runs|0);
+      if((p.dismissals|0)>0) return Math.round(((p.runs|0)/(p.dismissals|0))*100)/100;
+      return '—';
+    }
     function batTable(rows,currentName){
-      if(!rows||!rows.length)return'<tr><td colspan="6" class="empty">No batting yet</td></tr>';
+      if(!rows||!rows.length)return'<tr><td colspan="7" class="empty">No batting yet</td></tr>';
       var cur=(currentName||'').toLowerCase();
       var sorted=rows.slice().sort(function(a,b){
         var an=(a.name||'').toLowerCase()===cur?0:1,bn=(b.name||'').toLowerCase()===cur?0:1;
@@ -3410,7 +3419,8 @@ body.light, body[data-theme="light"] {
         var isCur=cur && (p.name||'').toLowerCase()===cur && !p.isOut;
         var name=esc(p.name)+(p.isOut?'':((p.balls|0)>0?'*':''));
         var srVal=sr(p.runs,p.balls);
-        return '<tr class="'+(isCur?'neon':'dim')+'"><td>'+name+'</td><td class="num">'+(p.runs|0)+'</td><td class="num">'+(p.balls|0)+'</td><td class="num">'+(p.fours|0)+'/'+(p.sixes|0)+'</td><td class="num">'+srVal+'</td><td>'+esc(p.howOut||(p.isOut?'':'not out'))+'</td></tr>';
+        var avgVal=batAvg(p);
+        return '<tr class="'+(isCur?'neon':'dim')+'"><td>'+name+'</td><td class="num">'+(p.runs|0)+'</td><td class="num">'+(p.balls|0)+'</td><td class="num">'+(p.fours|0)+'/'+(p.sixes|0)+'</td><td class="num">'+avgVal+'</td><td class="num">'+srVal+'</td><td>'+esc(p.howOut||(p.isOut?'':'not out'))+'</td></tr>';
       }).join('');
     }
     function bowlTable(rows,currentName){
@@ -3427,7 +3437,7 @@ body.light, body[data-theme="light"] {
         return '<tr class="'+(isCur?'neon':'')+'"><td class="nm">'+esc(p.name)+'</td><td class="num">'+ov+'</td><td class="num">'+runs+'</td><td class="num">'+wk+'</td><td class="num">'+(p.dots|0)+'</td><td class="num">'+ec+'</td></tr>';
       }).join('');
     }
-    function statsBlock(title,batName,bowlName,batters,bowlers,cls){return'<div class="sec-title '+(cls||'')+'">'+esc(title)+' · Batting · '+esc(batName||'')+'</div><table class="stats"><thead><tr><th>Batter</th><th class="num">R</th><th class="num">B</th><th class="num">4/6</th><th class="num">SR</th><th>Out</th></tr></thead><tbody>'+batTable(batters,(lastData&&lastData.strikerName)||'')+'</tbody></table><div class="sec-title '+(cls||'')+'">'+esc(title)+' · Bowling · '+esc(bowlName||'')+'</div><table class="stats"><thead><tr><th>Bowler</th><th class="num">O</th><th class="num">R</th><th class="num">W</th><th class="num">Dots</th><th class="num">Econ</th></tr></thead><tbody>'+bowlTable(bowlers,(lastData&&lastData.bowlerName)||'')+'</tbody></table>'}
+    function statsBlock(title,batName,bowlName,batters,bowlers,cls){return'<div class="sec-title '+(cls||'')+'">'+esc(title)+' · Batting · '+esc(batName||'')+'</div><table class="stats"><thead><tr><th>Batter</th><th class="num">R</th><th class="num">B</th><th class="num">4/6</th><th class="num">Avg</th><th class="num">SR</th><th>Out</th></tr></thead><tbody>'+batTable(batters,(lastData&&lastData.strikerName)||'')+'</tbody></table><div class="sec-title '+(cls||'')+'">'+esc(title)+' · Bowling · '+esc(bowlName||'')+'</div><table class="stats"><thead><tr><th>Bowler</th><th class="num">O</th><th class="num">R</th><th class="num">W</th><th class="num">Dots</th><th class="num">Econ</th></tr></thead><tbody>'+bowlTable(bowlers,(lastData&&lastData.bowlerName)||'')+'</tbody></table>'}
     function playAnim(type,data){
       if(!type)return;
       if(Date.now()<skipEventAnimUntil)return;
@@ -4928,7 +4938,7 @@ body.light, body[data-theme="light"] {
         if($('v-str-r'))$('v-str-r').textContent=r;
         if($('v-str-b'))$('v-str-b').textContent=b;
         if($('v-str-46'))$('v-str-46').textContent=f4+'/'+s6;
-        if($('v-str-sr'))$('v-str-sr').textContent=s;
+        if($('v-str-sr'))$('v-str-sr').textContent=s; try{ var sa=$('v-str-avg'); if(sa){ var out=!!(data.strikerOut||data.strikerIsOut); sa.textContent=out?String(data.strikerRuns|0):'—'; } }catch(eAvg){}
         // non-striker if present
         var nr=data.nonStrikerRuns|0, nb=data.nonStrikerBalls|0;
         var ns=nb>0?((nr*100)/nb).toFixed(1):'0.0';
@@ -4936,7 +4946,7 @@ body.light, body[data-theme="light"] {
         if($('v-ns-r'))$('v-ns-r').textContent=nr;
         if($('v-ns-b'))$('v-ns-b').textContent=nb;
         if($('v-ns-46'))$('v-ns-46').textContent=(data.nonStrikerFours|0)+'/'+(data.nonStrikerSixes|0);
-        if($('v-ns-sr'))$('v-ns-sr').textContent=ns;
+        if($('v-ns-sr'))$('v-ns-sr').textContent=ns; try{ var na=$('v-ns-avg'); if(na){ var nout=!!(data.nonStrikerOut||data.nonStrikerIsOut); na.textContent=nout?String(data.nonStrikerRuns|0):'—'; } }catch(eAvg2){}
         var nsr=$('v-nonstrike-row');
         if(nsr) nsr.style.display = data.nonStrikerName ? '' : 'none';
       })();
@@ -5144,8 +5154,8 @@ body.light, body[data-theme="light"] {
       if(vr){ vr.classList.add('hidden'); vr.innerHTML=''; vr.style.display='none'; }
       // Cumulative orange/purple like Info tab (fallback to this-match if not pushed yet)
       var orange=data.cumulativeOrangeCap&&data.cumulativeOrangeCap.length?data.cumulativeOrangeCap:(data.orangeCap||[]);
-      $('sum-orange').innerHTML='<div class="sec-title">🟠 Orange cap · all matches</div><table class="stats"><thead><tr><th>#</th><th>Batter</th><th class="num">R</th><th class="num">B</th><th class="num">4s</th><th class="num">6s</th><th class="num">SR</th></tr></thead><tbody>'+
-        (orange.length?orange.map(function(p,i){return'<tr><td class="num">'+(i+1)+'</td><td class="nm">'+esc(p.name)+'</td><td class="num">'+(p.runs|0)+'</td><td class="num">'+(p.balls|0)+'</td><td class="num">'+(p.fours|0)+'</td><td class="num">'+(p.sixes|0)+'</td><td class="num">'+(p.SR!=null?p.SR:sr(p.runs,p.balls))+'</td></tr>'}).join(''):'<tr><td colspan="7" class="empty">No batting data</td></tr>')+'</tbody></table>';
+      $('sum-orange').innerHTML='<div class="sec-title">🟠 Orange cap · all matches</div><table class="stats"><thead><tr><th>#</th><th>Batter</th><th class="num">R</th><th class="num">B</th><th class="num">4s</th><th class="num">6s</th><th class="num">Avg</th><th class="num">SR</th></tr></thead><tbody>'+
+        (orange.length?orange.map(function(p,i){return'<tr><td class="num">'+(i+1)+'</td><td class="nm">'+esc(p.name)+'</td><td class="num">'+(p.runs|0)+'</td><td class="num">'+(p.balls|0)+'</td><td class="num">'+(p.fours|0)+'</td><td class="num">'+(p.sixes|0)+'</td><td class="num">'+(p.avg!=null?p.avg:(p.isOut?(p.runs|0):'—'))+'</td><td class="num">'+(p.SR!=null?p.SR:sr(p.runs,p.balls))+'</td></tr>'}).join(''):'<tr><td colspan="8" class="empty">No batting data</td></tr>')+'</tbody></table>';
       var purple=data.cumulativePurpleCap&&data.cumulativePurpleCap.length?data.cumulativePurpleCap:(data.purpleCap||[]);
       $('sum-purple').innerHTML='<div class="sec-title">🟣 Purple cap · all matches</div><table class="stats"><thead><tr><th>#</th><th>Bowler</th><th class="num">W</th><th class="num">R</th><th class="num">O</th><th class="num">Dots</th><th class="num">Econ</th></tr></thead><tbody>'+
         (purple.length?purple.map(function(p,i){return'<tr><td class="num">'+(i+1)+'</td><td class="nm">'+esc(p.name)+'</td><td class="num">'+(p.wickets|0)+'</td><td class="num">'+(p.bowlRuns|0)+'</td><td class="num">'+oversFromBalls(p.bowlBalls)+'</td><td class="num">'+(p.dots|0)+'</td><td class="num">'+(p.Econ!=null?p.Econ:econ(p.bowlRuns,p.bowlBalls))+'</td></tr>'}).join(''):'<tr><td colspan="7" class="empty">No bowling data</td></tr>')+'</tbody></table>';
@@ -6858,9 +6868,9 @@ body:not([data-theme="sports"]) .comm-line.ev-wicket { background: rgba(239,68,6
     var maxO = d.maxOvers ? ' (' + d.maxOvers + ' ovs maximum)' : '';
     var html = '<div style="padding:12px 12px 4px;font-weight:900;font-size:16px;color:inherit">' + title + maxO + '</div>';
     html += '<div class="sc-section-title">Batting</div>';
-    html += '<table class="sc-table"><thead><tr><th>Batter</th><th class="n">R</th><th class="n">B</th><th class="n">4s</th><th class="n">6s</th><th class="n">SR</th></tr></thead><tbody>';
+    html += '<table class="sc-table"><thead><tr><th>Batter</th><th class="n">R</th><th class="n">B</th><th class="n">4s</th><th class="n">6s</th><th class="n">Avg</th><th class="n">SR</th></tr></thead><tbody>';
     if (!(batters||[]).length) {
-      html += '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:16px">No batting data yet</td></tr>';
+      html += '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:16px">No batting data yet</td></tr>';
     } else {
       batters.forEach(function(b){
         var yet = b.yetToBat || b.howOut === 'yet to bat';
@@ -6868,7 +6878,8 @@ body:not([data-theme="sports"]) .comm-line.ev-wicket { background: rgba(239,68,6
         html += '<tr><td><div class="nm'+(yet?' yet':'')+'">'+(b.name||'—')+'</div><div class="how">'+how+'</div></td>';
         html += '<td class="n">'+(yet?'—':(b.runs|0))+'</td><td class="n">'+(yet?'—':(b.balls|0))+'</td>';
         html += '<td class="n">'+(yet?'—':(b.fours|0))+'</td><td class="n">'+(yet?'—':(b.sixes|0))+'</td>';
-        html += '<td class="n">'+(yet?'—':sr(b.runs,b.balls))+'</td></tr>';
+        var gav = yet?'—':(b.avg!=null?b.avg:(b.isOut?(b.runs|0):'—'));
+        html += '<td class="n">'+gav+'</td><td class="n">'+(yet?'—':sr(b.runs,b.balls))+'</td></tr>';
       });
     }
     html += '</tbody></table>';
@@ -8243,12 +8254,13 @@ body:not([data-theme="sports"]) .cap-table th {
       }
       function nm(p){ var n=String((p&&(p.name||p.player))||'').trim(); return n||'—'; }
       function ot(list){
-        var h = '<table class="cap-table"><thead><tr><th>#</th><th>Batter</th><th class="n">R</th><th class="n">B</th><th class="n">4s</th><th class="n">6s</th><th class="n">SR</th></tr></thead><tbody>';
-        if (!list.length) h += '<tr><td colspan="7">No data</td></tr>';
+        var h = '<table class="cap-table"><thead><tr><th>#</th><th>Batter</th><th class="n">R</th><th class="n">B</th><th class="n">4s</th><th class="n">6s</th><th class="n">Avg</th><th class="n">SR</th></tr></thead><tbody>';
+        if (!list.length) h += '<tr><td colspan="8">No data</td></tr>';
         list.slice(0,15).forEach(function(p,i){
           var r=p.runs|0,b=p.balls|0,f=p.fours|0,s=p.sixes|0;
           var sr=b?(Math.round(r/b*1000)/10):0;
-          h += '<tr><td class="n">'+(i+1)+'</td><td>'+nm(p)+'</td><td class="n val">'+r+'</td><td class="n">'+b+'</td><td class="n">'+f+'</td><td class="n">'+s+'</td><td class="n">'+sr+'</td></tr>';
+          var avg=(p.avg!=null&&p.avg!=='')?p.avg:(p.isOut?r:'—');
+          h += '<tr><td class="n">'+(i+1)+'</td><td>'+nm(p)+'</td><td class="n val">'+r+'</td><td class="n">'+b+'</td><td class="n">'+f+'</td><td class="n">'+s+'</td><td class="n">'+avg+'</td><td class="n">'+sr+'</td></tr>';
         });
         return h+'</tbody></table>';
       }
@@ -9976,6 +9988,255 @@ body[data-theme="sports"] #comm-list .comm-row .ob {
     } catch(e){}
   }
   loadPlatformAds();
+})();
+</script>
+
+
+<style id="live-v50-fixes">
+/* Team names ABOVE score, no overflow */
+.google-score-row .g-meta,
+.g-meta {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  max-width: 42vw !important;
+}
+.google-score-row .g-name,
+#v-team-a, #v-team-b, .g-name {
+  order: -2 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+}
+.google-score-row .g-score,
+#v-score-a, #v-score-b, .g-score {
+  order: -1 !important;
+  font-size: 22px !important;
+  line-height: 1.15 !important;
+}
+.google-score-row .g-overs { order: 0 !important; font-size: 11px !important; }
+.google-score-row .g-role { order: 1 !important; font-size: 10px !important; }
+.g-team { min-width: 0 !important; max-width: 46% !important; }
+
+/* Summary: hide Teams tab */
+#st-teams, button#st-teams { display: none !important; }
+#sum-teams { display: none !important; }
+
+/* Stop summary tab flash */
+.subtab { transition: none !important; }
+.subtabs .subtab { opacity: 1 !important; }
+
+/* Cap tables visible */
+.cap-table td, .cap-table th { color: inherit; opacity: 1 !important; }
+</style>
+<script id="live-v50-fixes">
+(function(){
+  // ---- Flags: once per match, stable ----
+  var FLAG_POOL = ['🇮🇳','🇦🇺','🏴󠁧󠁢󠁥󠁮󠁧󠁿','🇵🇰','🇧🇩','🇱🇰','🇦🇫','🇳🇿','🇿🇦','🇯🇲','🇧🇧','🇹🇹','🇬🇾','🇿🇼','🇰🇪','🇺🇬','🇳🇬','🇬🇭','🇳🇱','🇮🇪','🇺🇸','🇨🇦','🇦🇪','🇶🇦','🇲🇾','🇸🇬','🇳🇵','🇩🇪','🇮🇹','🏴󠁧󠁢󠁳󠁣󠁴󠁿','🇦🇫'];
+  function matchKey(d){
+    try {
+      var q = new URLSearchParams(location.search);
+      return q.get('match') || (d && (d.matchId||d.id)) || 'default';
+    } catch(e){ return 'default'; }
+  }
+  function stableFlags(d){
+    var key = 'live_flags_v50_' + matchKey(d);
+    try {
+      var raw = localStorage.getItem(key);
+      if (raw) {
+        var o = JSON.parse(raw);
+        if (o && o.a && o.b) return o;
+      }
+    } catch(e){}
+    var na = String((d&&d.teamA)||'A');
+    var nb = String((d&&d.teamB)||'B');
+    function hf(s){ var h=0; s=String(s); for(var i=0;i<s.length;i++) h=((h<<5)-h)+s.charCodeAt(i)|0; return FLAG_POOL[Math.abs(h)%FLAG_POOL.length]; }
+    var o = { a: (d&&d.flagA)||hf(na+key+'A'), b: (d&&d.flagB)||hf(nb+key+'B') };
+    if (o.a===o.b) o.b = FLAG_POOL[(FLAG_POOL.indexOf(o.a)+5)%FLAG_POOL.length];
+    try { localStorage.setItem(key, JSON.stringify(o)); } catch(e){}
+    return o;
+  }
+  function paintFlags(d){
+    var o = stableFlags(d||{});
+    var fa = document.getElementById('v-flag-a');
+    var fb = document.getElementById('v-flag-b');
+    if (fa) fa.textContent = o.a;
+    if (fb) fb.textContent = o.b;
+  }
+
+  // ---- Sound off = TTS + stadium hard mute ----
+  var _origToggleTts = window.toggleTts;
+  window.toggleTts = function(){
+    try {
+      if (typeof _origToggleTts === 'function') _origToggleTts();
+    } catch(e){}
+    try {
+      // When TTS turned off, also stop stadium; when on, leave stadium preference alone
+      var on = true;
+      try { on = localStorage.getItem('cricket_tts_on') !== '0'; } catch(e){}
+      // Re-read after toggle
+      setTimeout(function(){
+        try {
+          var tts = localStorage.getItem('cricket_tts_on');
+          if (tts === '0') {
+            if (typeof stadSetEnabled === 'function') stadSetEnabled(false);
+            if (window.__hardMuteAll) window.__hardMuteAll();
+            if (window.speechSynthesis) speechSynthesis.cancel();
+          }
+        } catch(e2){}
+      }, 50);
+    } catch(e3){}
+  };
+
+  // ---- Summary: default away from teams ----
+  var _origSetSum = window.setSumSub;
+  if (typeof _origSetSum === 'function') {
+    window.setSumSub = function(s){
+      if (s === 'teams') s = 'sum';
+      return _origSetSum(s);
+    };
+  }
+
+  // ---- Squad / scorecard / caps: single debounced render from last data ----
+  var _lastD = null;
+  var _rendT = null;
+  function batAvg(p){
+    if (!p) return '—';
+    if (p.avg != null && p.avg !== '') return p.avg;
+    if (p.isOut) return String(p.runs|0);
+    if ((p.dismissals|0)>0) return (Math.round(((p.runs|0)/(p.dismissals|0))*100)/100);
+    return '—';
+  }
+  function renderAll(d){
+    if (!d) return;
+    _lastD = d;
+    paintFlags(d);
+    // Squad
+    try {
+      if (typeof window.renderLiveSquads === 'function') window.renderLiveSquads(d);
+    } catch(e){}
+    // Caps on stats tab
+    try {
+      var box = document.getElementById('live-tab-stats') || document.getElementById('panel-stats');
+      // Prefer existing updater
+      if (typeof window.renderLiveStats === 'function') window.renderLiveStats(d);
+      else if (typeof window.paintCaps === 'function') window.paintCaps(d);
+    } catch(e){}
+    // Inject avg into scorecard tables if present
+    try {
+      document.querySelectorAll('.sc-table tr, .sb-table tr').forEach(function(tr){
+        // no-op structural
+      });
+    } catch(e){}
+  }
+  function scheduleRender(d){
+    _lastD = d || _lastD;
+    if (_rendT) clearTimeout(_rendT);
+    _rendT = setTimeout(function(){ renderAll(_lastD); }, 80);
+  }
+  ['applyLiveData','onLiveUpdate','renderLive'].forEach(function(n){
+    try {
+      if (typeof window[n]==='function' && !window[n]._v50) {
+        var p = window[n];
+        window[n] = function(data){
+          var r = p.apply(this, arguments);
+          try { scheduleRender(data || arguments[0]); } catch(e){}
+          return r;
+        };
+        window[n]._v50 = true;
+      }
+    } catch(e){}
+  });
+
+  // Truncate long team names in DOM
+  setInterval(function(){
+    ['v-team-a','v-team-b'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (!el) return;
+      var t = (el.textContent||'').trim();
+      if (t.length > 14) {
+        el.title = t;
+        el.textContent = t.slice(0,12)+'…';
+      }
+    });
+  }, 2000);
+})();
+</script>
+
+
+<script id="live-v50-caps-avg">
+(function(){
+  function avgOf(p){
+    if (!p) return '—';
+    if (p.avg != null && p.avg !== '') return p.avg;
+    if (p.isOut) return (p.runs|0);
+    return '—';
+  }
+  function buildCapTables(d){
+    if (!d) return;
+    var orange = d.orangeCap || d.cumulativeOrangeCap || [];
+    var purple = d.purpleCap || d.cumulativePurpleCap || [];
+    // Also derive from batters if empty
+    if (!orange.length) {
+      var bats = [].concat(d.innings1Batters||[], d.innings2Batters||[], d.batters||[]);
+      orange = bats.slice().filter(function(p){ return p && ((p.runs|0)>0||(p.balls|0)>0); })
+        .sort(function(a,b){ return (b.runs|0)-(a.runs|0); }).slice(0,10)
+        .map(function(p){ return { name:p.name, runs:p.runs|0, balls:p.balls|0, fours:p.fours|0, sixes:p.sixes|0, avg:avgOf(p), sr: p.balls? Math.round(p.runs/p.balls*10000)/100:0 }; });
+    }
+    if (!purple.length) {
+      var bowls = [].concat(d.innings1Bowlers||[], d.innings2Bowlers||[], d.bowlers||[]);
+      purple = bowls.slice().filter(function(p){ return p && ((p.wickets|0)>0||(p.bowlBalls|0)>0||(p.balls|0)>0); })
+        .sort(function(a,b){ return (b.wickets|0)-(a.wickets|0); }).slice(0,10);
+    }
+    var host = document.getElementById('live-tab-stats') || document.querySelector('[data-tab="stats"]');
+    // Update any existing cap containers
+    document.querySelectorAll('.cap-card.orange, #stats-orange').forEach(function(el){
+      if (!orange.length) return;
+      var rows = orange.map(function(p,i){
+        var sr = p.sr != null ? p.sr : (p.balls? (Math.round((p.runs/p.balls)*10000)/100) : '—');
+        var av = avgOf(p);
+        return '<tr><td>'+(i+1)+'</td><td>'+(p.name||'—')+'</td><td class="val">'+(p.runs|0)+'</td><td>'+(p.balls|0)+'</td><td>'+av+'</td><td>'+sr+'</td></tr>';
+      }).join('');
+      var table = '<table class="cap-table" style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th>#</th><th>Batter</th><th>R</th><th>B</th><th>Avg</th><th>SR</th></tr></thead><tbody>'+rows+'</tbody></table>';
+      var body = el.querySelector('.cap-body') || el;
+      // keep h3 if present
+      var h = el.querySelector('h3');
+      el.innerHTML = (h?h.outerHTML:'<h3>🟠 Orange Cap</h3>') + table;
+    });
+    document.querySelectorAll('.cap-card.purple, #stats-purple').forEach(function(el){
+      if (!purple.length) return;
+      var rows = purple.map(function(p,i){
+        var balls = p.bowlBalls != null ? p.bowlBalls : (p.balls|0);
+        var overs = (Math.floor(balls/6)+'.'+(balls%6));
+        var runs = p.bowlRuns != null ? p.bowlRuns : (p.runs|0);
+        var econ = balls ? (Math.round((runs/(balls/6))*100)/100) : '—';
+        return '<tr><td>'+(i+1)+'</td><td>'+(p.name||'—')+'</td><td class="val">'+(p.wickets|0)+'</td><td>'+runs+'</td><td>'+overs+'</td><td>'+econ+'</td></tr>';
+      }).join('');
+      var table = '<table class="cap-table" style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th>#</th><th>Bowler</th><th>W</th><th>R</th><th>O</th><th>Econ</th></tr></thead><tbody>'+rows+'</tbody></table>';
+      var h = el.querySelector('h3');
+      el.innerHTML = (h?h.outerHTML:'<h3>🟣 Purple Cap</h3>') + table;
+    });
+  }
+  window.__v50BuildCaps = buildCapTables;
+  ['applyLiveData','onLiveUpdate'].forEach(function(n){
+    try {
+      if (typeof window[n]==='function' && !window[n]._v50c) {
+        var p = window[n];
+        window[n] = function(data){
+          var r = p.apply(this, arguments);
+          try { buildCapTables(data||arguments[0]); } catch(e){}
+          return r;
+        };
+        window[n]._v50c = true;
+      }
+    } catch(e){}
+  });
 })();
 </script>
 
