@@ -2523,7 +2523,15 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
 
                 
                     
-                    <div class="border theme-border rounded-xl p-3 space-y-2 mt-2" id="float-ads-settings" style="background:rgba(15,23,42,0.04)">
+                    <div class="border theme-border rounded-xl p-3 space-y-2 mt-2" 
+                    <div class="border theme-border rounded-xl p-3 space-y-2 mt-2" id="share-poster-settings" style="background:rgba(15,23,42,0.04)">
+                        <label class="text-xs font-black theme-text uppercase tracking-wider block">📤 WhatsApp share image</label>
+                        <p class="text-[10px] theme-muted">Use a <b>direct</b> image URL ending in .jpg/.png (ImgBB → “Direct link”). Gallery pages like ibb.co/xxx will not preview.</p>
+                        <input id="share-poster-url" type="url" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" placeholder="https://i.ibb.co/…/poster.jpg" onchange="try{localStorage.setItem('cricket_share_poster_url',this.value.trim())}catch(e){}"/>
+                        <input id="share-desc" type="text" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" placeholder="Optional share caption" onchange="try{localStorage.setItem('cricket_share_desc',this.value.trim())}catch(e){}"/>
+                    </div>
+
+                    id="float-ads-settings" style="background:rgba(15,23,42,0.04)">
                         <label class="text-xs font-black theme-text uppercase tracking-wider block">📢 Floating Ads</label>
                         <label class="flex items-center gap-2 text-sm theme-text"><input type="checkbox" id="ad-float-enabled" onchange="saveAdSettings()"/> Enable floating ads</label>
                         <label class="text-[10px] theme-muted font-semibold block">Show when</label>
@@ -7644,6 +7652,12 @@ function placeBoundaryAnimationOnStriker(toast){
             if (!base || base.indexOf('http') !== 0) { finish(longUrl); return; }
             var customImage = '';
             try { customImage = (localStorage.getItem('cricket_share_poster_url') || '').trim(); } catch(eI) {}
+            // Prefer direct image URL (jpg/png). Gallery links (ibb.co/page) often fail in WhatsApp.
+            if (customImage && !/^https:\/\//i.test(customImage)) customImage = '';
+            if (customImage && /ibb\.co\//i.test(customImage) && !/i\.ibb\.co\//i.test(customImage)) {
+              // warn once — user needs ImgBB "Direct link"
+              try { console.warn('[share] Use ImgBB Direct link (i.ibb.co/...), not gallery page'); } catch(eW){}
+            }
             var customDesc = '';
             try { customDesc = (localStorage.getItem('cricket_share_desc') || '').trim(); } catch(eD) {}
             fetch(base + '/api/short', {
@@ -16471,6 +16485,15 @@ body[data-theme="dark"] button.cup-subtab.is-active {
     hideFloatAd();
     try { if (typeof publishLiveViewerState === 'function') publishLiveViewerState(); } catch(eP){}
   }
+  function hydrateSharePoster(){
+    try {
+      var el = document.getElementById('share-poster-url');
+      if (el) el.value = localStorage.getItem('cricket_share_poster_url') || '';
+      var d = document.getElementById('share-desc');
+      if (d) d.value = localStorage.getItem('cricket_share_desc') || '';
+    } catch(e){}
+  }
+  try { if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', hydrateSharePoster); else hydrateSharePoster(); } catch(eH){}
   function hydrateAdForm(){
     var o = loadAd();
     var en = document.getElementById('ad-float-enabled'); if (en) en.checked = !!o.enabled;

@@ -1508,9 +1508,10 @@ body.light, body[data-theme="light"] {
 </style>
 <nav id="live-main-tabs" class="live-tabs" role="tablist">
   <button type="button" class="active" data-live-tab="live" onclick="switchLiveTab('live')">Live</button>
+  <button type="button" data-live-tab="commentary" onclick="switchLiveTab('commentary')">Commentary</button>
   <button type="button" data-live-tab="scorecard" onclick="switchLiveTab('scorecard')">Scorecard</button>
-  <button type="button" data-live-tab="schedule" onclick="switchLiveTab('schedule')">Schedule</button>
   <button type="button" data-live-tab="squad" onclick="switchLiveTab('squad')">Squad</button>
+  <button type="button" data-live-tab="schedule" onclick="switchLiveTab('schedule')">Schedule</button>
   <button type="button" data-live-tab="stats" onclick="switchLiveTab('stats')">Stats</button>
   
 </nav>
@@ -10237,6 +10238,131 @@ body[data-theme="sports"] #comm-list .comm-row .ob {
       }
     } catch(e){}
   });
+})();
+</script>
+
+
+<script id="live-v53-stable">
+(function(){
+  // ---- Stable paint: only write DOM when content hash changes ----
+  var _hash = {};
+  function setHTML(el, html, key){
+    if (!el) return;
+    key = key || el.id || 'x';
+    var h = String(html||'');
+    if (_hash[key] === h) return; // no flash
+    _hash[key] = h;
+    el.innerHTML = h;
+  }
+  window.__stableSetHTML = setHTML;
+
+  // Patch common body paints
+  function wrapPaint(name, getElId){
+    try {
+      var fn = window[name];
+      if (typeof fn !== 'function' || fn._v53) return;
+      window[name] = function(){
+        var el = document.getElementById(getElId);
+        var prev = el ? el.innerHTML : '';
+        var r = fn.apply(this, arguments);
+        // if function cleared then filled, that's ok; prevent empty flash by restoring if empty briefly
+        return r;
+      };
+      window[name]._v53 = true;
+    } catch(e){}
+  }
+
+  // Debounced single apply
+  var _t = null, _last = null, _lastKey = '';
+  function stableApply(data){
+    if (!data) return;
+    _last = data;
+    var key = [
+      data.runs, data.wickets, data.overs, data.balls,
+      data.teamA, data.teamB, data.strikerName, data.bowlerName,
+      (data.commentary&&data.commentary.length),
+      (data.squadA&&data.squadA.length), (data.squadB&&data.squadB.length),
+      (data.batters&&data.batters.length), (data.innings1Batters&&data.innings1Batters.length),
+      (data.fixtures&&data.fixtures.length)
+    ].join('|');
+    if (key === _lastKey && _hash['boot']) return;
+    _lastKey = key;
+    _hash['boot'] = '1';
+  }
+
+  ['applyLiveData','onLiveUpdate','renderLive'].forEach(function(n){
+    try {
+      if (typeof window[n]==='function' && !window[n]._v53s) {
+        var p = window[n];
+        window[n] = function(data){
+          try { stableApply(data||arguments[0]); } catch(e){}
+          return p.apply(this, arguments);
+        };
+        window[n]._v53s = true;
+      }
+    } catch(e){}
+  });
+
+  // switchLiveTab: support commentary + no blank flash
+  var prevSwitch = window.switchLiveTab;
+  window.switchLiveTab = function(name){
+    try {
+      if (name === 'commentary' || name === 'comm') {
+        name = 'live';
+        // show commentary section inside live
+        try {
+          var pc = document.getElementById('panel-comm') || document.getElementById('comm-list');
+          if (pc) pc.scrollIntoView({behavior:'smooth', block:'start'});
+        } catch(e){}
+      }
+    } catch(e){}
+    if (typeof prevSwitch === 'function') return prevSwitch.apply(this, arguments);
+  };
+
+  // Reduce squad flicker: if renderLiveSquads clears, skip empty when we had content
+  var prevSquad = window.renderLiveSquads;
+  if (typeof prevSquad === 'function' && !prevSquad._v53) {
+    window.renderLiveSquads = function(d){
+      try {
+        var body = document.getElementById('squads-body');
+        var before = body ? body.innerHTML : '';
+        var r = prevSquad.apply(this, arguments);
+        if (body) {
+          var after = body.innerHTML || '';
+          if ((!after || /PLAYING XI[\s\S]*^\s*$/m.test(after) || after.length < 40) && before && before.length > 80) {
+            body.innerHTML = before; // restore — avoid blank flash
+          }
+        }
+        return r;
+      } catch(e){ return prevSquad.apply(this, arguments); }
+    };
+    window.renderLiveSquads._v53 = true;
+  }
+
+  // Scorecard: don't leave "all yet to bat" when runs > 0 — prefer live batters list
+  var prevSC = window.renderLiveScorecard;
+  if (typeof prevSC === 'function' && !prevSC._v53) {
+    window.renderLiveScorecard = function(){
+      try {
+        var d = (typeof data==='function'?data():null) || window.__lastLiveData || window.lastData;
+        if (d) {
+          // Ensure current innings batters surface
+          if ((!d.innings1Batters || !d.innings1Batters.length) && d.batters && d.batters.length) {
+            d.innings1Batters = d.batters;
+          }
+        }
+      } catch(e){}
+      return prevSC.apply(this, arguments);
+    };
+    window.renderLiveScorecard._v53 = true;
+  }
+
+  // CSS: kill transition flash on panels
+  var st = document.createElement('style');
+  st.id = 'v53-stable-css';
+  st.textContent = '.live-tab-panel,.panel,#squads-body,#scorecard-body,#comm-list{min-height:120px}'
+    + '.live-tabs button{white-space:nowrap}';
+  document.head.appendChild(st);
 })();
 </script>
 
