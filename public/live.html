@@ -10022,9 +10022,10 @@ body[data-theme="sports"] #comm-list .comm-row .ob {
 .google-score-row .g-role { order: 1 !important; font-size: 10px !important; }
 .g-team { min-width: 0 !important; max-width: 46% !important; }
 
-/* Summary: hide Teams tab */
-#st-teams, button#st-teams { display: none !important; }
-#sum-teams { display: none !important; }
+/* v61: Teams tab restored */
+#st-teams, button#st-teams { display: inline-flex !important; }
+#sum-teams:not(.hidden) { display: block !important; }
+#sum-sum:not(.hidden), #sum-viewers:not(.hidden), #sum-fow:not(.hidden), #sum-orange:not(.hidden), #sum-purple:not(.hidden) { display: block !important; }
 
 /* Stop summary tab flash */
 .subtab { transition: none !important; }
@@ -10522,6 +10523,466 @@ body[data-theme="sports"] #comm-list .comm-row .ob {
     } catch(e){}
     if (typeof prev === "function") return prev(t);
   };
+})();
+</script>
+
+
+<style id="v61-live-fix">
+/* Summary panels visible when selected */
+#sum-teams:not(.hidden),
+#sum-sum:not(.hidden),
+#sum-viewers:not(.hidden),
+#sum-fow:not(.hidden),
+#sum-orange:not(.hidden),
+#sum-purple:not(.hidden) {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  min-height: 80px;
+}
+#st-teams, button#st-teams { display: inline-flex !important; }
+
+/* This-over balls — light colorful (scorer palette, softer) */
+.over-balls .ob, #this-over-balls .ob, .to-ball {
+  min-width: 28px; height: 28px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 900; border: 1px solid #e2e8f0;
+  background: #f8fafc; color: #334155;
+}
+.over-balls .ob.b0, .over-balls .ob.dot, .to-ball.b0 { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+.over-balls .ob.b1, .to-ball.b1 { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+.over-balls .ob.b2, .to-ball.b2 { background: #d1fae5; color: #047857; border-color: #6ee7b7; }
+.over-balls .ob.b3, .to-ball.b3 { background: #ffedd5; color: #c2410c; border-color: #fdba74; }
+.over-balls .ob.b4, .to-ball.b4 { background: #ede9fe; color: #6d28d9; border-color: #c4b5fd; }
+.over-balls .ob.b6, .to-ball.b6 { background: #fef3c7; color: #b45309; border-color: #fcd34d; }
+.over-balls .ob.w, .over-balls .ob.wk, .to-ball.w { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+.over-balls .ob.wd, .over-balls .ob.nb, .to-ball.wd, .to-ball.nb { background: #e0f2fe; color: #0369a1; border-color: #7dd3fc; }
+
+/* Live boundary / wicket flash */
+#live-event-flash {
+  position: fixed; inset: 0; z-index: 50000; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .2s ease;
+  background: rgba(15,23,42,.35);
+}
+#live-event-flash.show { opacity: 1; }
+#live-event-flash .flash-label {
+  font-size: 56px; font-weight: 900; letter-spacing: .08em;
+  text-transform: uppercase; color: #fff;
+  text-shadow: 0 4px 24px rgba(0,0,0,.5);
+  animation: liveFlashPop .7s ease;
+}
+#live-event-flash.four .flash-label { color: #a78bfa; }
+#live-event-flash.six .flash-label { color: #fbbf24; }
+#live-event-flash.wicket .flash-label { color: #f87171; }
+@keyframes liveFlashPop {
+  0% { transform: scale(.6); opacity: 0; }
+  40% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+</style>
+<script id="v61-live-fix">
+(function(){
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function getData(){ return window.__lastLiveData || window.lastData || window.__liveData || {}; }
+
+  // ---- Summary: paint all subtabs ----
+  window.__paintSummaryAll = function(which){
+    var d = getData();
+    which = which || 'teams';
+    try {
+      // Teams
+      if (which === 'teams' || which === 'all') {
+        var el = $('sum-teams');
+        if (el) {
+          var squadA = d.squadA || d.teamAPlayers || [];
+          var squadB = d.squadB || d.teamBPlayers || [];
+          if (Array.isArray(d.players)) {
+            if (!squadA.length) squadA = d.players.filter(function(p){ return p.team==='A'; });
+            if (!squadB.length) squadB = d.players.filter(function(p){ return p.team==='B'; });
+          }
+          function side(name, list){
+            var rows = (list||[]).map(function(n,i){
+              var nm = typeof n==='string' ? n : (n && n.name) || '—';
+              return '<div style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-weight:700;color:#0f172a">'+(i+1)+'. '+esc(nm)+'</div>';
+            }).join('') || '<div class="empty" style="padding:12px">No players listed</div>';
+            return '<div style="margin-bottom:12px"><div class="sec-title" style="background:#dc2626;color:#fff;padding:8px 12px;border-radius:8px 8px 0 0">'+esc(name||'Team')+'</div><div style="background:#fff;border:1px solid #e5e7eb;border-top:0;border-radius:0 0 8px 8px">'+rows+'</div></div>';
+          }
+          el.innerHTML = side(d.teamA||'Team A', squadA) + side(d.teamB||'Team B', squadB);
+          el.classList.remove('hidden');
+        }
+      }
+      // Match summary
+      if (which === 'sum' || which === 'all') {
+        var sm = $('sum-sum');
+        if (sm) {
+          var tA = d.teamA||'Team A', tB = d.teamB||'Team B';
+          var scoreA = (d.runsA!=null?d.runsA:(d.innings===1||d.battingSide==='A'?d.runs:d.teamAScore)) ;
+          var scoreB = (d.runsB!=null?d.runsB:d.teamBScore);
+          var html = '<div class="info-card" style="padding:12px;background:#eff6ff;border-radius:12px;margin-bottom:8px;border:1px solid #bfdbfe">';
+          html += '<div style="font-weight:900;color:#1e3a8a;margin-bottom:6px">📋 Match summary</div>';
+          html += '<div style="font-weight:800;color:#0f172a">'+esc(tA)+' vs '+esc(tB)+'</div>';
+          html += '<div style="margin-top:6px;color:#334155;font-size:13px">Score: <b>'+esc(String(d.runs!=null?d.runs:'—'))+'/'+esc(String(d.wickets!=null?d.wickets:'—'))+'</b> ('+esc(String(d.overs!=null?d.overs:'—'))+' ov)</div>';
+          if (d.result || d.matchEnded) html += '<div style="margin-top:8px;font-weight:900;color:#b45309">'+(esc(d.result||'Match completed'))+'</div>';
+          if (d.tossText) html += '<div style="margin-top:6px;font-size:12px;color:#64748b">Toss: '+esc(d.tossText)+'</div>';
+          if (d.venue||d.location) html += '<div style="font-size:12px;color:#64748b">Venue: '+esc(d.venue||d.location)+'</div>';
+          html += '</div>';
+          sm.innerHTML = html;
+          sm.classList.remove('hidden');
+        }
+      }
+      // Viewers
+      if (which === 'viewers' || which === 'all') {
+        try {
+          if (typeof paintViewersSummary === 'function') paintViewersSummary();
+        } catch(e){}
+        var sv = $('sum-viewers');
+        if (sv) {
+          sv.classList.remove('hidden');
+          sv.style.display = 'block';
+          if (!(sv.innerHTML||'').trim() || /No viewers/i.test(sv.innerHTML)) {
+            var rows = [];
+            try {
+              if (window.__viewerHistoryList && window.__viewerHistoryList.length) rows = window.__viewerHistoryList.slice();
+              else if (window.__viewerMap) rows = Object.keys(window.__viewerMap).map(function(k){ return window.__viewerMap[k]; });
+            } catch(e){}
+            if (!rows.length) {
+              sv.innerHTML = '<div class="sec-title">👁 Viewers</div><div class="empty" style="padding:12px">No viewer activity yet. Share the live link to start tracking.</div>';
+            } else {
+              var h = '<div class="sec-title">👁 Viewers ('+rows.length+')</div><table class="stats" style="width:100%;font-size:12px"><thead><tr><th>Viewer</th><th>Status</th><th>Last seen</th></tr></thead><tbody>';
+              rows.slice(0,50).forEach(function(r){
+                var name = r.name || r.id || r.device || 'Viewer';
+                var st = r.online ? 'Online' : 'Left';
+                var ls = r.lastSeen ? new Date(r.lastSeen).toLocaleString() : '—';
+                h += '<tr><td>'+esc(name)+'</td><td>'+st+'</td><td>'+esc(ls)+'</td></tr>';
+              });
+              h += '</tbody></table>';
+              sv.innerHTML = h;
+            }
+          }
+        }
+      }
+      // FOW
+      if (which === 'fow' || which === 'all') {
+        try { if (typeof paintFallOfWickets === 'function') paintFallOfWickets(); } catch(e){}
+      }
+      // Caps
+      if (which === 'orange' || which === 'purple' || which === 'all') {
+        try { window.__paintCapsFromData(d); } catch(e){}
+      }
+    } catch(e){ console.log('paintSummary', e); }
+  };
+
+  // Wrap setSumSub
+  var _setSum = window.setSumSub;
+  window.setSumSub = function(s){
+    s = s || 'teams';
+    try {
+      if (typeof _setSum === 'function') _setSum(s);
+    } catch(e){}
+    ['teams','sum','viewers','orange','purple','fow'].forEach(function(x){
+      var p = $('sum-'+x);
+      if (!p) return;
+      if (x === s) { p.classList.remove('hidden'); p.style.display = 'block'; }
+      else { p.classList.add('hidden'); }
+    });
+    try { window.__paintSummaryAll(s); } catch(e2){}
+  };
+
+  // ---- Orange / Purple from scorer payload ----
+  window.__paintCapsFromData = function(d){
+    d = d || getData();
+    function rowsOrange(arr){
+      arr = arr || [];
+      if (!arr.length) return '<div class="empty" style="padding:12px">No orange cap data yet — sync from scorer.</div>';
+      var h = '<table class="cap-table stats" style="width:100%;font-size:12px"><thead><tr><th>#</th><th>Player</th><th>R</th><th>B</th><th>4s</th><th>6s</th><th>Avg</th><th>SR</th></tr></thead><tbody>';
+      arr.slice(0,20).forEach(function(p,i){
+        var n = p.name||p.player||'—';
+        var r = p.runs!=null?p.runs:(p.r!=null?p.r:0);
+        var b = p.balls!=null?p.balls:(p.b!=null?p.b:0);
+        var f = p.fours!=null?p.fours:(p.fours4!=null?p.fours4:0);
+        var s6 = p.sixes!=null?p.sixes:0;
+        var outs = p.dismissals!=null?p.dismissals:(p.outs!=null?p.outs:(p.isOut?1:0));
+        var avg = outs>0 ? (r/outs).toFixed(2) : '—';
+        var sr = b>0 ? ((r/b)*100).toFixed(1) : '—';
+        h += '<tr><td>'+(i+1)+'</td><td>'+esc(n)+'</td><td>'+r+'</td><td>'+b+'</td><td>'+f+'</td><td>'+s6+'</td><td>'+avg+'</td><td>'+sr+'</td></tr>';
+      });
+      return h + '</tbody></table>';
+    }
+    function rowsPurple(arr){
+      arr = arr || [];
+      if (!arr.length) return '<div class="empty" style="padding:12px">No purple cap data yet — sync from scorer.</div>';
+      var h = '<table class="cap-table stats" style="width:100%;font-size:12px"><thead><tr><th>#</th><th>Player</th><th>W</th><th>R</th><th>O</th><th>Econ</th></tr></thead><tbody>';
+      arr.slice(0,20).forEach(function(p,i){
+        var n = p.name||p.player||'—';
+        var w = p.wickets!=null?p.wickets:(p.w!=null?p.w:0);
+        var r = p.runs!=null?p.runs:(p.runsConceded!=null?p.runsConceded:0);
+        var o = p.overs!=null?p.overs:(p.o!=null?p.o:0);
+        var econ = p.econ!=null?p.econ:(o>0?(r/o).toFixed(2):'—');
+        h += '<tr><td>'+(i+1)+'</td><td>'+esc(n)+'</td><td>'+w+'</td><td>'+r+'</td><td>'+o+'</td><td>'+econ+'</td></tr>';
+      });
+      return h + '</tbody></table>';
+    }
+    var oArr = d.cumulativeOrangeCap || d.orangeCap || d.orange || [];
+    var pArr = d.cumulativePurpleCap || d.purpleCap || d.purple || [];
+    var so = $('sum-orange');
+    if (so) so.innerHTML = '<div class="sec-title">🟠 Orange cap</div>' + rowsOrange(oArr);
+    var sp = $('sum-purple');
+    if (sp) sp.innerHTML = '<div class="sec-title">🟣 Purple cap</div>' + rowsPurple(pArr);
+  };
+
+  // ---- Commentary: show full log (newest first), not only last over ----
+  window.__paintFullCommentary = function(d){
+    d = d || getData();
+    var list = $('comm-list');
+    if (!list) return;
+    var arr = d.commentary || d.commentaryLog || d.ballByBall || [];
+    if (!Array.isArray(arr)) arr = [];
+    if (!arr.length) {
+      list.innerHTML = '<div class="empty">No commentary yet</div>';
+      return;
+    }
+    // newest first
+    var lines = arr.slice().reverse();
+    var html = lines.map(function(line, idx){
+      var t = typeof line === 'string' ? line : (line.text || line.line || line.msg || JSON.stringify(line));
+      t = String(t);
+      var cls = 'ci-ball';
+      if (/\b(W|WICKET|OUT)\b/i.test(t)) cls += ' ev-wicket';
+      else if (/\bFOUR\b|\b4\b/i.test(t) && /boundary|four/i.test(t)) cls += ' ev-four';
+      else if (/\bSIX\b/i.test(t)) cls += ' ev-six';
+      // ball stamp at start if over.ball present
+      var stamp = '';
+      var m = t.match(/^(\d+\.\d+)\s*/);
+      if (m) { stamp = '<span class="ob to-ball" style="margin-right:8px">'+m[1]+'</span>'; }
+      return '<div class="'+cls+'" style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:left">'+stamp+'<span>'+esc(t)+'</span></div>';
+    }).join('');
+    list.innerHTML = html;
+  };
+
+  // ---- Scorecard: all batters ----
+  var _sc = window.renderLiveScorecard;
+  window.renderLiveScorecard = function(){
+    try { if (typeof _sc === 'function') _sc(); } catch(e){}
+    try {
+      var d = getData();
+      var body = $('scorecard-body') || $('scorecard-body-top');
+      if (!body) return;
+      // If only 1 row of real stats, rebuild from full lists
+      var batters = d.innings1Batters || d.batters || d.battingCard || [];
+      var side = window.__scTeam || 'A';
+      var firstBat = d.firstBattingSide || 'A';
+      if (side !== firstBat && d.innings2Batters) batters = d.innings2Batters;
+      if (!Array.isArray(batters)) batters = [];
+      // Merge yet to bat from squad
+      var squad = (side === 'A' || side === firstBat) ? (d.squadA||[]) : (d.squadB||[]);
+      var names = {};
+      batters.forEach(function(b){ var n=typeof b==='string'?b:b.name; if(n) names[n]=1; });
+      (squad||[]).forEach(function(p){
+        var n = typeof p==='string'?p:(p&&p.name);
+        if (n && !names[n]) batters.push({ name:n, runs:0, balls:0, yetToBat:true });
+      });
+      if (batters.length <= 1 && (d.squadA||[]).length > 1) {
+        // force full card
+        var rows = batters.map(function(b){
+          var n = typeof b==='string'?b:(b.name||'—');
+          var r = b.runs!=null?b.runs:'—';
+          var bl = b.balls!=null?b.balls:'—';
+          var f = b.fours!=null?b.fours:'—';
+          var s6 = b.sixes!=null?b.sixes:'—';
+          var ytb = b.yetToBat || (r==='—'||r===0&&bl===0);
+          return '<tr><td>'+esc(n)+(ytb?' <span style="color:#94a3b8;font-size:11px">yet to bat</span>':'')+'</td><td>'+r+'</td><td>'+bl+'</td><td>'+f+'</td><td>'+s6+'</td></tr>';
+        }).join('');
+        if (rows) {
+          var table = body.querySelector('table');
+          if (table) {
+            var tb = table.querySelector('tbody');
+            if (tb) tb.innerHTML = rows;
+          }
+        }
+      }
+    } catch(e2){}
+  };
+
+  // ---- Stadium sound OFF + idle 5 min ----
+  window.__forceStadiumOff = function(){
+    try {
+      if (typeof stadiumOn !== 'undefined') window.stadiumOn = false;
+      try { localStorage.setItem('cricket_stadium_on','0'); } catch(e){}
+      if (typeof stadStopAllSamples === 'function') stadStopAllSamples();
+      if (typeof stadStopAll === 'function') stadStopAll();
+      try {
+        if (window.__stadAmbientAudio) {
+          window.__stadAmbientAudio.pause();
+          window.__stadAmbientAudio.loop = false;
+          try { window.__stadAmbientAudio.src = ''; } catch(e){}
+        }
+      } catch(e){}
+      try {
+        if (window.__stadActive) {
+          window.__stadActive.forEach(function(a){ try{ a.pause(); a.currentTime=0; }catch(e){} });
+          window.__stadActive = [];
+        }
+      } catch(e){}
+      try { if (typeof updateStadBtn === 'function') updateStadBtn(); } catch(e){}
+    } catch(e){}
+  };
+
+  // Patch toggleStadium
+  var _ts = window.toggleStadium;
+  window.toggleStadium = function(){
+    try {
+      if (typeof stadiumOn !== 'undefined' && stadiumOn) {
+        // turning OFF
+        if (typeof _ts === 'function') _ts();
+        window.__forceStadiumOff();
+        return;
+      }
+    } catch(e){}
+    if (typeof _ts === 'function') return _ts();
+  };
+
+  // Idle watchdog 5 min
+  setInterval(function(){
+    try {
+      var last = window.__lastScoreActivityAt || window.__lastLiveTs || Date.now();
+      if (typeof __lastScoreActivityAt !== 'undefined') last = __lastScoreActivityAt;
+      if (Date.now() - last > 5*60*1000) {
+        window.__forceStadiumOff();
+        try {
+          if (window.speechSynthesis) window.speechSynthesis.cancel();
+        } catch(e){}
+      }
+    } catch(e){}
+  }, 15000);
+
+  // ---- Boundary / wicket animations ----
+  function ensureFlash(){
+    var el = $('live-event-flash');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'live-event-flash';
+      el.innerHTML = '<div class="flash-label"></div>';
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+  window.__liveEventFlash = function(kind, label){
+    var el = ensureFlash();
+    el.className = '';
+    el.classList.add(kind||'');
+    var lab = el.querySelector('.flash-label');
+    if (lab) lab.textContent = label || kind || '';
+    el.classList.add('show');
+    clearTimeout(window.__flashTimer);
+    window.__flashTimer = setTimeout(function(){ el.classList.remove('show'); }, 1200);
+  };
+
+  // ---- This over colorful balls ----
+  window.__paintThisOverBalls = function(d){
+    d = d || getData();
+    var balls = (d.thisOver && d.thisOver.balls) || d.thisOverBalls || d.currentOverBalls || [];
+    var hosts = ['this-over-balls','over-balls','v-this-over','current-over-balls'];
+    hosts.forEach(function(id){
+      var el = $(id);
+      if (!el) return;
+      if (!balls.length) { el.innerHTML = ''; return; }
+      el.innerHTML = balls.map(function(b){
+        var s = String(b).toUpperCase();
+        var cls = 'ob to-ball ';
+        if (s==='0'||s==='•'||s==='.') cls += 'b0 dot';
+        else if (s==='1') cls += 'b1';
+        else if (s==='2') cls += 'b2';
+        else if (s==='3') cls += 'b3';
+        else if (s==='4') cls += 'b4';
+        else if (s==='5') cls += 'b5';
+        else if (s==='6') cls += 'b6';
+        else if (s==='W'||s.indexOf('W')===0) cls += 'w';
+        else if (s==='WD'||s==='NB') cls += 'wd';
+        else cls += 'b1';
+        return '<span class="'+cls+'">'+esc(s)+'</span>';
+      }).join('');
+    });
+  };
+
+  // Hook data updates
+  var lastFlashKey = '';
+  function onData(d){
+    if (!d) return;
+    window.__lastLiveData = d;
+    window.lastData = d;
+    window.__lastLiveTs = Date.now();
+    try { if (typeof __lastScoreActivityAt !== 'undefined') { /* native var */ } } catch(e){}
+    try { window.__lastScoreActivityAt = Date.now(); } catch(e){}
+    try { window.__paintFullCommentary(d); } catch(e){}
+    try { window.__paintThisOverBalls(d); } catch(e){}
+    try { window.__paintCapsFromData(d); } catch(e){}
+    // detect boundary / wicket from last commentary or last ball
+    try {
+      var balls = (d.thisOver && d.thisOver.balls) || [];
+      var last = balls.length ? String(balls[balls.length-1]).toUpperCase() : '';
+      var key = (d.runs||0)+'|'+(d.wickets||0)+'|'+last;
+      if (key !== lastFlashKey) {
+        lastFlashKey = key;
+        if (last === '4') window.__liveEventFlash('four','FOUR!');
+        else if (last === '6') window.__liveEventFlash('six','SIX!');
+        else if (last === 'W' || last.indexOf('W')===0) window.__liveEventFlash('wicket','WICKET!');
+      }
+    } catch(e){}
+    // If summary panel open, refresh
+    try {
+      var tab = window.__currentViewerTab;
+      if (tab === 'sum') {
+        var on = document.querySelector('#panel-sum .subtab.on');
+        var s = on ? (on.id||'').replace('st-','') : 'teams';
+        window.__paintSummaryAll(s || 'teams');
+      }
+      if (tab === 'orange' || tab === 'purple') window.__paintCapsFromData(d);
+      if (tab === 'comm') window.__paintFullCommentary(d);
+    } catch(e){}
+  }
+
+  ['applyLiveData','onLiveUpdate','renderLive'].forEach(function(n){
+    try {
+      if (typeof window[n] === 'function' && !window[n]._v61) {
+        var p = window[n];
+        window[n] = function(d){
+          var r = p.apply(this, arguments);
+          try { onData(d || arguments[0]); } catch(e){}
+          return r;
+        };
+        window[n]._v61 = true;
+      }
+    } catch(e){}
+  });
+
+  // When opening summary tab
+  var _sv = window.setViewerTab;
+  window.setViewerTab = function(t){
+    var r;
+    if (typeof _sv === 'function') r = _sv(t);
+    try {
+      if (t === 'sum') {
+        setTimeout(function(){
+          var on = document.querySelector('#panel-sum .subtab.on');
+          var s = on ? (on.id||'').replace('st-','') : 'teams';
+          if (typeof setSumSub === 'function') setSumSub(s || 'teams');
+          else window.__paintSummaryAll(s || 'teams');
+        }, 50);
+      }
+      if (t === 'comm') setTimeout(function(){ window.__paintFullCommentary(); }, 50);
+      if (t === 'orange' || t === 'purple') setTimeout(function(){ window.__paintCapsFromData(); }, 50);
+      if (t === 'scorecard') setTimeout(function(){ try{ window.renderLiveScorecard(); }catch(e){} }, 50);
+    } catch(e){}
+    return r;
+  };
+
+  // Initial
+  setTimeout(function(){
+    try { window.__paintCapsFromData(); } catch(e){}
+    try { window.__paintThisOverBalls(); } catch(e){}
+  }, 800);
 })();
 </script>
 
