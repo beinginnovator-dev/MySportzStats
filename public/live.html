@@ -1507,13 +1507,14 @@ body.light, body[data-theme="light"] {
 }
 </style>
 <nav id="live-main-tabs" class="live-tabs" role="tablist">
-  <button type="button" class="active" data-live-tab="live" onclick="switchLiveTab('live')">Live</button>
-  <button type="button" data-live-tab="commentary" onclick="switchLiveTab('commentary')">Commentary</button>
-  <button type="button" data-live-tab="scorecard" onclick="switchLiveTab('scorecard')">Scorecard</button>
-  <button type="button" data-live-tab="squad" onclick="switchLiveTab('squad')">Squad</button>
-  <button type="button" data-live-tab="schedule" onclick="switchLiveTab('schedule')">Schedule</button>
-  <button type="button" data-live-tab="stats" onclick="switchLiveTab('stats')">Stats</button>
-  
+  <button type="button" id="live-menu-btn" class="live-menu-btn" onclick="event.stopPropagation();toggleLiveMenu(event);return false;" aria-haspopup="true" aria-expanded="false">☰ Menu</button>
+  <div id="live-menu-dropdown" class="live-menu-dropdown hidden" role="menu">
+    <button type="button" role="menuitem" data-live-tab="live" onclick="switchLiveTab('live');closeLiveMenu()">🏠 Live match</button>
+    <button type="button" role="menuitem" data-live-tab="scorecard" onclick="switchLiveTab('scorecard');closeLiveMenu()">📋 Scorecard</button>
+    <button type="button" role="menuitem" data-live-tab="squad" onclick="switchLiveTab('squad');closeLiveMenu()">👥 Squad</button>
+    <button type="button" role="menuitem" data-live-tab="schedule" onclick="switchLiveTab('schedule');closeLiveMenu()">📅 Schedule</button>
+    <button type="button" role="menuitem" data-live-tab="stats" onclick="switchLiveTab('stats');closeLiveMenu()">📊 Stats</button>
+  </div>
 </nav>
 <div id="live-tab-scorecard" class="live-tab-panel hidden" style="display:none;padding:8px 0 80px">
   <div class="sc-team-tabs" id="sc-team-tabs-top">
@@ -1622,10 +1623,12 @@ body.light, body[data-theme="light"] {
           </div>
 <div class="tabs score-tabs live-main-nav" style="grid-template-columns:repeat(7,1fr);margin:10px 0 8px">
           <button type="button" class="tab on" id="tab-live" onclick="setViewerTab('live')">Live</button>
+          <button type="button" class="tab" id="tab-comm" onclick="setViewerTab('comm')">Commentary</button>
           <button type="button" class="tab" id="tab-scorecard" onclick="setViewerTab('scorecard')">Scorecard</button>
+          <button type="button" class="tab" id="tab-orange" onclick="setViewerTab('orange')">Orange cap</button>
+          <button type="button" class="tab" id="tab-purple" onclick="setViewerTab('purple')">Purple cap</button>
           <button type="button" class="tab" id="tab-squads" onclick="setViewerTab('squads')">Squads</button>
           <button type="button" class="tab" id="tab-info" onclick="setViewerTab('info')">Info</button>
-          <button type="button" class="tab" id="tab-comm" onclick="setViewerTab('comm')">Commentary</button>
           <button type="button" class="tab" id="tab-sum" onclick="setViewerTab('sum')">Summary</button>
           <button type="button" class="tab" id="tab-fan" onclick="setViewerTab('fan')">Viewers</button>
         </div>
@@ -1897,8 +1900,6 @@ body.light, body[data-theme="light"] {
           <button type="button" class="subtab on" id="st-teams" onclick="setSumSub('teams')">Teams</button>
           <button type="button" class="subtab" id="st-sum" onclick="setSumSub('sum')">Match summary</button>
           <button type="button" class="subtab" id="st-viewers" onclick="setSumSub('viewers')">Viewers</button>
-          <button type="button" class="subtab" id="st-orange" onclick="setSumSub('orange')">Orange cap</button>
-          <button type="button" class="subtab" id="st-purple" onclick="setSumSub('purple')">Purple cap</button>
           <button type="button" class="subtab" id="st-fow" onclick="setSumSub('fow')">Fall of wickets</button>
         </div>
         <div id="sum-teams"></div>
@@ -10346,6 +10347,181 @@ body[data-theme="sports"] #comm-list .comm-row .ob {
       }
     } catch (e) {}
   });
+})();
+</script>
+
+
+
+<style id="v60-live-menu">
+#live-main-tabs {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  padding: 8px 12px !important;
+  position: relative !important;
+  overflow: visible !important;
+  background: #0c1220 !important;
+  border-bottom: 1px solid rgba(148,163,184,.2) !important;
+  z-index: 200 !important;
+}
+#live-main-tabs .live-menu-btn {
+  flex: 0 0 auto !important;
+  padding: 10px 16px !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  color: #fff !important;
+  background: #dc2626 !important;
+  border: none !important;
+  border-radius: 10px !important;
+  cursor: pointer !important;
+}
+.live-menu-dropdown {
+  position: absolute !important;
+  top: 100% !important;
+  left: 12px !important;
+  min-width: 220px !important;
+  background: #0f172a !important;
+  border: 1px solid rgba(148,163,184,.4) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 16px 48px rgba(0,0,0,.55) !important;
+  padding: 6px !important;
+  z-index: 300 !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+.live-menu-dropdown.hidden {
+  display: none !important;
+}
+.live-menu-dropdown:not(.hidden) {
+  display: flex !important;
+}
+.live-menu-dropdown button {
+  display: block !important;
+  width: 100% !important;
+  text-align: left !important;
+  padding: 12px 14px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #e2e8f0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  flex: none !important;
+  border-bottom: none !important;
+}
+.live-menu-dropdown button:active,
+.live-menu-dropdown button.active {
+  background: rgba(220,38,38,.25) !important;
+  color: #fff !important;
+}
+</style>
+<script id="v60-live-menu">
+(function(){
+  function dd(){ return document.getElementById("live-menu-dropdown"); }
+  function btn(){ return document.getElementById("live-menu-btn"); }
+  window.closeLiveMenu = function(){
+    var d = dd(), b = btn();
+    if (d) { d.classList.add("hidden"); d.style.display = "none"; }
+    if (b) b.setAttribute("aria-expanded", "false");
+  };
+  window.toggleLiveMenu = function(ev){
+    try { if (ev) { ev.preventDefault(); ev.stopPropagation(); } } catch(e){}
+    var d = dd(), b = btn();
+    if (!d) return;
+    var isHidden = d.classList.contains("hidden") || d.style.display === "none" || !d.style.display && d.classList.contains("hidden");
+    // force toggle by class
+    if (d.classList.contains("hidden")) {
+      d.classList.remove("hidden");
+      d.style.display = "flex";
+      if (b) b.setAttribute("aria-expanded", "true");
+    } else {
+      d.classList.add("hidden");
+      d.style.display = "none";
+      if (b) b.setAttribute("aria-expanded", "false");
+    }
+  };
+  // Close on outside click (use setTimeout so opening click does not immediately close)
+  document.addEventListener("click", function(e){
+    setTimeout(function(){
+      try {
+        var d = dd(), b = btn();
+        if (!d || d.classList.contains("hidden")) return;
+        if (b && (e.target === b || b.contains(e.target))) return;
+        if (d.contains(e.target)) return;
+        window.closeLiveMenu();
+      } catch(err){}
+    }, 0);
+  });
+  // Ensure globals even if other scripts redefine
+  window.toggleLiveMenu = window.toggleLiveMenu;
+  window.closeLiveMenu = window.closeLiveMenu;
+})();
+</script>
+
+
+<script id="v60-caps-tabs">
+(function(){
+  var prev = window.setViewerTab;
+  window.setViewerTab = function(t){
+    if (t === "orange" || t === "purple") {
+      window.__currentViewerTab = t;
+      // hide all standard panels
+      var ids = ["live","comm","stats","fan","sum","scorecard","squads","info"];
+      ids.forEach(function(x){
+        var tb = document.getElementById("tab-"+x);
+        var pn = document.getElementById("panel-"+x);
+        if (tb) tb.classList.remove("on");
+        if (pn) { pn.classList.add("hidden"); pn.style.display = "none"; }
+      });
+      // highlight orange/purple tabs
+      ["orange","purple"].forEach(function(x){
+        var tb = document.getElementById("tab-"+x);
+        if (tb) tb.classList.toggle("on", x === t);
+      });
+      // hide summary container panels except the cap
+      ["teams","sum","viewers","fow","orange","purple"].forEach(function(x){
+        var p = document.getElementById("sum-"+x);
+        if (!p) return;
+        if (x === t) {
+          p.classList.remove("hidden");
+          p.style.display = "block";
+        } else {
+          p.classList.add("hidden");
+          p.style.display = "none";
+        }
+      });
+      // show parent summary host if caps live under panel-sum
+      var host = document.getElementById("panel-sum");
+      if (host) {
+        host.classList.remove("hidden");
+        host.style.display = "block";
+        // hide subtabs when viewing caps from main tab
+        var st = host.querySelector(".subtabs");
+        if (st) st.style.display = "none";
+      }
+      try {
+        if (typeof setSumSub === "function") setSumSub(t);
+      } catch(e){}
+      return;
+    }
+    // restore summary subtabs when leaving caps
+    try {
+      var host = document.getElementById("panel-sum");
+      if (host) {
+        var st = host.querySelector(".subtabs");
+        if (st) st.style.display = "";
+      }
+      ["orange","purple"].forEach(function(x){
+        var tb = document.getElementById("tab-"+x);
+        if (tb) tb.classList.remove("on");
+      });
+    } catch(e){}
+    if (typeof prev === "function") return prev(t);
+  };
 })();
 </script>
 

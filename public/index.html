@@ -17601,5 +17601,108 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
 })();
 </script>
 
+
+<script id="v60-ads-fix">
+(function(){
+  var AD_KEY = window.AD_KEY || "cricket_float_ad_v1";
+  function loadAdSafe(){
+    try { return JSON.parse(localStorage.getItem(AD_KEY) || "{}") || {}; } catch(e){ return {}; }
+  }
+  function saveAdSafe(){
+    var o = {
+      enabled: !!(document.getElementById("ad-float-enabled") || {}).checked,
+      trigger: (document.getElementById("ad-float-trigger") || {}).value || "over",
+      shape: (document.getElementById("ad-float-shape") || {}).value || "rect",
+      image: ((document.getElementById("ad-float-image") || {}).value || "").trim(),
+      text: ((document.getElementById("ad-float-text") || {}).value || "").trim(),
+      link: ((document.getElementById("ad-float-link") || {}).value || "").trim()
+    };
+    try { localStorage.setItem(AD_KEY, JSON.stringify(o)); } catch(e){}
+    return o;
+  }
+  function ensureOverlay(){
+    var ov = document.getElementById("float-ad-overlay");
+    if (!ov) {
+      ov = document.createElement("div");
+      ov.id = "float-ad-overlay";
+      ov.className = "rect";
+      ov.innerHTML = '<div id="float-ad-card"><button type="button" id="float-ad-close" onclick="hideFloatAd()">✕</button><div id="float-ad-body"></div></div>';
+      document.body.appendChild(ov);
+    }
+    return ov;
+  }
+  window.hideFloatAd = function(){
+    var ov = document.getElementById("float-ad-overlay");
+    if (ov) {
+      ov.classList.remove("show");
+      ov.style.display = "none";
+    }
+  };
+  window.showFloatAd = function(force){
+    var o = loadAdSafe();
+    if (!force && !o.enabled) return;
+    if (!o.text && !o.image) {
+      if (force) {
+        try { if (typeof showModal === "function") showModal({title:"Ad empty", message:"Add image URL or text first.", icon:"ℹ️"});
+        else alert("Ad empty — add image URL or text first."); } catch(e){ alert("Ad empty"); }
+      }
+      return;
+    }
+    var ov = ensureOverlay();
+    var body = document.getElementById("float-ad-body");
+    if (!body) return;
+    ov.classList.remove("rect","vertical");
+    ov.classList.add(o.shape === "vertical" ? "vertical" : "rect");
+    var html = "";
+    if (o.image) {
+      html += '<img src="'+String(o.image).replace(/"/g,"")+'" alt="ad" style="max-width:100%;max-height:160px;border-radius:8px;display:block;margin:0 auto 8px" onerror="this.style.display=\'none\'"/>';
+    }
+    if (o.text) html += '<p style="font-weight:800;font-size:14px;margin:0 0 6px;text-align:center;color:#fff">'+String(o.text).replace(/</g,"&lt;")+'</p>';
+    if (o.link) html += '<p style="text-align:center;margin:0"><a href="'+String(o.link).replace(/"/g,"")+'" target="_blank" rel="noopener" style="color:#93c5fd;font-size:12px">Open link</a></p>';
+    body.innerHTML = html || '<p style="color:#fff;text-align:center">Ad</p>';
+    ov.classList.add("show");
+    ov.style.display = "flex";
+    clearTimeout(window.__floatAdTimer);
+    window.__floatAdTimer = setTimeout(function(){ window.hideFloatAd(); }, 5000);
+  };
+  window.previewFloatAd = function(){
+    var o = saveAdSafe();
+    if (!o.text && !o.image) {
+      try { if (typeof showModal === "function") showModal({title:"Ad empty", message:"Add image URL or text first.", icon:"ℹ️"});
+      else alert("Ad empty — add image URL or text first."); } catch(e){ alert("Ad empty"); }
+      return;
+    }
+    window.showFloatAd(true);
+  };
+  window.clearAdSettings = function(){
+    try { localStorage.removeItem(AD_KEY); } catch(e){}
+    ["ad-float-enabled","ad-float-image","ad-float-text","ad-float-link"].forEach(function(id){
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (el.type === "checkbox") el.checked = false; else el.value = "";
+    });
+    var tr = document.getElementById("ad-float-trigger"); if (tr) tr.value = "over";
+    var sh = document.getElementById("ad-float-shape"); if (sh) sh.value = "rect";
+    window.hideFloatAd();
+    try { if (typeof publishLiveViewerState === "function") publishLiveViewerState(); } catch(e){}
+    try { if (typeof showModal === "function") showModal({title:"Ad deleted", message:"Floating ad cleared.", icon:"✅"});
+    else alert("Ad deleted"); } catch(e2){}
+  };
+  // Also bind click in case inline handlers fail
+  document.addEventListener("DOMContentLoaded", function(){
+    setTimeout(function(){
+      try {
+        document.querySelectorAll('button[onclick*="previewFloatAd"]').forEach(function(b){
+          b.addEventListener("click", function(e){ e.preventDefault(); window.previewFloatAd(); });
+        });
+        document.querySelectorAll('button[onclick*="clearAdSettings"]').forEach(function(b){
+          b.addEventListener("click", function(e){ e.preventDefault(); window.clearAdSettings(); });
+        });
+      } catch(e){}
+    }, 300);
+  });
+})();
+</script>
+
 </body>
 </html>
