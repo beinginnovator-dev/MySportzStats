@@ -223,18 +223,10 @@ async function handleShortPage(request, env, url) {
   const teamB = data.teamB || "Team B";
   const desc = data.desc || (teamA + " vs " + teamB + " — live ball-by-ball scores, commentary & stats");
   const liveUrl = new URL("/live.html?match=" + encodeURIComponent(matchId), url.origin).toString();
-  // WhatsApp needs direct HTTPS JPEG/PNG URL (not gallery pages).
-  function resolveShareImage(u) {
-    u = String(u || "").trim();
-    if (!u || !/^https:\/\//i.test(u)) return "";
-    return u;
-  }
-  let customImg = resolveShareImage(data.imageUrl || "");
+  let customImg = data.imageUrl ? String(data.imageUrl).trim() : "";
+  if (customImg && !/^https:\/\//i.test(customImg)) customImg = "";
   const label = encodeURIComponent((teamA + " VS " + teamB).slice(0, 40));
-  // Prefer user poster; fallback branded 1200x630 PNG
   const posterUrl = customImg || ("https://placehold.co/1200x630/0f766e/ecfdf5/png?text=" + label);
-  const isRaster = /\.(jpe?g|png|webp|gif)(\?|$)/i.test(posterUrl) || /placehold\.co|i\.ibb\.co|imgur|media-amazon/i.test(posterUrl);
-  const imgType = /\.jpe?g(\?|$)/i.test(posterUrl) ? "image/jpeg" : "image/png";
   // Keep local SVG poster available for browsers (not used as og:image)
   const ua = (request.headers.get("User-Agent") || "").toLowerCase();
   const isBot = /bot|crawl|slurp|facebookexternalhit|whatsapp|telegram|twitter|linkedin|discord|preview|skypeuri/i.test(ua);
@@ -256,7 +248,7 @@ async function handleShortPage(request, env, url) {
 <meta property="og:description" content="${escapeHtml(desc)}"/>
 <meta property="og:image" content="${posterUrl}"/>
 <meta property="og:image:secure_url" content="${posterUrl}"/>
-<meta property="og:image:type" content="${imgType}"/>
+<meta property="og:image:type" content="image/png"/>
 <meta property="og:image:width" content="1200"/>
 <meta property="og:image:height" content="630"/>
 <meta property="og:url" content="${url.origin}/m/${encodeURIComponent(code)}"/>
@@ -267,10 +259,8 @@ async function handleShortPage(request, env, url) {
 <link rel="image_src" href="${posterUrl}"/>
 </head><body style="font-family:system-ui,sans-serif;background:#0f172a;color:#f8fafc;margin:0">
 <div style="max-width:520px;margin:0 auto">
-  <div style="background:#0d9488;padding:0;overflow:hidden">
-    <img src="${posterUrl}" alt="${escapeHtml(title)}" width="1200" height="630" style="display:block;width:100%;height:auto;max-height:320px;object-fit:cover;background:#115e59"/>
-  </div>
-  <div style="padding:20px 18px 28px;background:#0f172a">
+  <img src="${posterUrl}" alt="${escapeHtml(title)}" width="1200" height="630" style="display:block;width:100%;height:auto;max-height:320px;object-fit:cover;background:#115e59"/>
+  <div style="padding:20px 18px 28px">
     <div style="font-size:12px;font-weight:800;letter-spacing:.12em;color:#5eead4;text-transform:uppercase;margin-bottom:8px">MySportzStats Live</div>
     <h1 style="font-size:1.35rem;margin:0 0 10px;line-height:1.25">${escapeHtml(title)}</h1>
     <p style="opacity:.9;line-height:1.5;margin:0 0 18px;font-size:15px">${escapeHtml(desc)}</p>
