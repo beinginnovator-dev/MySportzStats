@@ -3692,6 +3692,8 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
                     if (!newCum[p.name]) newCum[p.name] = { r:0, b:0, w:0, br:0, bb:0, fours:0, sixes:0, dots:0, wides:0, noballs:0, dismissalsAsBowler:{}, outsAsBatsman:{} };
                     var s = newCum[p.name];
                     s.r += (p.runs || 0); s.b += (p.balls || 0); s.w += (p.wickets || 0);
+                    if (p.isOut) s.outs = (s.outs|0) + 1;
+                    else if (p.dismissal || p.howOut) s.outs = (s.outs|0) + 1;
                     s.br += (p.bowlRuns || 0); s.bb += (p.bowlBalls || 0);
                     s.fours += (p.fours || 0); s.sixes += (p.sixes || 0); s.dots += (p.dots || 0);
                 });
@@ -6981,8 +6983,7 @@ function placeBoundaryAnimationOnStriker(toast){
             var avg = null;
             try {
               // Cricket batting avg = runs / times dismissed (match: 1 if out, else —)
-              if (p.isOut) avg = (p.runs|0);
-              else if ((p.dismissals|0) > 0) avg = Math.round(((p.runs|0) / (p.dismissals|0)) * 100) / 100;
+              var _outs=(p.dismissals|0)||(p.outs|0)||(p.isOut?1:0); if(_outs>0) avg=Math.round(((p.runs|0)/_outs)*100)/100;
             } catch(eA){}
             return {
                 name: p.name, runs: p.runs|0, balls: p.balls|0, fours: p.fours|0, sixes: p.sixes|0,
@@ -7190,7 +7191,9 @@ function placeBoundaryAnimationOnStriker(toast){
                     var rows = Object.keys(cum).map(function(nm){
                         var c = cum[nm] || {};
                         var r = c.r|0, b = c.b|0;
-                        return { name: nm, runs: r, balls: b, fours: c.fours|0, sixes: c.sixes|0, SR: b ? Math.round(r/b*1000)/10 : 0 };
+                        var outs = (c.outs|0) || (c.dismissals|0) || 0;
+                        var avg = outs > 0 ? Math.round((r/outs)*100)/100 : null;
+                        return { name: nm, runs: r, balls: b, fours: c.fours|0, sixes: c.sixes|0, outs: outs, dismissals: outs, avg: avg, SR: b ? Math.round(r/b*1000)/10 : 0 };
                     }).filter(function(p){ return p.runs > 0 || p.balls > 0; })
                       .sort(function(a,b){ return b.runs - a.runs || a.balls - b.balls; });
                     return rows;
@@ -9787,6 +9790,7 @@ function updateView() {
     }
 
     function qiSvgPie(items, opts) {
+        try { items = (items||[]).map(function(it){ var L=String(it.label||''); if(/^catch/i.test(L)) L='Catch out'; if(L.length>22) L=L.slice(0,20)+'\u2026'; return {label:L, v:it.v, color:it.color}; }); } catch(e){}
         opts = opts || {};
         var size = opts.size || 180, cx = size/2, cy = size/2, R = size*0.38, r = size*0.22;
         var total = 0;
@@ -10001,7 +10005,8 @@ function collectQuickInfoData() {
             if (!orangeMap[nm]) orangeMap[nm] = { runs:0, balls:0, fours:0, sixes:0, hs:0, outs:0 };
             orangeMap[nm].runs += (p.runs|0); orangeMap[nm].balls += (p.balls|0);
             orangeMap[nm].fours += (p.fours|0); orangeMap[nm].sixes += (p.sixes|0);
-            if ((p.runs|0) > orangeMap[nm].hs) orangeMap[nm].hs = p.runs|0; if (p.isOut) orangeMap[nm].outs = (orangeMap[nm].outs|0) + 1;
+            if ((p.runs|0) > orangeMap[nm].hs) orangeMap[nm].hs = p.runs|0;
+            /* outs counted once per match via dismissed set */
             if (!purpleMap[nm]) purpleMap[nm] = { wkts:0, runs:0, balls:0, dots:0 };
             purpleMap[nm].wkts += (p.wickets|0); purpleMap[nm].runs += (p.bowlRuns|0);
             purpleMap[nm].balls += (p.bowlBalls|0); purpleMap[nm].dots += (p.dots|0);
@@ -10064,11 +10069,33 @@ function collectQuickInfoData() {
             if (m.targetScore != null && !m.live) secondInns.push(m.score|0);
             (m.players || []).forEach(function(p){ totalFours += (p.fours|0); totalSixes += (p.sixes|0); addPlayer(p); });
             (m.fallOfWickets || []).forEach(function(w){
-                var t = String(w.dismissal || 'Other').replace(/\s+/g,' ').trim() || 'Other';
+                var t = String(w.dismissal || w.how || w.type || 'Other').replace(/\s+/g,' ').trim() || 'Other';
                 if (/^bowled/i.test(t)) t = 'Bowled';
                 else if (/hit out of box/i.test(t)) t = 'Hit out of box';
+                else if (/^caught|^catch/i.test(t)) t = 'Catch out';
+                else if (/^lbw/i.test(t)) t = 'LBW';
+                else if (/run\s*out/i.test(t)) t = 'Run out';
+                else if (/stump/i.test(t)) t = 'Stumped';
+                else if (/hit wicket/i.test(t)) t = 'Hit wicket';
                 wicketTypes[t] = (wicketTypes[t]||0)+1;
             });
+            (function(){
+                var dismissed = {};
+                (m.players || []).forEach(function(p){
+                    if (!p || !p.name) return;
+                    if (p.isOut === false || p.notOut === true) return;
+                    if (p.isOut === true) { dismissed[p.name] = 1; return; }
+                    if (p.dismissal || p.howOut || p.outMethod || p.wicketType) dismissed[p.name] = 1;
+                });
+                (m.fallOfWickets || []).forEach(function(w){
+                    var bat = w.batsman || w.player || w.name;
+                    if (bat) dismissed[String(bat)] = 1;
+                });
+                Object.keys(dismissed).forEach(function(nm){
+                    if (!orangeMap[nm]) orangeMap[nm] = { runs:0, balls:0, fours:0, sixes:0, hs:0, outs:0 };
+                    orangeMap[nm].outs = (orangeMap[nm].outs|0) + 1;
+                });
+            })();
             (m.deliveryHistory || []).forEach(function(d){
                 if (!d) return;
                 var chip = String(d.chipLabel || d.label || '').toUpperCase();
@@ -10121,7 +10148,7 @@ function collectQuickInfoData() {
 
         var orangeList = Object.keys(orangeMap).map(function(nm){
             var o = orangeMap[nm];
-            return { player:nm, Runs:o.runs, Balls:o.balls, fours:o.fours, sixes:o.sixes, HS:o.hs, Avg: o.outs? Math.round((o.runs/o.outs)*100)/100 : null, SR: o.balls?(o.runs/o.balls*100):0 };
+            return { player:nm, Runs:o.runs, Balls:o.balls, fours:o.fours, sixes:o.sixes, HS:o.hs, Avg: (o.outs|0)>0 ? Math.round((o.runs/o.outs)*100)/100 : null, SR: o.balls?(o.runs/o.balls*100):0 };
         }).sort(function(a,b){ return b.Runs-a.Runs; });
         var purpleList = Object.keys(purpleMap).map(function(nm){
             var o = purpleMap[nm]; var overs = o.balls/6;
@@ -11119,7 +11146,7 @@ function computeManOfTheMatch(plist) {
             }
             var w = window.open('', '_blank');
             if (w) {
-                w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Print</title><style>body{font-family:system-ui,sans-serif;padding:12px;color:#0f172a}table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:6px;border-bottom:1px solid #e2e8f0}@media print{body{padding:0}}</style></head><body>'+htmlStr+'<scr'+'ipt>setTimeout(function(){try{window.print()}catch(e){}},300)<\/scr'+'ipt></body></html>');
+                w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Print</title><style>body{font-family:system-ui,sans-serif;padding:12px;color:#0f172a}table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:6px;border-bottom:1px solid #e2e8f0}@media print{body{padding:0}}</style></head><body>'+htmlStr+'<scr'+'ipt>setTimeout(function(){try{window.print()}catch(e){}},300)<\/scr'+'ipt></bod' + 'y></ht' + 'ml>');
                 w.document.close();
                 return true;
             }
@@ -12589,7 +12616,7 @@ function printHistoryMatch(){
             for(var i=0;i<players.length;i++){ var p=players[i]; var badge=''; if(p.runs>=100) badge=' 👑'; else if(p.runs>=50) badge=' 🧢'; html+="<tr><td>"+p.name+badge+"</td><td>"+p.runs+"</td><td>"+p.balls+"</td><td>"+p.fours+"/"+p.sixes+"</td><td>"+calcSR(p.runs,p.balls)+"</td><td>"+(p.entryRank?"#"+p.entryRank+" at "+p.entryScore+"/"+p.entryWickets:"-")+"</td></tr>"; }
             html+="</table>"; html+="<h2>Bowling</h2><table><tr><th>Player</th><th>O</th><th>R</th><th>W</th><th>Econ</th></tr>";
             for(var k=0;k<players.length;k++){ var pb=players[k]; if(pb.bowlBalls>0) html+="<tr><td>"+pb.name+"</td><td>"+formatOvers(pb.bowlBalls)+"</td><td>"+pb.bowlRuns+"</td><td>"+pb.wickets+"</td><td>"+calcEcon(pb.bowlRuns,pb.bowlBalls)+"</td></tr>"; }
-            html+="</table></body></html>";
+            html+="</table></bod' + 'y></ht' + 'ml>";
             var blob=new Blob([html],{type:'text/html'}); var url=URL.createObjectURL(blob);
             var a=document.createElement('a'); a.href=url; a.download="Cricket_Report_"+new Date().toISOString().slice(0,10)+".html";
             document.body.appendChild(a); a.click(); setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); },800);
@@ -17703,6 +17730,42 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
   });
 })();
 </script>
+
+
+<script id="v64-ads-bind">
+(function(){
+  function bind(){
+    try {
+      document.querySelectorAll("button").forEach(function(b){
+        var t = (b.textContent || "").trim().toLowerCase();
+        if (t.indexOf("preview") >= 0 && t.indexOf("5") >= 0) {
+          b.onclick = function(e){ e.preventDefault(); e.stopPropagation(); try { window.previewFloatAd(); } catch(err){ alert("Preview: "+err); } };
+        }
+        if (t.indexOf("delete") >= 0 && t.indexOf("ad") >= 0) {
+          b.onclick = function(e){ e.preventDefault(); e.stopPropagation(); try { window.clearAdSettings(); } catch(err){ alert("Delete: "+err); } };
+        }
+      });
+    } catch(e){}
+  }
+  setTimeout(bind, 300);
+  setTimeout(bind, 1200);
+  document.addEventListener("click", function(e){
+    var b = e.target && e.target.closest ? e.target.closest("button") : null;
+    if (!b) return;
+    var t = (b.textContent || "").trim().toLowerCase();
+    if (t.indexOf("preview") >= 0 && t.indexOf("5") >= 0) {
+      if (typeof window.previewFloatAd === "function") { e.preventDefault(); window.previewFloatAd(); }
+    }
+    if (t.indexOf("delete") >= 0 && t.indexOf("ad") >= 0) {
+      if (typeof window.clearAdSettings === "function") { e.preventDefault(); window.clearAdSettings(); }
+    }
+  }, true);
+})();
+</script>
+<style id="v64-stats-layout">
+#dashboard-rank-body .rounded-2xl, #page-rank .rounded-2xl { overflow: hidden; max-width: 100%; }
+#dashboard-rank-body .rounded-2xl span, #page-rank .rounded-2xl span { max-width: 100%; overflow-wrap: anywhere; }
+</style>
 
 </body>
 </html>

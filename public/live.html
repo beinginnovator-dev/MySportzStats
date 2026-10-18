@@ -3404,10 +3404,9 @@ body.light, body[data-theme="light"] {
     function formatCommentaryLine(line){line=String(line||'').trim();if(!line)return{title:'',body:''};var dash=line.split(/\s+[—–]\s+/);if(dash.length>=2&&dash[0].length<100)return{title:dash[0].replace(/^\*+/,'').trim(),body:dash.slice(1).join(' — ').replace(/^\*+\s*/,'').trim()};var m=line.match(/^(.+?(?:\d+(?:st|nd|rd|th)\s+ball))[.\s*—–-]*(.*)$/i);if(m)return{title:m[1].replace(/^\*+/,'').trim(),body:(m[2]||'').replace(/^\*+\s*/,'').trim()};return{title:line.replace(/^\*+/,'').trim(),body:''}}
     function batAvg(p){
       if(!p) return '—';
-      if(p.avg!=null && p.avg!=='') return p.avg;
-      // Cricket: runs / dismissals; match innings → out = runs, not out = —
-      if(p.isOut) return (p.runs|0);
-      if((p.dismissals|0)>0) return Math.round(((p.runs|0)/(p.dismissals|0))*100)/100;
+      if(p.avg!=null && p.avg!=='' && p.avg!=='—') return p.avg;
+      var outs = (p.dismissals|0) || (p.outs|0) || (p.isOut ? 1 : 0);
+      if(outs>0) return Math.round(((p.runs|0)/outs)*100)/100;
       return '—';
     }
     function batTable(rows,currentName){
@@ -10732,31 +10731,63 @@ body[data-theme="sports"] #comm-list .comm-row .ob {
     if (sp) sp.innerHTML = '<div class="sec-title">🟣 Purple cap</div>' + rowsPurple(pArr);
   };
 
-  // ---- Commentary: show full log (newest first), not only last over ----
+  // ---- Commentary: KEEP attached format (LATEST + run circle + "Bowler to Batter, Nth ball" + body) ----
   window.__paintFullCommentary = function(d){
     d = d || getData();
+    // Prefer original renderer so layout matches screenshot
+    try {
+      if (typeof window.renderLiveCommentary === 'function') {
+        window.renderLiveCommentary();
+        return;
+      }
+    } catch(e0){}
     var list = $('comm-list');
     if (!list) return;
-    var arr = d.commentary || d.commentaryLog || d.ballByBall || [];
+    var arr = d.commentaryHi || d.commentary || d.commentaryLog || [];
     if (!Array.isArray(arr)) arr = [];
+    arr = arr.slice().filter(Boolean).reverse();
     if (!arr.length) {
       list.innerHTML = '<div class="empty">No commentary yet</div>';
       return;
     }
-    // newest first
-    var lines = arr.slice().reverse();
-    var html = lines.map(function(line, idx){
-      var t = typeof line === 'string' ? line : (line.text || line.line || line.msg || JSON.stringify(line));
-      t = String(t);
-      var cls = 'ci-ball';
-      if (/\b(W|WICKET|OUT)\b/i.test(t)) cls += ' ev-wicket';
-      else if (/\bFOUR\b|\b4\b/i.test(t) && /boundary|four/i.test(t)) cls += ' ev-four';
-      else if (/\bSIX\b/i.test(t)) cls += ' ev-six';
-      // ball stamp at start if over.ball present
-      var stamp = '';
-      var m = t.match(/^(\d+\.\d+)\s*/);
-      if (m) { stamp = '<span class="ob to-ball" style="margin-right:8px">'+m[1]+'</span>'; }
-      return '<div class="'+cls+'" style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:left">'+stamp+'<span>'+esc(t)+'</span></div>';
+    function fmtLine(line){
+      if (typeof formatCommentaryLine === 'function') return formatCommentaryLine(line);
+      line = String(line||'').trim();
+      var dash = line.split(/\s+[—–]\s+/);
+      if (dash.length >= 2 && dash[0].length < 100)
+        return { title: dash[0].replace(/^\*+/,'').trim(), body: dash.slice(1).join(' — ').replace(/^\*+\s*/,'').trim() };
+      var m = line.match(/^(.+?(?:\d+(?:st|nd|rd|th)\s+ball))[.\s*—–-]*(.*)$/i);
+      if (m) return { title: m[1].replace(/^\*+/,'').trim(), body: (m[2]||'').replace(/^\*+\s*/,'').trim() };
+      return { title: line.replace(/^\*+/,'').trim(), body: '' };
+    }
+    function stampOf(line){
+      if (typeof ballStampFromLine === 'function') return ballStampFromLine(line);
+      var t = String(line||'');
+      var m = t.match(/\b([0-6]|W|WD|NB)\b/i) || t.match(/\b(\d+)\s+runs?\b/i);
+      if (!m) return null;
+      var lab = String(m[1]).toUpperCase();
+      var cls = 'b1';
+      if (lab==='0') cls='b0'; else if (lab==='1') cls='b1'; else if (lab==='2') cls='b2';
+      else if (lab==='3') cls='b3'; else if (lab==='4') cls='b4'; else if (lab==='6') cls='b6';
+      else if (lab==='W') cls='w'; else if (lab==='WD'||lab==='NB') cls='wd';
+      return { label: lab, cls: cls };
+    }
+    function hl(s){
+      if (typeof highlightEventWords === 'function') return highlightEventWords(s);
+      return esc(s);
+    }
+    var html = arr.map(function(line, i){
+      var parts = fmtLine(line);
+      var stamp = stampOf(line);
+      var h = '';
+      if (i === 0) h += '<div class="t">LATEST</div>';
+      h += '<div class="comm-row">';
+      if (stamp) h += '<span class="ob '+stamp.cls+'">'+esc(stamp.label)+'</span>';
+      h += '<div class="comm-text">';
+      if (parts.title) h += '<div class="title">'+hl(parts.title)+'</div>';
+      if (parts.body) h += '<div class="body">'+hl(parts.body)+'</div>';
+      h += '</div></div>';
+      return h;
     }).join('');
     list.innerHTML = html;
   };
@@ -10983,6 +11014,89 @@ body[data-theme="sports"] #comm-list .comm-row .ob {
     try { window.__paintCapsFromData(); } catch(e){}
     try { window.__paintThisOverBalls(); } catch(e){}
   }, 800);
+})();
+</script>
+
+
+<style id="v62-comm-format">
+/* Retain attached commentary format */
+#panel-comm .t,
+#comm-list .t {
+  font-size: 11px; font-weight: 800; letter-spacing: .12em;
+  color: #16a34a; text-transform: uppercase; margin: 8px 0 6px 4px;
+}
+#comm-list .comm-row,
+.comm-list .comm-row {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px 14px; margin: 0 0 8px;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+  text-align: left;
+}
+#comm-list .comm-row .ob {
+  flex: 0 0 32px; width: 32px; height: 32px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 13px;
+}
+#comm-list .comm-text { flex: 1; min-width: 0; }
+#comm-list .comm-text .title {
+  font-weight: 800; color: #0f172a; font-size: 14px; line-height: 1.35; margin-bottom: 4px;
+}
+#comm-list .comm-text .body {
+  color: #64748b; font-size: 13px; line-height: 1.45;
+}
+#panel-comm .ball-by-ball-head,
+.bbb-head {
+  background: #dc2626; color: #fff; font-weight: 900;
+  padding: 10px 14px; border-radius: 12px 12px 0 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+</style>
+
+
+<script id="v64-retain-stats">
+(function(){
+  var KEY = "mysportz_last_live_payload_v1";
+  function save(d){
+    try {
+      if (!d || typeof d !== "object") return;
+      var prev = {};
+      try { prev = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch(e){}
+      var out = Object.assign({}, prev, d);
+      ["commentary","commentaryLog","commentaryHi","orangeCap","purpleCap","cumulativeOrangeCap","cumulativePurpleCap","squadA","squadB","innings1Batters","innings2Batters","schedule","fallOfWickets"].forEach(function(k){
+        var a = d[k], b = prev[k];
+        if (Array.isArray(a) && a.length) out[k] = a;
+        else if (Array.isArray(b) && b.length) out[k] = b;
+      });
+      localStorage.setItem(KEY, JSON.stringify(out));
+      window.__lastLiveData = out;
+      window.lastData = out;
+    } catch(e){}
+  }
+  function load(){
+    try {
+      var d = JSON.parse(localStorage.getItem(KEY) || "null");
+      if (d && typeof d === "object") { window.__lastLiveData = d; window.lastData = d; return d; }
+    } catch(e){}
+    return null;
+  }
+  load();
+  ["applyLiveData","onLiveUpdate"].forEach(function(n){
+    try {
+      if (typeof window[n] === "function" && !window[n]._v64r) {
+        var p = window[n];
+        window[n] = function(d){ if (d) save(d); return p.apply(this, arguments); };
+        window[n]._v64r = true;
+      }
+    } catch(e){}
+  });
+  setTimeout(function(){
+    try {
+      var d = load();
+      if (!d) return;
+      if (typeof window.applyLiveData === "function") window.applyLiveData(d);
+      else if (typeof window.onLiveUpdate === "function") window.onLiveUpdate(d);
+    } catch(e){}
+  }, 700);
 })();
 </script>
 
