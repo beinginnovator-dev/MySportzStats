@@ -32,14 +32,10 @@
   <title>Live Match · Viewer</title>
   <meta name="theme-color" content="#0f172a" />
   <meta name="description" content="Live cricket score viewer" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="no">
+  <meta name="mobile-web-app-capable" content="no">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Live Cricket" />
-  <link rel="manifest" href="/manifest-live.json" />
-  
-  
-  <link rel="icon" type="image/png" sizes="192x192" href="/icon-live-192.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-live-192.png" />
   <link rel="icon" type="image/png" sizes="512x512" href="/icon-live-512.png" />
   <link rel="apple-touch-icon" href="/icon-live-192.png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
@@ -11097,6 +11093,41 @@ body[data-theme="sports"] #comm-list .comm-row .ob {
       else if (typeof window.onLiveUpdate === "function") window.onLiveUpdate(d);
     } catch(e){}
   }, 700);
+})();
+</script>
+
+
+<script id="v65-open-browser">
+(function(){
+  function isStandalone(){
+    try {
+      if (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) return true;
+      if (window.matchMedia && window.matchMedia("(display-mode: minimal-ui)").matches) return true;
+      if (navigator.standalone === true) return true;
+      if (document.referrer && /android-app:\/\//i.test(document.referrer)) return true;
+    } catch(e){}
+    return false;
+  }
+  function showBar(){
+    if (!isStandalone()) return;
+    try { if (sessionStorage.getItem("ms_browser_tip")==="1") return; sessionStorage.setItem("ms_browser_tip","1"); } catch(e){}
+    var bar=document.createElement("div");
+    bar.id="open-in-browser-bar";
+    bar.style.cssText="position:fixed;left:0;right:0;top:0;z-index:99999;background:#0f172a;color:#f8fafc;padding:10px 14px;font:600 13px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(0,0,0,.35)";
+    bar.innerHTML="<span>Open this live score in <b>Chrome / Safari</b> (not the installed app).</span><span style=\"display:flex;gap:8px;flex-shrink:0\"><button type=\"button\" id=\"ms-copy-link\" style=\"background:#dc2626;color:#fff;border:0;border-radius:8px;padding:8px 10px;font-weight:800\">Copy link</button><button type=\"button\" id=\"ms-dismiss-bar\" style=\"background:transparent;color:#94a3b8;border:1px solid #334155;border-radius:8px;padding:8px 10px\">✕</button></span>";
+    document.documentElement.appendChild(bar);
+    document.body.style.paddingTop="52px";
+    var copy=document.getElementById("ms-copy-link");
+    if(copy) copy.onclick=function(){
+      var u=location.href.split("#")[0];
+      try{ if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(u); copy.textContent="Copied"; }
+      catch(e){ prompt("Open this link in Chrome:", u); }
+    };
+    var d=document.getElementById("ms-dismiss-bar");
+    if(d) d.onclick=function(){ bar.remove(); document.body.style.paddingTop=""; };
+  }
+  if (document.readyState==="loading") document.addEventListener("DOMContentLoaded", showBar);
+  else showBar();
 })();
 </script>
 

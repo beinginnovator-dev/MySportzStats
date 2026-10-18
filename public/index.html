@@ -7576,7 +7576,7 @@ function placeBoundaryAnimationOnStriker(toast){
             try {
                 // Always prefer native share sheet (WhatsApp, Messages, Email, etc.)
                 if (navigator.share) {
-                    var sharePayload = { title: title, text: desc, url: url }; // URL once only (WA duplicates text+url)
+                    var sharePayload = { title: title, text: desc + '\n\nOpen in browser (Chrome/Safari) for live scores.', url: url }; // URL once only (WA duplicates text+url)
                     // Fire share immediately — do not wait on poster image fetch
                     navigator.share(sharePayload).catch(function(err){
                         // User cancelled or share failed → fallback options
