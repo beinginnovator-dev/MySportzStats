@@ -231,10 +231,12 @@ async function handleShortPage(request, env, url) {
   const ua = (request.headers.get("User-Agent") || "").toLowerCase();
   const isBot = /bot|crawl|slurp|facebookexternalhit|whatsapp|telegram|twitter|linkedin|discord|preview|skypeuri/i.test(ua);
 
-  // Always serve HTML with OG tags for bots; humans redirect
-  if (!isBot) {
-    return Response.redirect(liveUrl, 302);
-  }
+  // Bots get OG tags; humans get a landing page that opens in the system browser
+  // (avoids installed PWA / in-app WebView capturing the link)
+  const browserLiveUrl = liveUrl + (liveUrl.indexOf("?") >= 0 ? "&" : "?") + "src=wa";
+  // Android Chrome intent — forces Chrome when possible
+  const intentUrl = "intent://" + browserLiveUrl.replace(/^https?:\/\//i, "") +
+    "#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;end";
 
   const html = `<!DOCTYPE html>
 <html lang="en"><head>
@@ -242,6 +244,8 @@ async function handleShortPage(request, env, url) {
 <title>${escapeHtml(title)}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="description" content="${escapeHtml(desc)}"/>
+<meta name="mobile-web-app-capable" content="no"/>
+<meta name="apple-mobile-web-app-capable" content="no"/>
 <meta property="og:type" content="website"/>
 <meta property="og:site_name" content="MySportzStats Live"/>
 <meta property="og:title" content="${escapeHtml(title)}"/>
@@ -264,7 +268,21 @@ async function handleShortPage(request, env, url) {
     <div style="font-size:12px;font-weight:800;letter-spacing:.12em;color:#5eead4;text-transform:uppercase;margin-bottom:8px">MySportzStats Live</div>
     <h1 style="font-size:1.35rem;margin:0 0 10px;line-height:1.25">${escapeHtml(title)}</h1>
     <p style="opacity:.9;line-height:1.5;margin:0 0 18px;font-size:15px">${escapeHtml(desc)}</p>
-    <a href="${liveUrl}" style="display:inline-block;background:#10b981;color:#042f2e;font-weight:800;text-decoration:none;padding:12px 18px;border-radius:10px">Open live score →</a>
+    <a href="${browserLiveUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#10b981;color:#042f2e;font-weight:800;text-decoration:none;padding:12px 18px;border-radius:10px">Open live score in browser →</a>
+    <p style="margin:14px 0 0;font-size:12px;opacity:.75">If it opens inside an app, tap menu → Open in Chrome / browser.</p>
+    <p style="margin:10px 0 0"><a href="${intentUrl}" style="color:#5eead4;font-size:13px;font-weight:700">Android: open in Chrome</a></p>
+    <script>
+    (function(){
+      var u = "${browserLiveUrl}";
+      try {
+        var ua = navigator.userAgent || "";
+        // Auto-open for normal browsers; WhatsApp users tap the button
+        if (!/WhatsApp|FBAN|FBAV|Instagram/i.test(ua)) {
+          window.location.replace(u);
+        }
+      } catch (e) {}
+    })();
+    </script>
   </div>
 </div>
 </body></html>`;
