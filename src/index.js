@@ -236,7 +236,8 @@ async function handleShortPage(request, env, url) {
   const browserLiveUrl = liveUrl + (liveUrl.indexOf("?") >= 0 ? "&" : "?") + "src=wa";
   // Android Chrome intent — forces Chrome when possible
   const intentUrl = "intent://" + browserLiveUrl.replace(/^https?:\/\//i, "") +
-    "#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;end";
+    "#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.android.chrome;S.browser_fallback_url=" + encodeURIComponent(browserLiveUrl) + ";end";
+  const chromeUrl = "googlechrome://navigate?url=" + encodeURIComponent(browserLiveUrl);
 
   const html = `<!DOCTYPE html>
 <html lang="en"><head>
