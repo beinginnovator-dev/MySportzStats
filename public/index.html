@@ -7543,14 +7543,45 @@ function placeBoundaryAnimationOnStriker(toast){
             
     function openPlatformAdsAdmin() {
         try {
-            var base = (getLiveServerUrl() || location.origin || '').replace(/\/$/, '');
-            if (!base) base = location.origin;
-            var url = base + '/admin-ads.html';
-            /* no navigate on share */ (void 0);
+            var base = '';
+            try {
+                if (typeof getLiveServerUrl === 'function') base = String(getLiveServerUrl() || '').replace(/\/$/, '');
+            } catch(e0){}
+            if (!base || base === 'null' || base.indexOf('content:') === 0 || base.indexOf('file:') === 0) {
+                try { base = String(location.origin || '').replace(/\/$/, ''); } catch(e1){}
+            }
+            if (!base || base === 'null' || base.indexOf('content:') === 0) {
+                // local file / content URI — open sibling admin-ads.html if possible
+                try {
+                    var path = String(location.href || '').replace(/[#?].*$/, '');
+                    base = path.replace(/\/[^\/]*$/, '');
+                } catch(e2){}
+            }
+            var url = (base ? (base + '/admin-ads.html') : 'admin-ads.html');
+            var opened = null;
+            try { opened = window.open(url, '_blank'); } catch(e3){}
+            if (!opened) {
+                try {
+                    // Same-tab fallback
+                    location.href = url;
+                    return;
+                } catch(e4){}
+            }
+            try {
+                showModal({
+                    title: 'Ads push page',
+                    message: 'Opening ads admin.<br><a href="'+url.replace(/"/g,'')+'" target="_blank" rel="noopener" style="color:#2563eb;font-weight:700;word-break:break-all">'+url.replace(/</g,'&lt;')+'</a><br><span class="text-xs text-slate-500">If it did not open, tap the link above. Use your ADMIN_KEY on that page.</span>',
+                    icon: '📢'
+                });
+            } catch(e5){}
         } catch(e) {
-            showModal({ title: 'Ads admin', message: 'Open /admin-ads.html on your Worker URL and enter your ADMIN_KEY.', icon: '📢' });
+            try {
+                showModal({ title: 'Ads admin', message: 'Open admin-ads.html on your Worker URL and enter your ADMIN_KEY.', icon: '📢' });
+            } catch(e6){}
         }
     }
+    try { window.openPlatformAdsAdmin = openPlatformAdsAdmin; } catch(eW){}
+
     function saveSharePosterSettings() {
         try {
             var img = (document.getElementById('cfg-share-poster') || {}).value || '';
@@ -17882,6 +17913,27 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
   try { window.setCupSubTab = window.setCupSubTab || (typeof setCupSubTab === "function" ? setCupSubTab : null); } catch(e){}
   try { window.cupStartMatch = window.cupStartMatch || (typeof cupStartMatch === "function" ? cupStartMatch : null); } catch(e){}
   try { window.goTab = window.goTab || window.switchTab; } catch(e){}
+})();
+</script>
+
+
+<script id="v70-open-ads">
+(function(){
+  function wire(){
+    try {
+      document.querySelectorAll("button").forEach(function(b){
+        var t = (b.textContent||"").toLowerCase();
+        if (t.indexOf("open ads push") >= 0 || t.indexOf("ads push page") >= 0) {
+          b.onclick = function(e){
+            try { e.preventDefault(); e.stopPropagation(); } catch(err){}
+            try { (window.openPlatformAdsAdmin||openPlatformAdsAdmin)(); } catch(err2){ alert("Open admin-ads.html on your server"); }
+          };
+        }
+      });
+    } catch(e){}
+  }
+  setTimeout(wire, 200);
+  setTimeout(wire, 1000);
 })();
 </script>
 
