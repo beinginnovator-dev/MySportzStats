@@ -3372,7 +3372,7 @@ body.light, body[data-theme="light"] {
     function sr(r,b){b=b|0;if(b<=0)return'—';return(Math.round((r/b)*1000)/10).toFixed(1)}
     function econ(r,b){b=b|0;if(b<=0)return'—';return(Math.round((r/(b/6))*100)/100).toFixed(2)}
     function highlightEventWords(text){
-      var out=esc(text).replace(/\b(FOUR|SIX|WICKET|OUT)\b!?/gi,function(m){var u=m.toUpperCase();var cls='hl';if(u.indexOf('FOUR')===0)cls+=' four';else if(u.indexOf('SIX')===0)cls+=' six';else cls+=' wicket';return'<span class="'+cls+'">'+m+'</span>'});
+      var out=esc(text).replace(/\b(FOUR|SIX|OUT)\b!?/gi,function(m){var u=m.toUpperCase();var cls='hl';if(u.indexOf('FOUR')===0)cls+=' four';else if(u.indexOf('SIX')===0)cls+=' six';else cls+=' wicket';return'<span class="'+cls+'">'+m+'</span>'});
       out=out.replace(/\bno run\b/gi,'<span class="hl run0">no run</span>');
       out=out.replace(/\bकोई रन नहीं\b/g,'<span class="hl run0">कोई रन नहीं</span>');
       out=out.replace(/\b([012])(\s*runs?)\b/gi,function(m,n,w){return'<span class="hl run'+n+'">'+n+w+'</span>'});
@@ -3383,7 +3383,10 @@ body.light, body[data-theme="light"] {
       try{
         var s=String(line||'');
         var u=s.toUpperCase();
-        if(/\bOUT\b|\bWICKET\b|\bCAUGHT\b|\bBOWLED\b|\bLBW\b|\bSTUMPED\b|\bRUN OUT\b/.test(u)) return {label:'W', cls:'w'};
+        var mEarly=s.match(/[—–-]\s*(\d)\s*runs?/i) || s.match(/ball\s*[—–-]\s*(\d)\s*runs?/i);
+        if(mEarly){ var ne=mEarly[1]; return {label:ne, cls:'b'+ne}; }
+        if(/\bOUT\b|\bCAUGHT\b|\bBOWLED\b|\bLBW\b|\bSTUMPED\b|\bRUN OUT\b/.test(u)) return {label:'W', cls:'w'};
+        if(/\bWICKET\b/.test(u) && !/on this wicket|this wicket|the wicket|length on this wicket/i.test(s)) return {label:'W', cls:'w'};
         if(/\bSIX\b|\b6 RUNS\b|— 6\b|\b6\s*RUNS/.test(u) || /\b6\b/.test(s) && /boundary|maximum|over the|into the crowd/i.test(s)) return {label:'6', cls:'b6'};
         if(/\bFOUR\b|\b4 RUNS\b|— 4\b|\b4\s*RUNS/.test(u) || (/\b4\b/.test(s) && /boundary|rope|cover drive|square cut/i.test(s))) return {label:'4', cls:'b4'};
         if(/\bWIDE\b|\bWD\b/.test(u)) return {label:'Wd', cls:'wd'};
@@ -11114,9 +11117,16 @@ body[data-theme="sports"] #comm-list .comm-row .ob {
     var bar=document.createElement("div");
     bar.id="open-in-browser-bar";
     bar.style.cssText="position:fixed;left:0;right:0;top:0;z-index:99999;background:#0f172a;color:#f8fafc;padding:10px 14px;font:600 13px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(0,0,0,.35)";
-    bar.innerHTML="<span>Open this live score in <b>Chrome / Safari</b> (not the installed app).</span><span style=\"display:flex;gap:8px;flex-shrink:0\"><button type=\"button\" id=\"ms-copy-link\" style=\"background:#dc2626;color:#fff;border:0;border-radius:8px;padding:8px 10px;font-weight:800\">Copy link</button><button type=\"button\" id=\"ms-dismiss-bar\" style=\"background:transparent;color:#94a3b8;border:1px solid #334155;border-radius:8px;padding:8px 10px\">✕</button></span>";
+    bar.innerHTML="<span>This opened in the <b>app</b>. Use Chrome for live scores.</span><span style=\"display:flex;gap:8px;flex-shrink:0\"><button type=\"button\" id=\"ms-chrome-open\" style=\"background:#2563eb;color:#fff;border:0;border-radius:8px;padding:8px 10px;font-weight:800\">Chrome</button><button type=\"button\" id=\"ms-copy-link\" style=\"background:#dc2626;color:#fff;border:0;border-radius:8px;padding:8px 10px;font-weight:800\">Copy link</button><button type=\"button\" id=\"ms-dismiss-bar\" style=\"background:transparent;color:#94a3b8;border:1px solid #334155;border-radius:8px;padding:8px 10px\">✕</button></span>";
     document.documentElement.appendChild(bar);
     document.body.style.paddingTop="52px";
+    var ch=document.getElementById("ms-chrome-open");
+    if(ch) ch.onclick=function(){
+      var u=location.href.split("#")[0];
+      var chromeU="googlechrome://navigate?url="+encodeURIComponent(u);
+      var intentU="intent://"+u.replace(/^https?:\/\//i,"")+"#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url="+encodeURIComponent(u)+";end";
+      try{ location.href=intentU; }catch(e){ try{ location.href=chromeU; }catch(e2){ prompt("Open in Chrome:", u); } }
+    };
     var copy=document.getElementById("ms-copy-link");
     if(copy) copy.onclick=function(){
       var u=location.href.split("#")[0];
