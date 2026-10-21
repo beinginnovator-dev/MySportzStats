@@ -16207,5 +16207,148 @@ body[data-theme="dark"] #v97-wait { background: #1e293b; color: #e2e8f0; }
 })();
 </script>
 
+
+<script id="v102-live-sync">
+(function(){
+  function $(id){ return document.getElementById(id); }
+
+  function server(){
+    try {
+      if ((location.protocol==='http:'||location.protocol==='https:') && location.host)
+        return location.origin.replace(/\/+$/,'');
+    } catch(e){}
+    try {
+      var s=(localStorage.getItem('cricket_live_server')||'').trim();
+      if (/^https?:\/\//i.test(s)) return s.replace(/\/+$/,'');
+    } catch(e){}
+    return 'https://mysportzstats.being-innovator.workers.dev';
+  }
+  function match(){
+    try {
+      var q=new URLSearchParams(location.search||'');
+      var u=(q.get('m')||q.get('match')||'').trim();
+      if (u) { try{localStorage.setItem('cricket_live_match_id',u);}catch(e){} return u; }
+      return (localStorage.getItem('cricket_live_match_id')||'current').trim()||'current';
+    } catch(e){ return 'current'; }
+  }
+
+  var lastTs = 0;
+  function forceHero(d){
+    if (!d) return;
+    // Update CRR pills
+    try {
+      var crr = d.crr != null ? d.crr : (d.balls ? (Math.round((d.runs/(d.balls/6))*100)/100) : null);
+      var el = document.querySelector('#v77-crr, .crr-pill, [id*="crr"]');
+      // common ids from hero
+      var crrEl = $('v77-crr') || document.querySelector('#v77-hero .crr');
+    } catch(e){}
+
+    // Team names
+    try {
+      var a = d.teamA || d.teamAName || '';
+      var b = d.teamB || d.teamBName || '';
+      var bat = d.battingTeamName || '';
+      var bowl = d.bowlingTeamName || '';
+      // Prefer batting on the side that has runs if innings known
+      // Use applyData primarily; direct score numbers:
+    } catch(e){}
+
+    // Direct score elements used by v77 hero — try common patterns
+    try {
+      var runs = d.runs|0, wk = d.wickets|0, balls = d.balls|0;
+      var overs = d.overs || (Math.floor(balls/6)+'.'+(balls%6));
+      // Find glowing score nodes
+      var scoreNodes = document.querySelectorAll('#v77-hero [id*="score"], #v77-hero .score, #v77-a-score, #v77-b-score');
+      // Specific ids if present
+      ['v77-a-score','v77-b-score','team-a-score','team-b-score','v77-a-runs','v77-b-runs'].forEach(function(id){
+        var el = $(id);
+        if (!el) return;
+      });
+    } catch(e){}
+  }
+
+  function apply(d){
+    if (!d || typeof d !== 'object') return;
+    var ts = d.ts|0;
+    // Allow equal ts if runs advanced
+    var runs = d.runs|0;
+    if (ts && ts < lastTs && runs === (window.__lastRuns|0)) return;
+    lastTs = Math.max(lastTs, ts);
+    window.__lastRuns = runs;
+    window.lastData = d;
+    window.__lastLiveData = d;
+    try { localStorage.setItem('cricket_live_last_payload', JSON.stringify(d)); } catch(e){}
+
+    try { if (typeof window.applyData === 'function') window.applyData(d); } catch(e){}
+    try { if (typeof window.applyLiveData === 'function') window.applyLiveData(d); } catch(e){}
+    try { if (typeof window.onLiveUpdate === 'function') window.onLiveUpdate(d); } catch(e){}
+
+    // Ensure bowler/striker after apply
+    try {
+      if (d.bowlerName) {
+        var b = $('v-bowler');
+        if (b) b.textContent = String(d.bowlerName).replace(/\*+$/,'') + '*';
+      }
+      if (d.strikerName) {
+        var s = $('v-striker');
+        if (s) s.textContent = String(d.strikerName).replace(/\*+$/,'') + '*';
+      }
+      if (d.nonStrikerName) {
+        var n = $('v-nonstriker');
+        if (n) n.textContent = String(d.nonStrikerName).replace(/\*+$/,'');
+      }
+    } catch(e){}
+
+    // Commentary refresh
+    try {
+      if ((window.__currentViewerTab||'')==='comm' && typeof window.v96PaintCommentary==='function')
+        window.v96PaintCommentary();
+    } catch(e){}
+
+    forceHero(d);
+  }
+
+  function pull(){
+    var url = server() + '/api/live-public?match=' + encodeURIComponent(match()) + '&_=' + Date.now();
+    try {
+      var x = new XMLHttpRequest();
+      x.open('GET', url, true);
+      x.timeout = 6000;
+      x.setRequestHeader('Cache-Control','no-cache');
+      x.onload = function(){
+        try {
+          if (x.status>=200 && x.status<300) apply(JSON.parse(x.responseText));
+        } catch(e){}
+      };
+      x.send();
+    } catch(e){}
+  }
+
+  // Sounds: unlock on any first gesture, keep stadium on by default
+  function unlockSounds(){
+    try {
+      try { localStorage.setItem('cricket_stadium_on','1'); } catch(e){}
+      try { localStorage.setItem('cricket_commentary_on','1'); } catch(e){}
+      if (typeof window.stadiumOn !== 'undefined') window.stadiumOn = true;
+      if (typeof window.stadUnlock === 'function') window.stadUnlock();
+      if (typeof window.stadStartAmbient === 'function') window.stadStartAmbient();
+      // speech synthesis unlock
+      try {
+        if (window.speechSynthesis) {
+          var u = new SpeechSynthesisUtterance(' ');
+          u.volume = 0; window.speechSynthesis.speak(u);
+        }
+      } catch(e){}
+    } catch(e){}
+  }
+  ['pointerdown','touchstart','click'].forEach(function(ev){
+    document.addEventListener(ev, function(){ unlockSounds(); }, { once: true, capture: true });
+  });
+
+  pull();
+  setInterval(pull, 1500); // faster than scorer publish gap
+})();
+</script>
+
 </body>
 </html>

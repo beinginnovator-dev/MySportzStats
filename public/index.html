@@ -104,7 +104,7 @@
                        ((typeof totalScore !== 'undefined') && (totalScore|0) > 0);
             if (live) publishLiveViewerState();
         } catch(eHB){}
-    }, 2000);
+    }, 1000); /* v102 faster publish */
 
             if (ok && typeof restoreUIFromState === 'function') restoreUIFromState();
             else if (typeof updateView === 'function') updateView();
@@ -18325,6 +18325,41 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
   } else {
     setTimeout(show, 400);
   }
+})();
+</script>
+
+
+<script id="v102-publish">
+(function(){
+  function hookRecord(){
+    if (typeof window.recordDelivery !== 'function' || window.recordDelivery._v102) return;
+    var orig = window.recordDelivery;
+    // recordDelivery may be local not on window — also try global scope via assignment
+    window.recordDelivery = function(){
+      var r = orig.apply(this, arguments);
+      try { if (typeof publishLiveViewerState === 'function') publishLiveViewerState(); } catch(e){}
+      return r;
+    };
+    window.recordDelivery._v102 = true;
+  }
+  // recordDelivery is likely in closure — intercept via periodic publish on score DOM change
+  var lastSig = '';
+  setInterval(function(){
+    try {
+      if (typeof publishLiveViewerState !== 'function') return;
+      var sig = String(typeof totalScore!=='undefined'?totalScore:'')+'|'+String(typeof totalBalls!=='undefined'?totalBalls:'')+'|'+String(typeof totalWickets!=='undefined'?totalWickets:'');
+      if (sig !== lastSig) {
+        lastSig = sig;
+        publishLiveViewerState();
+      }
+    } catch(e){}
+  }, 800);
+  // Also call after common pad buttons
+  document.addEventListener('click', function(){
+    setTimeout(function(){
+      try { if (typeof publishLiveViewerState === 'function') publishLiveViewerState(); } catch(e){}
+    }, 120);
+  }, true);
 })();
 </script>
 
