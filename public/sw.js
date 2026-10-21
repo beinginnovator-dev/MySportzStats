@@ -1,82 +1,29 @@
-/* Scorer PWA – navigation to / always opens scorer */
-const CACHE_NAME = "mysportzstats-scorer-v7";
-const ASSETS = [
-  "/",
-  "/index.html",
-  "/manifest.json",
-  "/icon-192.png",
-  "/icon-512.png"
-];
+/* MySportzStats scorer SW */
+const CACHE = 'mysportz-scorer-v1';
+const ASSETS = ['/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png'];
 
-self.addEventListener("install", (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS).catch(() => {}))
-  );
-  self.skipWaiting();
+self.addEventListener('install', function(e) {
+  e.waitUntil(caches.open(CACHE).then(function(c) { return c.addAll(ASSETS).catch(function(){}); }).then(function(){ return self.skipWaiting(); }));
 });
-
-self.addEventListener("activate", (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null)))
-    ).then(() => self.clients.claim())
-  );
+self.addEventListener('activate', function(e) {
+  e.waitUntil(caches.keys().then(function(keys) {
+    return Promise.all(keys.filter(function(k){ return k !== CACHE; }).map(function(k){ return caches.delete(k); }));
+  }).then(function(){ return self.clients.claim(); }));
 });
-
-self.addEventListener("fetch", (e) => {
-  const url = new URL(e.request.url);
-
-  if (
-    e.request.method !== "GET" ||
-    url.pathname.startsWith("/api/") ||
-    url.pathname === "/ws" ||
-    url.pathname.startsWith("/presence") ||
-    url.pathname.startsWith("/chat") ||
-    url.pathname.startsWith("/floats") ||
-    url.pathname.startsWith("/predictions") ||
-    url.pathname.startsWith("/admin/")
-  ) {
+self.addEventListener('fetch', function(e) {
+  var url = new URL(e.request.url);
+  // Never intercept live viewer or API
+  if (url.pathname.indexOf('live.html') >= 0 || url.pathname.indexOf('/api/') === 0 || url.pathname.indexOf('/m/') === 0) {
     return;
   }
-
-  if (e.request.mode === "navigate") {
-    const path = url.pathname;
-    if (path === "/" || path === "/index.html" || path === "") {
-      e.respondWith(
-        fetch(e.request)
-          .then((res) => {
-            try {
-              const copy = res.clone();
-              caches.open(CACHE_NAME).then((c) => c.put("/index.html", copy)).catch(() => {});
-            } catch (_) {}
-            return res;
-          })
-          .catch(() =>
-            caches.match("/index.html").then((c) => c || caches.match("/"))
-          )
-      );
-      return;
-    }
-    if (path === "/live" || path === "/live.html") {
-      e.respondWith(fetch(e.request).catch(() => caches.match("/live.html")));
-      return;
-    }
-  }
-
+  if (e.request.method !== 'GET') return;
   e.respondWith(
-    caches.match(e.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(e.request)
-        .then((res) => {
-          try {
-            if (res && res.ok && res.type === "basic") {
-              const copy = res.clone();
-              caches.open(CACHE_NAME).then((c) => c.put(e.request, copy)).catch(() => {});
-            }
-          } catch (_) {}
-          return res;
-        })
-        .catch(() => cached || new Response("Offline", { status: 503 }));
-    })
+    fetch(e.request).then(function(r) {
+      try {
+        var copy = r.clone();
+        caches.open(CACHE).then(function(c){ c.put(e.request, copy); });
+      } catch(err){}
+      return r;
+    }).catch(function(){ return caches.match(e.request); })
   );
 });

@@ -2257,6 +2257,73 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
     min-height: 38px;
 }
 </style>
+
+<style id="v76-dark-contrast">
+/* High-contrast text on dark Create / UI / Tournament panels */
+body[data-theme="dark"] #cup-sub-create,
+body[data-theme="dark"] #cup-ui-settings-wrap,
+body[data-theme="dark"] #cup-tournament-wrap,
+body[data-theme="dark"] #cup-match-settings-wrap,
+body[data-theme="dark"] #cup-merged-settings,
+body.theme-black #cup-sub-create,
+body.theme-black #cup-ui-settings-wrap,
+body.theme-black #cup-tournament-wrap {
+  color: #f8fafc !important;
+}
+body[data-theme="dark"] #cup-sub-create label,
+body[data-theme="dark"] #cup-ui-settings-wrap label,
+body[data-theme="dark"] #cup-tournament-wrap label,
+body[data-theme="dark"] #cup-sub-create h3,
+body[data-theme="dark"] #cup-ui-settings-wrap h3,
+body[data-theme="dark"] #cup-tournament-wrap h3,
+body[data-theme="dark"] #cup-sub-create .theme-text,
+body[data-theme="dark"] #cup-ui-settings-wrap .theme-text,
+body[data-theme="dark"] #cup-tournament-wrap .theme-text,
+body[data-theme="dark"] #cup-sub-create .theme-muted,
+body[data-theme="dark"] #cup-ui-settings-wrap .theme-muted,
+body[data-theme="dark"] #cup-tournament-wrap .theme-muted,
+body[data-theme="dark"] #cup-sub-create p,
+body[data-theme="dark"] #cup-ui-settings-wrap p,
+body[data-theme="dark"] #cup-tournament-wrap p {
+  color: #f1f5f9 !important;
+  opacity: 1 !important;
+}
+body[data-theme="dark"] #cup-sub-create input,
+body[data-theme="dark"] #cup-sub-create select,
+body[data-theme="dark"] #cup-sub-create textarea,
+body[data-theme="dark"] #cup-ui-settings-wrap input,
+body[data-theme="dark"] #cup-ui-settings-wrap select,
+body[data-theme="dark"] #cup-ui-settings-wrap textarea,
+body[data-theme="dark"] #cup-tournament-wrap input,
+body[data-theme="dark"] #cup-tournament-wrap select,
+body[data-theme="dark"] #cup-tournament-wrap textarea {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #475569 !important;
+}
+body[data-theme="dark"] #cup-sub-create input::placeholder,
+body[data-theme="dark"] #cup-ui-settings-wrap input::placeholder,
+body[data-theme="dark"] #cup-tournament-wrap input::placeholder {
+  color: #94a3b8 !important;
+}
+/* Blue-white theme */
+body[data-theme="bluewhite"], body.theme-bluewhite {
+  --bg: #f0f7ff;
+  --card: #ffffff;
+  --text: #0c4a6e;
+  --muted: #0369a1;
+  background: #f0f7ff !important;
+  color: #0c4a6e !important;
+}
+body[data-theme="bluewhite"] .theme-card,
+body.theme-bluewhite .theme-card {
+  background: #ffffff !important;
+  border-color: #bae6fd !important;
+}
+body[data-theme="bluewhite"] .theme-text { color: #0c4a6e !important; }
+body[data-theme="bluewhite"] .theme-muted { color: #0284c7 !important; }
+</style>
+
 </head>
 <body class="p-0 m-0" data-theme="light">
 <div id="boundary-toast-container" class="boundary-toast-container"></div>
@@ -2265,7 +2332,7 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
 
     <!-- Absolute Animation Overlay -->
     <div id="page-transition-fx" aria-hidden="true"></div>
-    <div id="animation-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 pointer-events-none transition-opacity">
+    <div id="animation-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/20 pointer-events-none transition-opacity">
         <h1 id="animation-text" class="text-7xl font-black drop-shadow-2xl uppercase tracking-widest text-center"></h1>
     </div>
 
@@ -2355,7 +2422,6 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
                 
                 <div class="cup-subtab-bar">
                     <button type="button" id="cup-subtab-create" onclick="try{(window.setCupSubTab||setCupSubTab)('create')}catch(e){console.log(e)}" class="cup-subtab is-active">Create Match</button>
-                    <button type="button" id="cup-subtab-settings" onclick="try{(window.setCupSubTab||setCupSubTab)('settings')}catch(e){console.log(e)}" class="cup-subtab">Settings</button>
                     <button type="button" id="cup-subtab-ui" onclick="try{(window.setCupSubTab||setCupSubTab)('ui')}catch(e){console.log(e)}" class="cup-subtab">UI</button>
                     <button type="button" id="cup-subtab-tournament" onclick="try{(window.setCupSubTab||setCupSubTab)('tournament')}catch(e){console.log(e)}" class="cup-subtab">Tournament</button>
                 </div>
@@ -2467,36 +2533,19 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
                             <p class="text-[10px] theme-muted mt-1">Flash "Time for Super over!!" at end of over just before these overs</p>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="space-y-2 p-3 theme-card border theme-border rounded-lg">
-                            <p class="text-xs font-black theme-text uppercase">Team A</p>
-                            <input type="text" id="cup-cfg-teamA-name" placeholder="Team A name" class="w-full border theme-border theme-card theme-text p-1.5 rounded text-sm" onchange="renameCupTeamFromSettings('A'); syncCupToScoreboardSettings(); try{updateMatchDescHeader();}catch(e){}">
-                            <select id="cup-cfg-teamA-color" class="w-full border theme-border theme-card theme-text p-1.5 rounded text-sm" onchange="syncCupToScoreboardSettings()">
-                                <option value="blue" selected>Blue</option>
-                                <option value="orange">Orange</option>
-                                <option value="indigo">Indigo</option>
-                                <option value="cyan">Cyan</option>
-                                <option value="red">Red</option>
-                                <option value="emerald">Emerald</option>
-                            </select>
-                            <p class="text-[10px] theme-muted">Squad: <span id="cup-count-A">—</span> players (from Teams)</p>
-                            <input type="hidden" id="cup-cfg-teamA-count" value="11">
-                        </div>
-                        <div class="space-y-2 p-3 theme-card border theme-border rounded-lg">
-                            <p class="text-xs font-black theme-text uppercase">Team B</p>
-                            <input type="text" id="cup-cfg-teamB-name" placeholder="Team B name" class="w-full border theme-border theme-card theme-text p-1.5 rounded text-sm" onchange="renameCupTeamFromSettings('B'); syncCupToScoreboardSettings(); try{updateMatchDescHeader();}catch(e){}">
-                            <select id="cup-cfg-teamB-color" class="w-full border theme-border theme-card theme-text p-1.5 rounded text-sm" onchange="syncCupToScoreboardSettings()">
-                                <option value="orange" selected>Orange</option>
-                                <option value="blue">Blue</option>
-                                <option value="red">Red</option>
-                                <option value="emerald">Emerald</option>
-                                <option value="indigo">Indigo</option>
-                                <option value="cyan">Cyan</option>
-                            </select>
-                            <p class="text-[10px] theme-muted">Squad: <span id="cup-count-B">—</span> players (from Teams)</p>
-                            <input type="hidden" id="cup-cfg-teamB-count" value="11">
-                        </div>
+                    
+                    <!-- Team colour pickers removed from UI; defaults kept for engine -->
+                    <div class="hidden" aria-hidden="true">
+                        <input type="text" id="cup-cfg-teamA-name" value="">
+                        <select id="cup-cfg-teamA-color"><option value="blue" selected>Blue</option></select>
+                        <span id="cup-count-A"></span>
+                        <input type="hidden" id="cup-cfg-teamA-count" value="11">
+                        <input type="text" id="cup-cfg-teamB-name" value="">
+                        <select id="cup-cfg-teamB-color"><option value="orange" selected>Orange</option></select>
+                        <span id="cup-count-B"></span>
+                        <input type="hidden" id="cup-cfg-teamB-count" value="11">
                     </div>
+
                     <p class="text-[10px] theme-muted">Players are managed in Teams &amp; Squad above. Team A/B selection loads that roster into the scoreboard.</p>
 
                     <div class="border theme-border rounded-xl p-3 space-y-2 bg-emerald-50/50">
@@ -2518,39 +2567,10 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
                             <option value="light" selected>Light</option>
                             <option value="amazon">Amazon Light</option>
                             <option value="dark">Dark</option>
+                            <option value="bluewhite">Blue White</option>
                         </select>
                     </div>
-
-                
-                    
-                    <div class="border theme-border rounded-xl p-3 space-y-2 mt-2" id="float-ads-settings" style="background:rgba(15,23,42,0.04)">
-                        <label class="text-xs font-black theme-text uppercase tracking-wider block">📢 Floating Ads</label>
-                        <label class="flex items-center gap-2 text-sm theme-text"><input type="checkbox" id="ad-float-enabled" onchange="saveAdSettings()"/> Enable floating ads</label>
-                        <label class="text-[10px] theme-muted font-semibold block">Show when</label>
-                        <select id="ad-float-trigger" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
-                            <option value="over">After each over</option>
-                            <option value="innings">After innings</option>
-                            <option value="boundary">On boundaries (4/6)</option>
-                            <option value="wicket">On wickets</option>
-                            <option value="random">Random</option>
-                        </select>
-                        <label class="text-[10px] theme-muted font-semibold block">Shape</label>
-                        <select id="ad-float-shape" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
-                            <option value="rect">Rectangular banner</option>
-                            <option value="vertical">Vertical OOH</option>
-                        </select>
-                        <label class="text-[10px] theme-muted font-semibold block">Direct image URL (png/jpg — not gallery page)</label>
-                        <input type="url" id="ad-float-image" placeholder="https://.../banner.png" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
-                        <input type="text" id="ad-float-text" placeholder="Ad headline / sponsor" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
-                        <input type="url" id="ad-float-link" placeholder="https://click-through-link" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
-                        <div class="flex gap-2">
-                            <button type="button" onclick="previewFloatAd()" class="flex-1 bg-indigo-600 text-white text-xs font-bold py-2 rounded-lg">Preview 5s</button>
-                            <button type="button" onclick="clearAdSettings()" class="flex-1 bg-red-500 text-white text-xs font-bold py-2 rounded-lg">Delete ad</button>
-                        </div>
-                        <p class="text-[10px] theme-muted">Ads are sent to the Live page with match publish.</p>
-                    </div>
-
-                <div class="border theme-border rounded-xl p-3 space-y-2 bg-sky-50/50">
+<div class="border theme-border rounded-xl p-3 space-y-2 bg-sky-50/50">
                     <label class="text-xs font-black theme-text uppercase tracking-wider block">📊 Scoreboard display</label>
                     <p class="text-[10px] theme-muted mb-1">Choose one format (not both at once)</p>
                     <div class="grid grid-cols-2 gap-2">
@@ -2581,6 +2601,11 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
                 </div>
                 
 
+                    
+
+
+                
+                    
                     <div class="border theme-border rounded-xl p-3 space-y-2 bg-amber-50/40 mt-2">
                         <label class="text-xs font-black theme-text uppercase tracking-wider block">🔗 Share link preview (WhatsApp)</label>
                         <p class="text-[10px] theme-muted">Poster image must be a public <b>JPG or PNG</b> URL (WhatsApp often ignores SVG). Description shows on the link card.</p>
@@ -2590,6 +2615,34 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
                         <textarea id="cfg-share-desc" rows="2" placeholder="Follow this match live — ball by ball on MySportzStats" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm"></textarea>
                         <button type="button" onclick="saveSharePosterSettings()" class="w-full bg-slate-800 text-white font-bold py-2 rounded-lg text-xs">Save share preview</button>
                         <button type="button" onclick="openPlatformAdsAdmin()" class="w-full bg-amber-600 text-white font-bold py-2 rounded-lg text-xs mt-1">📢 Open ads push page (app creator)</button>
+                    </div>
+
+                
+<div class="border theme-border rounded-xl p-3 space-y-2 mt-2" id="float-ads-settings" style="background:rgba(15,23,42,0.04)">
+                        <label class="text-xs font-black theme-text uppercase tracking-wider block">📢 Floating Ads</label>
+                        <label class="flex items-center gap-2 text-sm theme-text"><input type="checkbox" id="ad-float-enabled" onchange="saveAdSettings()"/> Enable floating ads</label>
+                        <label class="text-[10px] theme-muted font-semibold block">Show when</label>
+                        <select id="ad-float-trigger" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
+                            <option value="over">After each over</option>
+                            <option value="innings">After innings</option>
+                            <option value="boundary">On boundaries (4/6)</option>
+                            <option value="wicket">On wickets</option>
+                            <option value="random">Random</option>
+                        </select>
+                        <label class="text-[10px] theme-muted font-semibold block">Shape</label>
+                        <select id="ad-float-shape" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
+                            <option value="rect">Rectangular banner</option>
+                            <option value="vertical">Vertical OOH</option>
+                        </select>
+                        <label class="text-[10px] theme-muted font-semibold block">Direct image URL (png/jpg — not gallery page)</label>
+                        <input type="url" id="ad-float-image" placeholder="https://.../banner.png" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
+                        <input type="text" id="ad-float-text" placeholder="Ad headline / sponsor" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
+                        <input type="url" id="ad-float-link" placeholder="https://click-through-link" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="previewFloatAd()" class="flex-1 bg-indigo-600 text-white text-xs font-bold py-2 rounded-lg">Preview 5s</button>
+                            <button type="button" onclick="clearAdSettings()" class="flex-1 bg-red-500 text-white text-xs font-bold py-2 rounded-lg">Delete ad</button>
+                        </div>
+                        <p class="text-[10px] theme-muted">Ads are sent to the Live page with match publish.</p>
                     </div>
 
                 </div><!-- /cup-ui-settings-wrap -->
@@ -5059,7 +5112,11 @@ function cupRenameTeam(idx) {
             const okBtn = document.createElement('button');
             okBtn.className = "flex-1 modal-btn-primary";
             okBtn.innerText = opts.okText || 'OK';
-            okBtn.onclick = () => { closeModal(); if (opts.onOk) opts.onOk(); };
+            okBtn.onclick = () => {
+              var proceed = true;
+              try { if (opts.onOk) { var r = opts.onOk(); if (r === false) proceed = false; } } catch(eO){}
+              if (proceed) closeModal();
+            };
             btnWrap.appendChild(okBtn);
         }
 
@@ -7038,6 +7095,24 @@ function placeBoundaryAnimationOnStriker(toast){
             ts: Date.now(),
             teamA: teamConfig.A.name,
             teamB: teamConfig.B.name,
+            teamAName: teamConfig.A.name,
+            teamBName: teamConfig.B.name,
+            teamAOvers: (function(){
+                try {
+                    if (batT === 'A') return (typeof formatOvers === 'function' ? formatOvers(totalBalls) : (totalBalls/6).toFixed(1));
+                    if (firstBattingTeam === 'A' && typeof firstInningsOvers !== 'undefined') return firstInningsOvers;
+                    return (typeof formatOvers === 'function' && typeof firstInningsBalls !== 'undefined') ? formatOvers(firstInningsBalls) : '';
+                } catch(e){ return ''; }
+            })(),
+            teamBOvers: (function(){
+                try {
+                    if (batT === 'B') return (typeof formatOvers === 'function' ? formatOvers(totalBalls) : (totalBalls/6).toFixed(1));
+                    if (firstBattingTeam === 'B' && typeof firstInningsOvers !== 'undefined') return firstInningsOvers;
+                    return '';
+                } catch(e){ return ''; }
+            })(),
+            overs: (typeof formatOvers === 'function' ? formatOvers(totalBalls) : String(totalBalls||0)),
+            batT: batT,
             battingSide: batT,
             battingTeamName: batName,
             bowlingTeamName: bowlName,
@@ -7287,6 +7362,8 @@ function placeBoundaryAnimationOnStriker(toast){
                     });
                 } catch(eM) { return []; }
             })(),
+            lastRuns: (function(){ try { var h=deliveryHistory||[]; var d=h[h.length-1]; return d?(d.runs|0):null; } catch(e){ return null; } })(),
+            lastChip: (function(){ try { var h=deliveryHistory||[]; var d=h[h.length-1]; return d?String(d.chipLabel||''):''; } catch(e){ return ''; } })(),
             lastEvent: (function(){
                 try {
                     var hist = deliveryHistory || [];
@@ -7375,7 +7452,27 @@ function placeBoundaryAnimationOnStriker(toast){
                     return null;
                 } catch(e){ return null; }
             })(),
-            floatAd: (function(){ try { return (typeof getFloatAdConfig==='function'?getFloatAdConfig():null)||JSON.parse(localStorage.getItem('cricket_float_ad_v1')||'null'); } catch(e){ return null; } })(),
+            floatAd: (function(){
+                try {
+                    // Prefer live form values so publish always has latest (even if save not tapped)
+                    try { if (typeof saveAdSettings === 'function') saveAdSettings(); } catch(eS){}
+                    var o = null;
+                    try { if (typeof getFloatAdConfig === 'function') o = getFloatAdConfig(); } catch(eG){}
+                    if (!o) { try { o = JSON.parse(localStorage.getItem('cricket_float_ad_v1')||'null'); } catch(eL){} }
+                    if (!o) o = {};
+                    // Normalize aliases for live page
+                    o.enabled = !!o.enabled;
+                    o.image = o.image || o.imageUrl || '';
+                    o.imageUrl = o.image;
+                    o.link = o.link || o.linkUrl || '';
+                    o.linkUrl = o.link;
+                    o.trigger = o.trigger || 'over';
+                    o.shape = o.shape || 'rect';
+                    o.text = o.text || '';
+                    return o;
+                } catch(e){ return null; }
+            })(),
+            floatAdEvent: (function(){ try { return window.__lastFloatAdEvent || null; } catch(e){ return null; } })(),
             fixtures: (function(){
                 try {
                     var d = (typeof loadTournament === 'function') ? loadTournament() : null;
@@ -7419,6 +7516,7 @@ function placeBoundaryAnimationOnStriker(toast){
             }
             payload.liveMatchId = getLiveMatchId();
             payload.ts = payload.ts || Date.now();
+            try { localStorage.setItem('cricket_live_last_payload', JSON.stringify(payload)); localStorage.setItem('cricket_live_last_ts', String(Date.now())); } catch(eLS){}
             var body = JSON.stringify(payload);
             var url = server.replace(/\/+$/,'') + '/api/live?match=' + encodeURIComponent(getLiveMatchId());
             function sendWithKey(key, attempt) {
@@ -7500,14 +7598,20 @@ function placeBoundaryAnimationOnStriker(toast){
             }
             if (!server || !/^https?:\/\//i.test(server)) {
                 // last resort: stored default from previous sessions
-                try { server = (localStorage.getItem(LIVE_SERVER_KEY) || '').replace(/\/+$/, ''); } catch(eL) {}
+                try { server = (localStorage.getItem(LIVE_SERVER_KEY) || localStorage.getItem('cricket_live_server') || '').replace(/\/+$/, ''); } catch(eL) {}
+            if (!server || !/^https?:\/\//i.test(server)) server = 'https://mysportzstats.being-innovator.workers.dev';
             }
             var matchId = '';
             try { matchId = getLiveMatchId(); } catch(eM) { matchId = 'default'; }
             var viewKey = '';
             try { viewKey = (typeof LIVE_VIEW_KEY !== 'undefined' ? LIVE_VIEW_KEY : ''); } catch(eK) {}
             // Standard public viewer URL on the worker
-            var url = server + '/live.html?match=' + encodeURIComponent(matchId || 'default');
+            if (!server || !/^https?:\/\//i.test(server)) {
+                server = 'https://mysportzstats.being-innovator.workers.dev';
+            }
+            server = String(server).replace(/\/+$/,'');
+            try { localStorage.setItem(LIVE_SERVER_KEY, server); localStorage.setItem('cricket_live_server', server); } catch(eSrv){}
+            var url = server + '/live?match=' + encodeURIComponent(matchId || getLiveMatchId());
             if (viewKey) url += '&key=' + encodeURIComponent(viewKey);
             return url;
         } catch(e) {
@@ -16632,6 +16736,8 @@ body[data-theme="dark"] button.cup-subtab.is-active {
     } catch(e){}
   }
   function maybeShowAd(eventType){
+    try { window.__lastFloatAdEvent = eventType || null; } catch(eLE){}
+
     var o = loadAd();
     if (!o.enabled) return;
     var t = o.trigger || 'over';
@@ -17934,6 +18040,291 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
   }
   setTimeout(wire, 200);
   setTimeout(wire, 1000);
+})();
+</script>
+
+
+<script id="v72-pwa-install">
+(function(){
+  function showInstall(){
+    try {
+      if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return;
+      if (navigator.standalone) return;
+      var b = document.getElementById('btn-install-pwa');
+      if (b) {
+        b.classList.remove('hidden');
+        b.style.display = '';
+      }
+    } catch(e){}
+  }
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    window.__pwaDeferredPrompt = e;
+    showInstall();
+  });
+  window.installPwaApp = async function(){
+    var ev = window.__pwaDeferredPrompt;
+    if (ev) {
+      try { ev.prompt(); var ch = await ev.userChoice; window.__pwaDeferredPrompt = null; return; } catch(e){}
+    }
+    alert('Install: use browser menu → "Add to Home screen" / "Install app".\nChrome needs HTTPS + visit the site twice.');
+  };
+  setTimeout(showInstall, 500);
+  setTimeout(showInstall, 2000);
+})();
+</script>
+
+
+<script id="v74-merge-settings">
+(function(){
+  function merge(){
+    try {
+      var create = document.getElementById('cup-sub-create');
+      var settings = document.getElementById('cup-match-settings-wrap');
+      var body = document.getElementById('cup-match-settings-body');
+      if (!create || !settings) return;
+      // Move settings fields into create panel once
+      if (!document.getElementById('cup-merged-settings') && body) {
+        var wrap = document.createElement('div');
+        wrap.id = 'cup-merged-settings';
+        wrap.className = 'border theme-border rounded-xl p-3 space-y-3 mt-3';
+        wrap.innerHTML = '<h3 class="text-sm font-black theme-text uppercase tracking-wider">Match settings</h3>';
+        wrap.appendChild(body);
+        create.appendChild(wrap);
+      }
+      // Always keep settings panel hidden
+      settings.classList.add('hidden');
+      settings.style.display = 'none';
+      var btn = document.getElementById('cup-subtab-settings');
+      if (btn) { btn.classList.add('hidden'); btn.style.display = 'none'; }
+    } catch(e){}
+  }
+  // Patch setCupSubTab so 'settings' redirects to create
+  function patch(){
+    try {
+      var orig = window.setCupSubTab;
+      if (typeof orig === 'function' && !orig._v74) {
+        window.setCupSubTab = function(which){
+          if (which === 'settings') which = 'create';
+          var r = orig.apply(this, [which]);
+          try { merge(); } catch(e){}
+          return r;
+        };
+        window.setCupSubTab._v74 = true;
+      }
+    } catch(e){}
+    merge();
+  }
+  setTimeout(patch, 200);
+  setTimeout(patch, 1000);
+  setTimeout(merge, 1500);
+})();
+</script>
+
+
+<script id="v75-create-layout">
+(function(){
+  function reorderCreate(){
+    try {
+      var create = document.getElementById('cup-sub-create');
+      if (!create) return;
+
+      // Hide settings tab remnants
+      var btnS = document.getElementById('cup-subtab-settings');
+      if (btnS) { btnS.remove(); }
+      var settingsWrap = document.getElementById('cup-match-settings-wrap');
+      if (settingsWrap) {
+        // Pull overs fields into create top before removing colour UI
+        var maxO = document.getElementById('cup-max-overs');
+        var supO = document.getElementById('cup-super-overs');
+        if (maxO && !document.getElementById('cup-overs-top')) {
+          var box = document.createElement('div');
+          box.id = 'cup-overs-top';
+          box.className = 'grid grid-cols-2 gap-2';
+          box.innerHTML = '';
+          // move parent col of max overs
+          var maxWrap = maxO.closest('.col-span-2') || maxO.parentElement;
+          var supWrap = supO ? (supO.closest('.col-span-2') || supO.parentElement) : null;
+          var grid = document.createElement('div');
+          grid.className = 'grid grid-cols-2 gap-2 mb-2';
+          grid.id = 'cup-overs-top';
+          if (maxWrap) grid.appendChild(maxWrap);
+          if (supWrap) grid.appendChild(supWrap);
+          // insert after h3 or at top
+          var h3 = create.querySelector('h3');
+          if (h3 && h3.nextSibling) create.insertBefore(grid, h3.nextSibling);
+          else create.insertBefore(grid, create.firstChild);
+        }
+        // Hide the rest of settings wrap (colours etc.)
+        settingsWrap.classList.add('hidden');
+        settingsWrap.style.display = 'none';
+      }
+
+      // Hide any leftover Team A/B colour cards
+      create.querySelectorAll('select#cup-cfg-teamA-color, select#cup-cfg-teamB-color').forEach(function(el){
+        var card = el.closest('.space-y-2') || el.parentElement;
+        if (card) { card.classList.add('hidden'); card.style.display = 'none'; }
+      });
+      create.querySelectorAll('#cup-cfg-teamA-name, #cup-cfg-teamB-name').forEach(function(el){
+        var card = el.closest('.space-y-2') || el.parentElement;
+        if (card && card.querySelector('select')) { card.classList.add('hidden'); card.style.display='none'; }
+      });
+
+      // Start match button always last
+      var start = document.getElementById('cup-start-match-btn');
+      if (start && start.parentElement === create) {
+        create.appendChild(start);
+      } else if (start) {
+        create.appendChild(start);
+      }
+
+      // Equal subtabs: Create, UI, Tournament
+      var bar = document.querySelector('.cup-sub-bar') || document.getElementById('cup-sub-bar');
+      if (bar) {
+        bar.style.display = 'flex';
+        bar.style.gap = '6px';
+        Array.prototype.forEach.call(bar.children, function(b){
+          if (b.id === 'cup-subtab-settings') { b.remove(); return; }
+          b.style.flex = '1';
+          b.style.minWidth = '0';
+        });
+      }
+    } catch(e){ console.log('reorderCreate', e); }
+  }
+  function patchTab(){
+    try {
+      var orig = window.setCupSubTab;
+      if (typeof orig === 'function' && !orig._v75) {
+        window.setCupSubTab = function(which){
+          if (which === 'settings') which = 'create';
+          var r = orig.apply(this, [which]);
+          setTimeout(reorderCreate, 30);
+          return r;
+        };
+        window.setCupSubTab._v75 = true;
+      }
+    } catch(e){}
+    reorderCreate();
+  }
+  setTimeout(patchTab, 150);
+  setTimeout(patchTab, 800);
+  setTimeout(reorderCreate, 1200);
+})();
+</script>
+
+
+<script id="v76-bluewhite">
+(function(){
+  function applyBW(){
+    try {
+      var thEl = document.getElementById('cup-theme');
+      var th = (thEl && thEl.value) || localStorage.getItem('theme') || document.body.getAttribute('data-theme') || 'light';
+      if (th === 'bluewhite') {
+        document.body.setAttribute('data-theme','bluewhite');
+        document.documentElement.setAttribute('data-theme','bluewhite');
+        document.body.classList.add('theme-bluewhite');
+        try { localStorage.setItem('theme','bluewhite'); } catch(e){}
+      } else {
+        document.body.classList.remove('theme-bluewhite');
+      }
+    } catch(e){}
+  }
+  var orig = window.applyTheme;
+  if (typeof orig === 'function' && !orig._v76) {
+    window.applyTheme = function(){ var r = orig.apply(this, arguments); applyBW(); return r; };
+    window.applyTheme._v76 = true;
+  }
+  document.addEventListener('change', function(e){
+    if (e.target && e.target.id === 'cup-theme') applyBW();
+  });
+  setTimeout(applyBW, 300);
+})();
+</script>
+
+
+<style id="v94-whatsnew">
+#v94-whatsnew-ov {
+  position: fixed; inset: 0; z-index: 99999;
+  background: rgba(15,23,42,.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+#v94-whatsnew-ov.hidden { display: none !important; }
+#v94-whatsnew {
+  width: 100%; max-width: 380px;
+  background: #0f172a; color: #f8fafc;
+  border-radius: 16px; padding: 18px 18px 14px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.45);
+  border: 1px solid #334155;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+#v94-whatsnew h2 {
+  margin: 0 0 6px; font-size: 17px; font-weight: 900;
+  color: #38bdf8;
+}
+#v94-whatsnew .sub {
+  font-size: 12px; color: #94a3b8; margin-bottom: 12px;
+}
+#v94-whatsnew ul {
+  margin: 0 0 14px; padding-left: 18px;
+  font-size: 13px; line-height: 1.5; color: #e2e8f0;
+}
+#v94-whatsnew li { margin-bottom: 6px; }
+#v94-whatsnew .actions {
+  display: flex; gap: 8px; justify-content: flex-end;
+}
+#v94-whatsnew button {
+  border: none; border-radius: 10px; padding: 10px 14px;
+  font-weight: 800; font-size: 13px; cursor: pointer;
+}
+#v94-whatsnew .btn-ok {
+  background: #0284c7; color: #fff;
+}
+#v94-whatsnew .btn-ok:active { transform: scale(.98); }
+</style>
+<div id="v94-whatsnew-ov" class="hidden" role="dialog" aria-modal="true" aria-label="What's new">
+  <div id="v94-whatsnew">
+    <h2>✨ What's new</h2>
+    <div class="sub">Latest scorer & live updates</div>
+    <ul>
+      <li><b>New live score panel</b> — LIVE/OFFLINE, flags, overs under scores</li>
+      <li><b>Caps tab</b> — Orange & Purple leaderboards (sync from scorer)</li>
+      <li><b>Commentary</b> — ball stamps, Cricbuzz-style highlights</li>
+      <li><b>Themes</b> — Light, Dark, Blue White (stadium bg)</li>
+      <li><b>Cheers</b> — reactions open only when you tap Cheers</li>
+      <li><b>Stability</b> — less flashing, tabs stay on the page you pick</li>
+    </ul>
+    <div class="actions">
+      <button type="button" class="btn-ok" id="v94-whatsnew-ok">Got it</button>
+    </div>
+  </div>
+</div>
+<script id="v94-whatsnew-js">
+(function(){
+  var KEY = 'mysportz_whatsnew_v94';
+  function hide(){
+    var ov = document.getElementById('v94-whatsnew-ov');
+    if (ov) ov.classList.add('hidden');
+    try { localStorage.setItem(KEY, '1'); } catch(e){}
+  }
+  function show(){
+    try {
+      if (localStorage.getItem(KEY) === '1') return;
+    } catch(e){}
+    var ov = document.getElementById('v94-whatsnew-ov');
+    if (!ov) return;
+    ov.classList.remove('hidden');
+    var ok = document.getElementById('v94-whatsnew-ok');
+    if (ok) ok.onclick = hide;
+    ov.addEventListener('click', function(e){
+      if (e.target === ov) hide();
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(show, 400); });
+  } else {
+    setTimeout(show, 400);
+  }
 })();
 </script>
 
