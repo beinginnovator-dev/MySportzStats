@@ -101,8 +101,10 @@ export class MatchDO {
       (url.pathname === "/api/live-public" || url.pathname === "/api/live") &&
       request.method === "GET"
     ) {
+      const __pub = this.publicPayload();
+      // Flat + nested so older/newer viewers both see runs/team names at top-level
       return new Response(
-        JSON.stringify({ ok: true, data: this.publicPayload(), updatedAt: this.live.ts }),
+        JSON.stringify(Object.assign({ ok: true, data: __pub, updatedAt: this.live.ts }, __pub)),
         { headers: cors }
       );
     }
