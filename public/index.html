@@ -7182,6 +7182,22 @@ function placeBoundaryAnimationOnStriker(toast){
             bowlerBalls: bw ? (bw.bowlBalls|0) : 0,
             bowlerWickets: bw ? (bw.wickets|0) : 0,
             bowlerDots: bw ? (bw.dots|0) : 0,
+            bowlerWides: (function(){
+                try {
+                  var n = bw ? ((bw.wides|0)||(bw.bowlWides|0)||0) : 0;
+                  if (bw && typeof bowlerExtraMapLive !== 'undefined' && bowlerExtraMapLive[bw.name])
+                    n = Math.max(n, bowlerExtraMapLive[bw.name].wides|0);
+                  return n;
+                } catch(e){ return 0; }
+            })(),
+            bowlerNoBalls: (function(){
+                try {
+                  var n = bw ? ((bw.noballs|0)||(bw.noBalls|0)||(bw.bowlNoBalls|0)||0) : 0;
+                  if (bw && typeof bowlerExtraMapLive !== 'undefined' && bowlerExtraMapLive[bw.name])
+                    n = Math.max(n, bowlerExtraMapLive[bw.name].noballs|0);
+                  return n;
+                } catch(e){ return 0; }
+            })(),
             flagA: (function(){
                 try {
                   var FLAGS = ['🇮🇳','🇦🇺','🏴󠁧󠁢󠁥󠁮󠁧󠁿','🇵🇰','🇧🇩','🇱🇰','🇦🇫','🇳🇿','🇿🇦','🇯🇲','🇧🇧','🇹🇹','🇬🇾','🇿🇼','🇰🇪','🇺🇬','🇳🇬','🇬🇭','🇳🇱','🇮🇪','🇺🇸','🇨🇦','🇦🇪','🇶🇦','🇲🇾','🇸🇬','🇳🇵'];
