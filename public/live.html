@@ -1344,6 +1344,82 @@ input, select, textarea {
 
 
 
+
+<style id="v106-ui">
+/* Center score under team name in hero */
+#v77-hero .team,
+#v77-hero .g-team {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+}
+#v77-hero .name-row,
+#v77-hero .g-name {
+  justify-content: center !important;
+  text-align: center !important;
+}
+#v77-hero #v77-a-score,
+#v77-hero #v77-b-score,
+#v77-hero .score,
+#v77-hero .g-score {
+  text-align: center !important;
+  width: 100% !important;
+  display: block !important;
+  margin: 4px auto 0 !important;
+}
+#v77-hero #v77-a-overs,
+#v77-hero #v77-b-overs,
+#v77-hero .overs,
+#v77-hero .g-overs {
+  text-align: center !important;
+  width: 100% !important;
+}
+
+/* Light headers on dark table bars in ALL themes */
+#live-root .sb-table thead th,
+#live-root .sb-table th,
+#live-root table.stats th,
+#live-root .cap-card h3,
+#live-root .panel-hdr .ttl,
+#live-root .sec-title,
+#live-root .ci-over-head,
+.sb-table th {
+  color: #f8fafc !important;
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+body[data-theme="sports"] #live-root .sb-table th,
+body.theme-sports #live-root .sb-table th,
+html[data-theme="sports"] #live-root .sb-table th {
+  color: #0f172a !important;
+  background: #e2e8f0 !important;
+}
+/* BATSMAN / BOWLER header bars */
+#live-root .sb-wrap .sb-table thead,
+#live-root .sb-wrap thead {
+  background: #1e293b !important;
+}
+#live-root .sb-wrap .sb-table th {
+  color: #f1f5f9 !important;
+  background: #1e293b !important;
+}
+
+/* This over visible */
+#live-root .over-box,
+#live-root #over-box {
+  display: block !important;
+  visibility: visible !important;
+}
+#live-root #v-over-balls {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  justify-content: center !important;
+  min-height: 28px !important;
+}
+</style>
+
 </head>
 <body>
 
@@ -16712,6 +16788,200 @@ body[data-theme="dark"] #v97-wait { background: #1e293b; color: #e2e8f0; }
       if (d) forceHeroScores(d);
     } catch(e){}
   }, 1000);
+})();
+</script>
+
+
+<script id="v106-live-fix">
+(function(){
+  'use strict';
+  function $(id){ return document.getElementById(id); }
+  function setTxt(id, v){
+    var el = $(id);
+    if (!el) return;
+    var s = (v == null || v === '') ? '' : String(v);
+    if (el.textContent !== s) el.textContent = s;
+  }
+  function unwrap(d){
+    if (!d || typeof d !== 'object') return null;
+    if (d.data && typeof d.data === 'object' &&
+        (d.data.runs != null || d.data.ts || d.data.strikerName || d.data.teamA))
+      return d.data;
+    return d;
+  }
+  function oversFromBalls(balls){
+    balls = balls|0;
+    return Math.floor(balls/6) + '.' + (balls % 6);
+  }
+  function ballClass(b){
+    var s = String(b == null ? '' : b).toUpperCase();
+    if (!s || s === '0' || s === '.') return 'ob b0';
+    if (s === 'W' || s.indexOf('W') >= 0) return 'ob w';
+    if (s.indexOf('WD') >= 0 || s.indexOf('NB') >= 0 || s.indexOf('LB') >= 0) return 'ob nb';
+    if (s === '4' || s.indexOf('4') === 0) return 'ob b4';
+    if (s === '6' || s.indexOf('6') === 0) return 'ob b6';
+    if (s === '1') return 'ob b1';
+    if (s === '2') return 'ob b2';
+    if (s === '3') return 'ob b3';
+    return 'ob';
+  }
+
+  function paintPlayers(d){
+    if (!d) return;
+    // Striker
+    if (d.strikerName) {
+      setTxt('v-striker', String(d.strikerName).replace(/\*+$/,'') + '*');
+    }
+    var sr = d.strikerRuns; if (sr != null) setTxt('v-str-r', sr);
+    var sb = d.strikerBalls; if (sb != null) setTxt('v-str-b', sb);
+    if (d.strikerFours != null || d.strikerSixes != null)
+      setTxt('v-str-46', (d.strikerFours|0) + '/' + (d.strikerSixes|0));
+    if (sb > 0 && sr != null) {
+      setTxt('v-str-sr', (Math.round((sr / sb) * 1000) / 10));
+    } else if (d.strikerSR != null) setTxt('v-str-sr', d.strikerSR);
+
+    // Non-striker
+    if (d.nonStrikerName) setTxt('v-nonstriker', String(d.nonStrikerName).replace(/\*+$/,''));
+    var nr = d.nonStrikerRuns; if (nr != null) setTxt('v-ns-r', nr);
+    var nb = d.nonStrikerBalls; if (nb != null) setTxt('v-ns-b', nb);
+    if (d.nonStrikerFours != null || d.nonStrikerSixes != null)
+      setTxt('v-ns-46', (d.nonStrikerFours|0) + '/' + (d.nonStrikerSixes|0));
+    if (nb > 0 && nr != null) setTxt('v-ns-sr', (Math.round((nr / nb) * 1000) / 10));
+
+    // Bowler
+    if (d.bowlerName) setTxt('v-bowler', String(d.bowlerName).replace(/\*+$/,'') + '*');
+    var br = d.bowlerRuns; if (br != null) setTxt('v-bowl-r', br);
+    var bb = d.bowlerBalls;
+    if (bb != null) setTxt('v-bowl-b', oversFromBalls(bb));
+    if (d.bowlerWickets != null) setTxt('v-bowl-w', d.bowlerWickets);
+    if (bb > 0 && br != null) {
+      setTxt('v-bowl-econ', (Math.round((br / (bb / 6)) * 100) / 100).toFixed(2));
+    }
+  }
+
+  function paintThisOver(d){
+    if (!d) return;
+    var box = $('v-over-balls');
+    if (!box) return;
+    var ov = d.thisOver || {};
+    var balls = Array.isArray(ov) ? ov : (ov.balls || []);
+    if (!balls.length && Array.isArray(d.thisOverBalls)) balls = d.thisOverBalls;
+    if (!balls.length) {
+      // keep empty but show container
+      if (!box.innerHTML) box.innerHTML = '';
+      return;
+    }
+    var html = balls.map(function(b){
+      var s = String(b);
+      return '<span class="' + ballClass(s) + '">' + s.replace(/</g,'') + '</span>';
+    }).join('');
+    if (box.innerHTML !== html) box.innerHTML = html;
+
+    var msg = $('v-over-msg');
+    if (msg) {
+      var runs = ov.runs != null ? ov.runs : balls.reduce(function(a,b){
+        var n = parseInt(String(b),10); return a + (isNaN(n)?0:n);
+      }, 0);
+      var legal = ov.legal != null ? ov.legal : balls.length;
+      msg.textContent = 'This over: ' + runs + ' runs off ' + legal + ' balls';
+    }
+    // ensure parent over-box visible
+    try {
+      var p = box.closest('.over-box') || box.parentElement;
+      if (p) { p.style.display = 'block'; p.classList.remove('hidden'); }
+    } catch(e){}
+  }
+
+  var lastSpeakKey = '';
+  function maybeSpeak(d){
+    if (!d) return;
+    try {
+      if (typeof ttsOn !== 'undefined' && ttsOn === false) return;
+    } catch(e){}
+    var key = (d.balls|0) + ':' + (d.runs|0) + ':' + (d.wickets|0) + ':' + String(d.lastEvent||'');
+    if (key === lastSpeakKey) return;
+    lastSpeakKey = key;
+    try {
+      if (typeof window.speakNewCommentary === 'function') window.speakNewCommentary(d);
+      else if (typeof speakNewCommentary === 'function') speakNewCommentary(d);
+    } catch(e){}
+  }
+
+  function unlockAudio(){
+    try {
+      try { localStorage.setItem('cricket_tts_on','1'); } catch(e){}
+      try { localStorage.setItem('cricket_stadium_on','1'); } catch(e){}
+      try { if (typeof ttsOn !== 'undefined') ttsOn = true; } catch(e){}
+      try { if (typeof stadiumOn !== 'undefined') stadiumOn = true; } catch(e){}
+      try { if (typeof window.ttsOn !== 'undefined') window.ttsOn = true; } catch(e){}
+      try { if (typeof window.stadiumOn !== 'undefined') window.stadiumOn = true; } catch(e){}
+      try { if (typeof stadUnlock === 'function') stadUnlock(); } catch(e){}
+      try { if (typeof window.stadUnlock === 'function') window.stadUnlock(); } catch(e){}
+      try { if (typeof stadStartAmbient === 'function') stadStartAmbient(); } catch(e){}
+      try { if (typeof window.stadStartAmbient === 'function') window.stadStartAmbient(); } catch(e){}
+      try {
+        if (window.speechSynthesis) {
+          var u = new SpeechSynthesisUtterance(' ');
+          u.volume = 0;
+          window.speechSynthesis.speak(u);
+        }
+      } catch(e){}
+    } catch(e){}
+  }
+
+  function onData(raw){
+    var d = unwrap(raw) || raw;
+    if (!d || typeof d !== 'object') return;
+    window.lastData = d;
+    window.__lastLiveData = d;
+    paintPlayers(d);
+    paintThisOver(d);
+    maybeSpeak(d);
+    // hero force if available
+    try { if (typeof window.__v104ForceHero === 'function') window.__v104ForceHero(d); } catch(e){}
+  }
+
+  function hook(){
+    ['applyData','applyLiveData','onLiveUpdate'].forEach(function(n){
+      if (typeof window[n] !== 'function' || window[n]._v106) return;
+      var o = window[n];
+      window[n] = function(data){
+        var r = o.apply(this, arguments);
+        try { onData(data); } catch(e){}
+        return r;
+      };
+      window[n]._v106 = true;
+    });
+  }
+
+  ['pointerdown','touchstart','click'].forEach(function(ev){
+    document.addEventListener(ev, function(){ unlockAudio(); }, { capture: true });
+  });
+
+  // Turn commentary audio UI on if toggle exists
+  setTimeout(function(){
+    try {
+      var btn = document.querySelector('[data-tts],[id*="tts"],.tts-toggle,#btn-tts');
+      // Audio · EN · Off label — try click to enable if shows Off
+      var labels = document.querySelectorAll('button, .pill, .chip, span');
+      labels.forEach(function(el){
+        var t = (el.textContent||'');
+        if (/Audio.*Off/i.test(t) && !el._v106) {
+          el._v106 = true;
+          // don't auto click; user may want off — unlock still helps when they turn on
+        }
+      });
+    } catch(e){}
+  }, 800);
+
+  hook();
+  setInterval(function(){
+    hook();
+    try {
+      var d = window.lastData || window.__lastLiveData;
+      if (d) { paintPlayers(d); paintThisOver(d); }
+    } catch(e){}
+  }, 1200);
 })();
 </script>
 
