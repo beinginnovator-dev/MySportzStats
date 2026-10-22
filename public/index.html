@@ -7515,7 +7515,7 @@ function placeBoundaryAnimationOnStriker(toast){
                 return;
             }
             payload.liveMatchId = getLiveMatchId();
-            payload.ts = payload.ts || Date.now();
+            payload.ts = Date.now(); /* v103 always fresh ts */
             try { localStorage.setItem('cricket_live_last_payload', JSON.stringify(payload)); localStorage.setItem('cricket_live_last_ts', String(Date.now())); } catch(eLS){}
             var body = JSON.stringify(payload);
             var url = server.replace(/\/+$/,'') + '/api/live?match=' + encodeURIComponent(getLiveMatchId());
