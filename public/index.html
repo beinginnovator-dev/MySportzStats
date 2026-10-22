@@ -104,7 +104,7 @@
                        ((typeof totalScore !== 'undefined') && (totalScore|0) > 0);
             if (live) publishLiveViewerState();
         } catch(eHB){}
-    }, 1000); /* v102 faster publish */
+    }, 500); /* v108 faster publish */
 
             if (ok && typeof restoreUIFromState === 'function') restoreUIFromState();
             else if (typeof updateView === 'function') updateView();
@@ -7135,10 +7135,53 @@ function placeBoundaryAnimationOnStriker(toast){
             strikerName: st ? st.name : '',
             strikerRuns: st ? (st.runs|0) : 0,
             strikerBalls: st ? (st.balls|0) : 0,
+            strikerFours: st ? (st.fours|0) : 0,
+            strikerSixes: st ? (st.sixes|0) : 0,
+            nonStrikerName: (function(){
+                try {
+                    var nsEl = document.getElementById('select-nonstriker');
+                    var nid = nsEl ? nsEl.value : '';
+                    var ns = (players || []).find(function(p){ return p.id === nid; });
+                    return ns ? ns.name : '';
+                } catch(e){ return ''; }
+            })(),
+            nonStrikerRuns: (function(){
+                try {
+                    var nsEl = document.getElementById('select-nonstriker');
+                    var nid = nsEl ? nsEl.value : '';
+                    var ns = (players || []).find(function(p){ return p.id === nid; });
+                    return ns ? (ns.runs|0) : 0;
+                } catch(e){ return 0; }
+            })(),
+            nonStrikerBalls: (function(){
+                try {
+                    var nsEl = document.getElementById('select-nonstriker');
+                    var nid = nsEl ? nsEl.value : '';
+                    var ns = (players || []).find(function(p){ return p.id === nid; });
+                    return ns ? (ns.balls|0) : 0;
+                } catch(e){ return 0; }
+            })(),
+            nonStrikerFours: (function(){
+                try {
+                    var nsEl = document.getElementById('select-nonstriker');
+                    var nid = nsEl ? nsEl.value : '';
+                    var ns = (players || []).find(function(p){ return p.id === nid; });
+                    return ns ? (ns.fours|0) : 0;
+                } catch(e){ return 0; }
+            })(),
+            nonStrikerSixes: (function(){
+                try {
+                    var nsEl = document.getElementById('select-nonstriker');
+                    var nid = nsEl ? nsEl.value : '';
+                    var ns = (players || []).find(function(p){ return p.id === nid; });
+                    return ns ? (ns.sixes|0) : 0;
+                } catch(e){ return 0; }
+            })(),
             bowlerName: bw ? bw.name : '',
             bowlerRuns: bw ? (bw.bowlRuns|0) : 0,
             bowlerBalls: bw ? (bw.bowlBalls|0) : 0,
             bowlerWickets: bw ? (bw.wickets|0) : 0,
+            bowlerDots: bw ? (bw.dots|0) : 0,
             flagA: (function(){
                 try {
                   var FLAGS = ['🇮🇳','🇦🇺','🏴󠁧󠁢󠁥󠁮󠁧󠁿','🇵🇰','🇧🇩','🇱🇰','🇦🇫','🇳🇿','🇿🇦','🇯🇲','🇧🇧','🇹🇹','🇬🇾','🇿🇼','🇰🇪','🇺🇬','🇳🇬','🇬🇭','🇳🇱','🇮🇪','🇺🇸','🇨🇦','🇦🇪','🇶🇦','🇲🇾','🇸🇬','🇳🇵'];
@@ -7375,6 +7418,14 @@ function placeBoundaryAnimationOnStriker(toast){
                     var lab = String(d.chipLabel||'');
                     if (r === 6 || lab === '6') return 'six';
                     if (r === 4 || lab === '4') return 'four';
+                    // Milestone on this ball (striker total)
+                    try {
+                      var ss = document.getElementById('select-striker');
+                      var sid = ss ? ss.value : '';
+                      var st = (players||[]).find(function(p){ return p.id === sid; });
+                      if (st && (st.runs|0) === 100) return 'hundred';
+                      if (st && (st.runs|0) === 50) return 'fifty';
+                    } catch(eM){}
                     if (r === 2 || lab === '2') return 'two';
                     if (r === 1 || lab === '1') return 'one';
                     return null;
@@ -18353,7 +18404,7 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
         publishLiveViewerState();
       }
     } catch(e){}
-  }, 800);
+  }, 400);
   // Also call after common pad buttons
   document.addEventListener('click', function(){
     setTimeout(function(){

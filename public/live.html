@@ -1420,6 +1420,72 @@ html[data-theme="sports"] #live-root .sb-table th {
 }
 </style>
 
+
+<style id="v107-ui">
+/* Light headers everywhere — visible text */
+#live-root .sb-table th,
+#live-root table.stats th,
+#live-root .sb-wrap .sb-table th,
+#live-root .panel-hdr,
+#live-root .panel-hdr .ttl,
+#live-root .sec-title,
+#live-root .ci-over-head,
+#live-root .cap-card h3,
+#live-root thead th,
+.sb-table th {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  font-weight: 800 !important;
+}
+html[data-theme="dark"] #live-root .sb-table th,
+body[data-theme="dark"] #live-root .sb-table th,
+html[data-theme="black"] #live-root .sb-table th,
+body[data-theme="black"] #live-root .sb-table th {
+  background: #334155 !important;
+  color: #f8fafc !important;
+  border-color: #475569 !important;
+}
+/* Never blank the live shell */
+#live-root { display: block !important; visibility: visible !important; opacity: 1 !important; }
+#live-root.hidden { display: block !important; }
+#panel-live:not(.hidden) { display: block !important; min-height: 120px; }
+#no-data { display: none !important; }
+</style>
+
+
+<style id="v108-anim-css">
+#anim-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99999 !important;
+  display: none;
+  align-items: center !important;
+  justify-content: center !important;
+  pointer-events: none !important;
+  background: rgba(0,0,0,.45) !important;
+}
+#anim-overlay.show {
+  display: flex !important;
+  opacity: 1 !important;
+}
+#anim-overlay .burst {
+  font-size: 52px !important;
+  font-weight: 900 !important;
+  text-align: center !important;
+  text-shadow: 0 0 28px currentColor !important;
+  animation: v108pop .9s ease !important;
+}
+#anim-overlay .burst.four { color: #c4b5fd !important; }
+#anim-overlay .burst.six { color: #fbbf24 !important; }
+#anim-overlay .burst.wicket { color: #f87171 !important; }
+#anim-overlay .burst.fifty, #anim-overlay .burst.hundred { color: #fbbf24 !important; }
+@keyframes v108pop {
+  0% { transform: scale(.4); opacity: 0; }
+  40% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+</style>
 </head>
 <body>
 
@@ -16982,6 +17048,420 @@ body[data-theme="dark"] #v97-wait { background: #1e293b; color: #e2e8f0; }
       if (d) { paintPlayers(d); paintThisOver(d); }
     } catch(e){}
   }, 1200);
+})();
+</script>
+
+
+<script id="v107-fix">
+(function(){
+  'use strict';
+  function $(id){ return document.getElementById(id); }
+  function setTxt(id, v){
+    var el = $(id);
+    if (!el) return;
+    var s = (v == null || v === '') ? el.textContent : String(v);
+    if (v == null || v === '') return;
+    s = String(v);
+    if (el.textContent !== s) el.textContent = s;
+  }
+  function unwrap(d){
+    if (!d || typeof d !== 'object') return null;
+    if (d.data && typeof d.data === 'object' &&
+        (d.data.runs != null || d.data.ts || d.data.strikerName || d.data.teamA || d.data.bowlerName))
+      return d.data;
+    return d;
+  }
+  function oversFromBalls(balls){
+    balls = balls|0;
+    return Math.floor(balls/6) + '.' + (balls % 6);
+  }
+  function ballClass(b){
+    var s = String(b == null ? '' : b).toUpperCase();
+    if (!s || s === '0' || s === '.') return 'ob b0';
+    if (s.indexOf('W') >= 0) return 'ob w';
+    if (s.indexOf('WD') >= 0 || s.indexOf('NB') >= 0 || s.indexOf('LB') >= 0) return 'ob nb';
+    if (s.charAt(0) === '4') return 'ob b4';
+    if (s.charAt(0) === '6') return 'ob b6';
+    if (s === '1') return 'ob b1';
+    if (s === '2') return 'ob b2';
+    if (s === '3') return 'ob b3';
+    return 'ob';
+  }
+
+  function paintPlayers(d){
+    if (!d) return;
+    if (d.strikerName) setTxt('v-striker', String(d.strikerName).replace(/\*+$/,'') + '*');
+    if (d.strikerRuns != null) setTxt('v-str-r', d.strikerRuns);
+    if (d.strikerBalls != null) setTxt('v-str-b', d.strikerBalls);
+    if (d.strikerFours != null || d.strikerSixes != null)
+      setTxt('v-str-46', (d.strikerFours|0) + '/' + (d.strikerSixes|0));
+    var sb = d.strikerBalls|0, sr = d.strikerRuns|0;
+    if (sb > 0) setTxt('v-str-sr', (Math.round((sr/sb)*1000)/10));
+
+    if (d.nonStrikerName) setTxt('v-nonstriker', String(d.nonStrikerName).replace(/\*+$/,''));
+    if (d.nonStrikerRuns != null) setTxt('v-ns-r', d.nonStrikerRuns);
+    if (d.nonStrikerBalls != null) setTxt('v-ns-b', d.nonStrikerBalls);
+    if (d.nonStrikerFours != null || d.nonStrikerSixes != null)
+      setTxt('v-ns-46', (d.nonStrikerFours|0) + '/' + (d.nonStrikerSixes|0));
+    var nb = d.nonStrikerBalls|0, nr = d.nonStrikerRuns|0;
+    if (nb > 0) setTxt('v-ns-sr', (Math.round((nr/nb)*1000)/10));
+
+    if (d.bowlerName) setTxt('v-bowler', String(d.bowlerName).replace(/\*+$/,'') + '*');
+    if (d.bowlerRuns != null) setTxt('v-bowl-r', d.bowlerRuns);
+    var bb = d.bowlerBalls;
+    if (bb != null) setTxt('v-bowl-b', oversFromBalls(bb));
+    if (d.bowlerWickets != null) setTxt('v-bowl-w', d.bowlerWickets);
+    if ((bb|0) > 0 && d.bowlerRuns != null)
+      setTxt('v-bowl-econ', (Math.round((d.bowlerRuns / (bb/6)) * 100) / 100).toFixed(2));
+  }
+
+  function paintThisOver(d){
+    if (!d) return;
+    var box = $('v-over-balls');
+    if (!box) return;
+    var ov = d.thisOver || {};
+    var balls = Array.isArray(ov) ? ov : (ov.balls || d.thisOverBalls || []);
+    if (!balls.length) return;
+    var html = balls.map(function(b){
+      var s = String(b);
+      return '<span class="' + ballClass(s) + '">' + s.replace(/</g,'') + '</span>';
+    }).join('');
+    if (box.innerHTML !== html) box.innerHTML = html;
+    var msg = $('v-over-msg');
+    if (msg) {
+      var runs = ov.runs != null ? ov.runs : 0;
+      var legal = ov.legal != null ? ov.legal : balls.length;
+      msg.textContent = 'This over: ' + runs + ' runs off ' + legal + ' balls';
+    }
+    try {
+      var p = box.closest('.over-box') || box.parentElement;
+      if (p) { p.style.display = 'block'; p.classList.remove('hidden'); }
+    } catch(e){}
+  }
+
+  var lastSpeakKey = '';
+  function maybeSpeak(d){
+    if (!d) return;
+    var key = (d.balls|0)+':'+(d.runs|0)+':'+(d.wickets|0)+':'+String(d.lastEvent||'');
+    if (key === lastSpeakKey) return;
+    lastSpeakKey = key;
+    try {
+      if (typeof ttsOn !== 'undefined' && !ttsOn) return;
+      if (typeof window.speakNewCommentary === 'function') window.speakNewCommentary(d);
+      else if (typeof speakNewCommentary === 'function') speakNewCommentary(d);
+    } catch(e){}
+  }
+
+  var audioReady = false;
+  function unlockAudio(){
+    try {
+      try { localStorage.setItem('cricket_tts_on','1'); } catch(e){}
+      try { localStorage.setItem('cricket_stadium_on','1'); } catch(e){}
+      try { ttsOn = true; } catch(e){}
+      try { stadiumOn = true; } catch(e){}
+      try { window.ttsOn = true; } catch(e){}
+      try { window.stadiumOn = true; } catch(e){}
+      try { if (typeof __idleMuted !== 'undefined') __idleMuted = false; } catch(e){}
+      try { if (typeof stadUnlock === 'function') stadUnlock(); } catch(e){}
+      try { if (typeof window.stadUnlock === 'function') window.stadUnlock(); } catch(e){}
+      try { if (typeof stadStartAmbient === 'function') stadStartAmbient(); } catch(e){}
+      try { if (typeof window.stadStartAmbient === 'function') window.stadStartAmbient(); } catch(e){}
+      try { if (typeof forceStadResume === 'function') forceStadResume(); } catch(e){}
+      try {
+        if (window.speechSynthesis) {
+          var u = new SpeechSynthesisUtterance(' ');
+          u.volume = 0;
+          window.speechSynthesis.speak(u);
+        }
+      } catch(e){}
+      // If UI still says Audio Off, turn it on once
+      try {
+        if (!audioReady && typeof toggleTts === 'function') {
+          var lab = document.querySelector('#comm-tools-dd option, #comm-tools-label, .comm-tools');
+          var t = lab ? (lab.textContent||'') : '';
+          // also scan buttons
+          document.querySelectorAll('button, select, .pill').forEach(function(el){
+            var x = (el.textContent||'');
+            if (/Audio/i.test(x) && /Off/i.test(x) && typeof toggleTts === 'function' && !el._v107on) {
+              el._v107on = true;
+            }
+          });
+        }
+      } catch(e){}
+      audioReady = true;
+    } catch(e){}
+  }
+
+  function preventBlank(){
+    try {
+      var root = $('live-root');
+      if (root) {
+        root.classList.remove('hidden');
+        root.style.setProperty('display','block','important');
+        root.style.visibility = 'visible';
+        root.style.opacity = '1';
+      }
+      var nd = $('no-data');
+      if (nd) { nd.classList.add('hidden'); nd.style.display = 'none'; }
+      var tab = window.__currentViewerTab || 'live';
+      if (tab === 'live') {
+        var pl = $('panel-live');
+        if (pl) {
+          pl.classList.remove('hidden');
+          pl.style.setProperty('display','block','important');
+        }
+      }
+    } catch(e){}
+  }
+
+  function onData(raw){
+    var d = unwrap(raw) || raw;
+    if (!d || typeof d !== 'object') return;
+    // Don't treat empty zero payload as clear-all if we already have names
+    window.lastData = d;
+    window.__lastLiveData = d;
+    preventBlank();
+    paintPlayers(d);
+    paintThisOver(d);
+    maybeSpeak(d);
+    try { if (typeof window.__v104ForceHero === 'function') window.__v104ForceHero(d); } catch(e){}
+  }
+
+  function hook(){
+    ['applyData','applyLiveData','onLiveUpdate'].forEach(function(n){
+      if (typeof window[n] !== 'function' || window[n]._v107) return;
+      var o = window[n];
+      window[n] = function(data){
+        var d = unwrap(data) || data;
+        // Block render(null) style clears: if no useful data, keep previous
+        if (!d || (!(d.runs!=null||d.ts||d.strikerName||d.teamA||d.balls!=null))) {
+          preventBlank();
+          return;
+        }
+        var r = o.call(this, d);
+        try { onData(d); } catch(e){}
+        preventBlank();
+        return r;
+      };
+      window[n]._v107 = true;
+    });
+  }
+
+  ['pointerdown','touchstart','click'].forEach(function(ev){
+    document.addEventListener(ev, function(){ unlockAudio(); }, { capture: true });
+  });
+
+  // Auto-enable TTS in localStorage so next paint speaks
+  try { localStorage.setItem('cricket_tts_on','1'); } catch(e){}
+  try { localStorage.setItem('cricket_stadium_on','1'); } catch(e){}
+
+  hook();
+  setInterval(function(){
+    hook();
+    preventBlank();
+    try {
+      var d = window.lastData || window.__lastLiveData;
+      if (d) { paintPlayers(d); paintThisOver(d); }
+    } catch(e){}
+  }, 1000);
+})();
+</script>
+
+
+<script id="v108-anim-speed">
+(function(){
+  'use strict';
+  function unwrap(d){
+    if (!d || typeof d !== 'object') return null;
+    if (d.data && typeof d.data === 'object' &&
+        (d.data.runs != null || d.data.ts || d.data.lastEvent || d.data.strikerName))
+      return d.data;
+    return d;
+  }
+
+  var lastKey = '';
+  var lastEnded = false;
+
+  function ensureAnimDom(){
+    var el = document.getElementById('anim-overlay');
+    var tx = document.getElementById('anim-text');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'anim-overlay';
+      el.style.cssText = 'position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;pointer-events:none;background:rgba(0,0,0,.45);opacity:0;transition:opacity .15s';
+      document.body.appendChild(el);
+    }
+    if (!tx) {
+      tx = document.createElement('div');
+      tx.id = 'anim-text';
+      el.appendChild(tx);
+    }
+    return { el: el, tx: tx };
+  }
+
+  function forcePlayAnim(type, data){
+    if (!type) return;
+    type = String(type).toLowerCase();
+    // normalize
+    if (type === '4' || type === 'boundary') type = 'four';
+    if (type === '6') type = 'six';
+    if (type === 'w' || type === 'out') type = 'wicket';
+    if (type === 'century' || type === '100') type = 'hundred';
+    if (type === '50') type = 'fifty';
+
+    try {
+      if (typeof window.playAnim === 'function') {
+        // temporarily clear skip
+        try { if (typeof skipEventAnimUntil !== 'undefined') skipEventAnimUntil = 0; } catch(e){}
+        window.playAnim(type, data);
+        return;
+      }
+    } catch(e){}
+
+    // Fallback local animation
+    try {
+      var dom = ensureAnimDom();
+      var el = dom.el, tx = dom.tx;
+      var name = (data && data.milestone && data.milestone.name) || (data && data.strikerName) || '';
+      tx.className = 'burst ' + type;
+      tx.style.cssText = 'font-size:52px;font-weight:900;text-align:center;color:#fff;text-shadow:0 0 30px currentColor';
+      if (type === 'four') { tx.textContent = 'FOUR! 4️⃣'; tx.style.color = '#a78bfa'; }
+      else if (type === 'six') { tx.textContent = 'SIX! 6️⃣'; tx.style.color = '#fbbf24'; }
+      else if (type === 'wicket') { tx.textContent = 'WICKET! 🔴'; tx.style.color = '#f87171'; }
+      else if (type === 'fifty') { tx.textContent = 'FIFTY! 5️⃣0️⃣ ' + name; tx.style.color = '#fbbf24'; }
+      else if (type === 'hundred') { tx.textContent = 'CENTURY! 💯 ' + name; tx.style.color = '#f59e0b'; }
+      else if (type === 'result' || type === 'matchend') {
+        tx.textContent = (data && (data.resultText || data.statusText)) || 'MATCH OVER';
+        tx.style.color = '#34d399';
+        tx.style.fontSize = '36px';
+      } else {
+        tx.textContent = String(type).toUpperCase();
+      }
+      el.classList.add('show');
+      el.style.display = 'flex';
+      el.style.opacity = '1';
+      clearTimeout(forcePlayAnim._t);
+      forcePlayAnim._t = setTimeout(function(){
+        el.classList.remove('show');
+        el.style.opacity = '0';
+        el.style.display = 'none';
+      }, 1400);
+    } catch(e){}
+  }
+
+  function reactStadium(ev, data){
+    try {
+      if (typeof stadiumReact === 'function') stadiumReact(ev, data);
+      else if (typeof window.stadiumReact === 'function') window.stadiumReact(ev, data);
+    } catch(e){}
+    try {
+      if (typeof noteScoreActivity === 'function') noteScoreActivity('sfx');
+    } catch(e){}
+  }
+
+  function handleMatchEnd(d){
+    if (!d || !d.matchEnded) return;
+    if (lastEnded) return;
+    lastEnded = true;
+    forcePlayAnim('result', d);
+    try {
+      if (typeof launchViewerFireworks === 'function')
+        launchViewerFireworks(d.matchWinner || d.winner || d.resultText || '');
+    } catch(e){}
+    try {
+      if (typeof stadiumMatchEnd === 'function') stadiumMatchEnd(d);
+    } catch(e){}
+  }
+
+  function process(raw){
+    var d = unwrap(raw) || raw;
+    if (!d || typeof d !== 'object') return;
+
+    var ev = d.lastEvent || null;
+    if (!ev && d.milestone && d.milestone.type) ev = d.milestone.type;
+    // Detect fifty/hundred from striker runs if event missing
+    if (!ev && d.strikerRuns === 50) ev = 'fifty';
+    if (!ev && d.strikerRuns === 100) ev = 'hundred';
+
+    var key = (d.balls|0) + ':' + (d.runs|0) + ':' + (d.wickets|0) + ':' + String(ev||'') + ':' + (d.strikerRuns|0);
+    if (key !== lastKey) {
+      var prev = lastKey;
+      lastKey = key;
+      if (prev && ev) {
+        forcePlayAnim(ev, d);
+        reactStadium(ev, d);
+      }
+    }
+
+    if (d.matchEnded) handleMatchEnd(d);
+    else lastEnded = false;
+  }
+
+  // Hook data pipeline
+  function hook(){
+    ['applyData','applyLiveData','onLiveUpdate'].forEach(function(n){
+      if (typeof window[n] !== 'function' || window[n]._v108a) return;
+      var o = window[n];
+      window[n] = function(data){
+        var r = o.apply(this, arguments);
+        try { process(data); } catch(e){}
+        return r;
+      };
+      window[n]._v108a = true;
+    });
+  }
+
+  // Fast poll
+  function server(){
+    try {
+      if ((location.protocol==='http:'||location.protocol==='https:') && location.host)
+        return location.origin.replace(/\/+$/,'');
+    } catch(e){}
+    try {
+      var s = (localStorage.getItem('cricket_live_server')||'').trim();
+      if (/^https?:\/\//i.test(s)) return s.replace(/\/+$/,'');
+    } catch(e){}
+    return 'https://mysportzstats.being-innovator.workers.dev';
+  }
+  function matchId(){
+    try {
+      var q = new URLSearchParams(location.search||'');
+      var u = (q.get('m')||q.get('match')||'').trim();
+      if (u) return u;
+      return (localStorage.getItem('cricket_live_match_id')||'current').trim()||'current';
+    } catch(e){ return 'current'; }
+  }
+  function pull(){
+    var url = server() + '/api/live-public?match=' + encodeURIComponent(matchId()) + '&_=' + Date.now();
+    try {
+      var x = new XMLHttpRequest();
+      x.open('GET', url, true);
+      x.timeout = 5000;
+      x.onload = function(){
+        try {
+          if (x.status >= 200 && x.status < 300) {
+            var j = JSON.parse(x.responseText);
+            process(j);
+            try {
+              if (typeof window.__v103Apply === 'function') window.__v103Apply(j);
+              else if (typeof window.applyData === 'function') {
+                var d = unwrap(j) || j;
+                window.applyData(d);
+              }
+            } catch(e){}
+          }
+        } catch(e){}
+      };
+      x.send();
+    } catch(e){}
+  }
+
+  hook();
+  pull();
+  setInterval(function(){ hook(); pull(); }, 700); // fast updates
+
+  // Expose for debug
+  window.__v108ForceAnim = forcePlayAnim;
 })();
 </script>
 
