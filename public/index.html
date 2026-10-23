@@ -7046,6 +7046,8 @@ function placeBoundaryAnimationOnStriker(toast){
               var _outs=(p.dismissals|0)||(p.outs|0)||(p.isOut?1:0); if(_outs>0) avg=Math.round(((p.runs|0)/_outs)*100)/100;
             } catch(eA){}
             return {
+            currentOverBalls: (typeof currentOverBalls!=='undefined' && Array.isArray(currentOverBalls)) ? currentOverBalls.map(function(c){ return (c && typeof c==='object') ? {label:c.label,runs:c.runs|0,legal:c.legal!==false} : {label:String(c),runs:0,legal:true}; }) : [],
+
                 name: p.name, runs: p.runs|0, balls: p.balls|0, fours: p.fours|0, sixes: p.sixes|0,
                 isOut: !!p.isOut, howOut: how || (p.isOut ? '' : 'not out'),
                 avg: avg, sr: (p.balls|0) ? Math.round(((p.runs|0)/(p.balls|0))*10000)/100 : 0
@@ -8519,14 +8521,32 @@ function recordDelivery(runs, type, isW, bound, dismissal, zone, fielder) {
             if(!activeStNb && st){ activeStNb = ensureBattingStint(st); }
             if(st && batRunsNb){ st.runs += batRunsNb; if(bound===4) st.fours++; if(bound===6) st.sixes++; }
             if(activeStNb && batRunsNb){ activeStNb.runs += batRunsNb; if(bound===4) activeStNb.fours++; if(bound===6) activeStNb.sixes++; }
-            if(bw) bw.bowlRuns += (runs|0);
+            if(bw){
+                bw.bowlRuns += (runs|0);
+                bw.noballs = (bw.noballs|0) + 1;
+                bw.bowlNoBalls = (bw.bowlNoBalls|0) + 1;
+            }
             totalScore += (runs|0);
             // label already NB; enrich over chip
             try {
                 var lastB = currentOverBalls[currentOverBalls.length-1];
                 if (lastB && lastB.label === 'NB' && batRunsNb > 0) lastB.label = 'NB+'+batRunsNb;
             } catch(eL){}
-        } else { if(bw) bw.bowlRuns+=runs; totalScore+=runs; }
+        } else {
+            // wide (and any other non-legal non-NB)
+            if (bw) {
+                bw.bowlRuns += (runs|0);
+                if (type === 'wide' || type === 'WD' || label === 'WD') {
+                    bw.wides = (bw.wides|0) + 1;
+                    bw.bowlWides = (bw.bowlWides|0) + 1;
+                }
+                if (type === 'noball' || type === 'NB' || label === 'NB') {
+                    bw.noballs = (bw.noballs|0) + 1;
+                    bw.bowlNoBalls = (bw.bowlNoBalls|0) + 1;
+                }
+            }
+            totalScore += (runs|0);
+        }
         var batT = currentInnings===1 ? firstBattingTeam : (firstBattingTeam==='A'?'B':'A');
         var battingTeamName = batT==='A' ? teamConfig.A.name : teamConfig.B.name;
         // Legal 6th ball stays in current over (0.6 not 1.0). Extras use completed legal balls so post-over extras start next over.
