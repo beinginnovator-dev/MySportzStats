@@ -7046,8 +7046,6 @@ function placeBoundaryAnimationOnStriker(toast){
               var _outs=(p.dismissals|0)||(p.outs|0)||(p.isOut?1:0); if(_outs>0) avg=Math.round(((p.runs|0)/_outs)*100)/100;
             } catch(eA){}
             return {
-            currentOverBalls: (typeof currentOverBalls!=='undefined' && Array.isArray(currentOverBalls)) ? currentOverBalls.map(function(c){ return (c && typeof c==='object') ? {label:c.label,runs:c.runs|0,legal:c.legal!==false} : {label:String(c),runs:0,legal:true}; }) : [],
-
                 name: p.name, runs: p.runs|0, balls: p.balls|0, fours: p.fours|0, sixes: p.sixes|0,
                 isOut: !!p.isOut, howOut: how || (p.isOut ? '' : 'not out'),
                 avg: avg, sr: (p.balls|0) ? Math.round(((p.runs|0)/(p.balls|0))*10000)/100 : 0
@@ -7256,39 +7254,22 @@ function placeBoundaryAnimationOnStriker(toast){
             })(),
             thisOver: (function(){
                 try {
-                    // Mirror scorer "This Over" strip exactly (currentOverBalls)
-                    var src = (typeof currentOverBalls !== 'undefined' && Array.isArray(currentOverBalls))
-                      ? currentOverBalls
-                      : ((typeof thisOverBalls !== 'undefined' && Array.isArray(thisOverBalls)) ? thisOverBalls : []);
-                    if (src && src.length) {
-                        var chips = [], r0 = 0, leg0 = 0;
-                        src.forEach(function(c){
-                            var lab = '';
-                            var runs = 0;
-                            var legal = true;
-                            if (c && typeof c === 'object') {
-                                lab = String(c.label != null ? c.label : (c.chipLabel != null ? c.chipLabel : c.ball != null ? c.ball : ''));
-                                runs = c.runs != null ? (c.runs|0) : 0;
-                                legal = c.legal !== false;
-                            } else {
-                                lab = String(c);
-                                var s = lab.toLowerCase();
-                                if (s === 'w') { runs = 0; legal = true; }
-                                else if (s === 'wd' || s === 'wide' || s.indexOf('wd') === 0) { runs = 1; legal = false; }
-                                else if (s === 'nb' || s.indexOf('nb') === 0) { runs = 1; legal = false; }
-                                else { var n = parseInt(s, 10); runs = isNaN(n) ? 0 : n; legal = true; }
-                            }
-                            if (!lab) lab = String(runs);
-                            chips.push(lab);
-                            r0 += runs;
-                            if (legal) leg0++;
+                    var needLegal = (totalBalls|0) % 6;
+                    // Prefer live thisOverBalls chip strip (includes WD/NB/W at start of over)
+                    if (typeof thisOverBalls !== 'undefined' && Array.isArray(thisOverBalls) && thisOverBalls.length) {
+                        var chips = thisOverBalls.slice();
+                        var r0 = 0, leg0 = 0;
+                        chips.forEach(function(c){
+                            var s = String(c).toLowerCase();
+                            if (s === 'w') { leg0++; }
+                            else if (s === 'wd' || s === 'nb' || s === 'wide' || s.indexOf('wd')===0 || s.indexOf('nb')===0) { r0 += 1; }
+                            else { var n = parseInt(s, 10); if (!isNaN(n)) { r0 += n; leg0++; } }
                         });
-                        return { balls: chips, runs: r0, legal: leg0 };
+                        // Always return current over chips (even when legal%6===0 after extras-only start)
+                        return { balls: chips.map(String), runs: r0, legal: leg0 };
                     }
-                    // Empty strip on scorer → empty on live
-                    return { balls: [], runs: 0, legal: 0 };
-                    var needLegal = (totalBalls|0) % 6; // kept for hist fallback below
-                    if (false && needLegal === 0) return { balls: [], runs: 0, legal: 0 };
+                    // Empty only when scorer cleared the over strip
+                    if (needLegal === 0) return { balls: [], runs: 0, legal: 0 };
                     var hist = deliveryHistory || [];
                     var overBalls = [], overRuns = 0, legal = 0;
                     for (var j = hist.length - 1; j >= 0; j--) {
@@ -8521,11 +8502,7 @@ function recordDelivery(runs, type, isW, bound, dismissal, zone, fielder) {
             if(!activeStNb && st){ activeStNb = ensureBattingStint(st); }
             if(st && batRunsNb){ st.runs += batRunsNb; if(bound===4) st.fours++; if(bound===6) st.sixes++; }
             if(activeStNb && batRunsNb){ activeStNb.runs += batRunsNb; if(bound===4) activeStNb.fours++; if(bound===6) activeStNb.sixes++; }
-            if(bw){
-                bw.bowlRuns += (runs|0);
-                bw.noballs = (bw.noballs|0) + 1;
-                bw.bowlNoBalls = (bw.bowlNoBalls|0) + 1;
-            }
+            if(bw) bw.bowlRuns += (runs|0);
             totalScore += (runs|0);
             // label already NB; enrich over chip
             try {
@@ -8533,7 +8510,6 @@ function recordDelivery(runs, type, isW, bound, dismissal, zone, fielder) {
                 if (lastB && lastB.label === 'NB' && batRunsNb > 0) lastB.label = 'NB+'+batRunsNb;
             } catch(eL){}
         } else {
-            // wide (and any other non-legal non-NB)
             if (bw) {
                 bw.bowlRuns += (runs|0);
                 if (type === 'wide' || type === 'WD' || label === 'WD') {
