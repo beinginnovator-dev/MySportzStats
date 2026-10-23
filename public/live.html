@@ -1853,6 +1853,27 @@ html[data-theme="blue"] #live-root .sb-table th {
 .emoji-bar,.smile-strip,.emoji-rail,.fan-emoji-row,#emoji-bar,.smile-stripes { display:none!important; }
 </style>
 
+
+<style id="v114-ui">
+/* Striker / bowler stats +2 font sizes */
+#live-root .sb-table td.nm,
+#live-root #v-striker, #live-root #v-nonstriker, #live-root #v-bowler {
+  font-size: 16px !important;
+}
+#live-root .sb-table td.n,
+#live-root #v-str-r, #live-root #v-str-b, #live-root #v-str-46, #live-root #v-str-sr,
+#live-root #v-ns-r, #live-root #v-ns-b, #live-root #v-ns-46, #live-root #v-ns-sr,
+#live-root #v-bowl-r, #live-root #v-bowl-o, #live-root #v-bowl-w, #live-root #v-bowl-econ {
+  font-size: 15px !important;
+}
+#live-root .sb-table th { font-size: 11px !important; }
+
+/* This over above cheers */
+#panel-live .over-box { order: 10; }
+#cheer-panel, #cheers-panel, .cheers-wrap { order: 20; }
+#panel-live { display: flex !important; flex-direction: column !important; }
+</style>
+
 </head>
 <body data-theme="dark">
 
@@ -19801,6 +19822,332 @@ body[data-theme="dark"] #v97-wait { background: #1e293b; color: #e2e8f0; }
   hook();
   wireCheers();
   setInterval(function(){ hook(); wireCheers(); enhanceComm(); }, 1200);
+})();
+</script>
+
+
+<script id="v114-fix">
+(function(){
+  'use strict';
+  function $(id){ return document.getElementById(id); }
+  function unwrap(d){
+    if (!d || typeof d !== 'object') return null;
+    if (d.data && typeof d.data === 'object' &&
+        (d.data.runs != null || d.data.ts || d.data.thisOver || d.data.balls != null))
+      return d.data;
+    return d;
+  }
+
+  // ---- THIS OVER: paint exactly as scorer chips ----
+  function ballClass(lab){
+    var s = String(lab == null ? '' : lab).toUpperCase().trim();
+    if (s.indexOf('WD') >= 0 || s === 'WIDE') return 'ob wd wide';
+    if (s.indexOf('NB') >= 0) return 'ob nb noball';
+    if (s.indexOf('LB') >= 0) return 'ob lb';
+    if (s === 'W' || (s.charAt(0) === 'W' && s.indexOf('WD') < 0)) return 'ob w wicket';
+    if (s === '6' || s.indexOf('6') === 0) return 'ob b6 six';
+    if (s === '4' || s.indexOf('4') === 0) return 'ob b4 four';
+    if (s === '3') return 'ob b3';
+    if (s === '2') return 'ob b2';
+    if (s === '1') return 'ob b1';
+    if (s === '0' || s === '.' || s === '•') return 'ob b0 dot';
+    return 'ob b0';
+  }
+  function paintThisOver(d){
+    if (!d) return;
+    var box = $('v-over-balls');
+    if (!box) return;
+    var ov = d.thisOver;
+    var balls = [];
+    if (Array.isArray(ov)) balls = ov;
+    else if (ov && Array.isArray(ov.balls)) balls = ov.balls;
+    else if (Array.isArray(d.currentOverBalls)) {
+      balls = d.currentOverBalls.map(function(c){
+        if (c && typeof c === 'object') return c.label || c.chipLabel || '';
+        return c;
+      });
+    }
+    // Always reflect scorer — including empty between overs is OK only if truly empty
+    var html = balls.length
+      ? balls.map(function(b){ var s=String(b); return '<span class="'+ballClass(s)+'">'+s.replace(/</g,'')+'</span>'; }).join('')
+      : '';
+    var sig = balls.join('|');
+    if (box.getAttribute('data-sig') !== sig) {
+      box.setAttribute('data-sig', sig);
+      box.innerHTML = html;
+    }
+    var msg = $('v-over-msg');
+    if (msg && ov && typeof ov === 'object') {
+      msg.textContent = balls.length
+        ? ('This over: ' + (ov.runs|0) + ' runs · ' + (ov.legal|0) + ' legal')
+        : '';
+    }
+  }
+
+  // ---- STADIUM: force unlock + WebAudio (files missing on server) ----
+  var AC = window.AudioContext || window.webkitAudioContext;
+  var ctx = null, unlocked = false;
+  function ensureCtx(){
+    if (!AC) return null;
+    if (!ctx) ctx = new AC();
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function burst(dur, vol, freq, ftype){
+    try {
+      var c = ensureCtx(); if (!c) return;
+      var n = Math.max(1, Math.floor(c.sampleRate * dur));
+      var buf = c.createBuffer(1, n, c.sampleRate);
+      var data = buf.getChannelData(0);
+      for (var i = 0; i < n; i++) data[i] = (Math.random()*2-1) * (1 - i/n*0.5);
+      var src = c.createBufferSource(); src.buffer = buf;
+      var f = c.createBiquadFilter(); f.type = ftype || 'lowpass'; f.frequency.value = freq || 1200;
+      var g = c.createGain();
+      var now = c.currentTime;
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.001, vol||0.2), now+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now+dur);
+      src.connect(f); f.connect(g); g.connect(c.destination);
+      src.start(); src.stop(now+dur+0.05);
+    } catch(e){}
+  }
+  function tryFile(key, vol){
+    try {
+      if (typeof stadPlaySample === 'function') {
+        var a = stadPlaySample(key, vol, 1);
+        return !!a;
+      }
+    } catch(e){}
+    return false;
+  }
+  function sfx(kind){
+    try {
+      if (typeof stadiumOn !== 'undefined' && stadiumOn === false) return;
+      if (typeof __idleMuted !== 'undefined' && __idleMuted) return;
+    } catch(e){}
+    if (kind === 'cheer') { if (!tryFile('cheer', 0.55)) burst(1.1, 0.35, 2000); }
+    else if (kind === 'chant') { if (!tryFile('chant', 0.55)) burst(1.0, 0.32, 900); }
+    else if (kind === 'whistle') {
+      if (!tryFile('whistle', 0.55)) { burst(0.28, 0.25, 2800, 'highpass'); setTimeout(function(){ burst(0.2, 0.18, 2400, 'highpass'); }, 90); }
+    }
+    else if (kind === 'short') { if (!tryFile('short', 0.12)) burst(0.35, 0.05, 700); }
+    else if (kind === 'roar') { if (!tryFile('cheer', 0.7)) burst(1.6, 0.4, 1400); }
+  }
+  try {
+    window.stadiumReact = function(ev){
+      var e = String(ev||'').toLowerCase();
+      if (e==='six'||e==='four'||e==='boundary'||e==='4'||e==='6') sfx('cheer');
+      else if (e==='wicket'||e==='w'||e==='out') sfx('chant');
+      else if (e==='whistle'||e==='over') sfx('whistle');
+      else if (e==='roar'||e==='result'||e==='matchend') sfx('roar');
+    };
+  } catch(e){}
+
+  var lastBalls=null, lastWk=null, lastEnded=false, lastOverKey='';
+  function stadOnData(d){
+    if (!d) return;
+    var balls=d.balls|0, wk=d.wickets|0;
+    var ev=String(d.lastEvent||'').toLowerCase();
+    try {
+      var leg = d.thisOver && d.thisOver.legal;
+      if (leg === 1) {
+        var ok = 'ov'+Math.floor(balls/6);
+        if (ok !== lastOverKey) { lastOverKey = ok; sfx('whistle'); }
+      }
+    } catch(e){}
+    if (ev==='six'||ev==='four'||ev==='boundary') sfx('cheer');
+    else if (ev==='wicket'||ev==='w'||(lastWk!=null&&wk>lastWk)) sfx('chant');
+    else if (lastBalls!=null && balls>lastBalls) sfx('short');
+    if (d.matchEnded && !lastEnded) { lastEnded=true; sfx('roar'); }
+    if (!d.matchEnded) lastEnded=false;
+    lastBalls=balls; lastWk=wk;
+  }
+  function unlock(){
+    unlocked = true;
+    try { stadiumOn = true; window.stadiumOn = true; ttsOn = true; window.ttsOn = true; } catch(e){}
+    try { localStorage.setItem('cricket_stadium_on','1'); localStorage.setItem('cricket_tts_on','1'); } catch(e){}
+    try { if (typeof __idleMuted!=='undefined') __idleMuted=false; } catch(e){}
+    ensureCtx();
+    try { if (typeof stadUnlock==='function') stadUnlock(); } catch(e){}
+    try { if (typeof stadStartAmbient==='function') stadStartAmbient(); } catch(e){}
+    // short confirm chirp so user knows audio works
+    try { burst(0.15, 0.08, 1500); } catch(e){}
+  }
+  ['pointerdown','touchstart','click'].forEach(function(ev){
+    document.addEventListener(ev, function(){ unlock(); }, { capture:true, passive:true });
+  });
+
+  // ---- CHEERS float-bus (working) ----
+  function scoreTopY(){
+    try {
+      var h = $('v77-hero') || document.querySelector('.match-head') || document.querySelector('.score-card');
+      if (h) return Math.max(10, h.getBoundingClientRect().top + 4);
+    } catch(e){}
+    return 20;
+  }
+  function startY(){
+    try {
+      var o = document.querySelector('.over-box');
+      if (o) return o.getBoundingClientRect().top;
+    } catch(e){}
+    return window.innerHeight * 0.55;
+  }
+  function floatMsg(name, text){
+    var el = document.createElement('div');
+    el.setAttribute('data-float-bus','1');
+    el.style.cssText = 'position:fixed;z-index:48;pointer-events:none;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,#10b981,#3b82f6);color:#fff;font-weight:800;font-size:13px;padding:10px 14px;border-radius:16px;max-width:min(88vw,340px);box-shadow:0 6px 18px rgba(0,0,0,.35)';
+    el.textContent = (name||'Fan') + ': ' + (text||'');
+    var y0 = startY(), y1 = scoreTopY();
+    el.style.top = y0 + 'px';
+    document.body.appendChild(el);
+    var t0=null, dur=2800;
+    function step(ts){
+      if(!t0)t0=ts;
+      var p=Math.min(1,(ts-t0)/dur);
+      var e=1-Math.pow(1-p,2);
+      el.style.top = (y0+(y1-y0)*e) + 'px';
+      el.style.opacity = p<0.8 ? '1' : String((1-p)/0.2);
+      if(p<1) requestAnimationFrame(step); else try{el.remove()}catch(e){}
+    }
+    requestAnimationFrame(step);
+  }
+  function floatEmoji(em){
+    var W = window.innerWidth||360;
+    for (var i=0;i<3;i++){
+      (function(i){
+        setTimeout(function(){
+          var el=document.createElement('div');
+          el.textContent=em;
+          el.style.cssText='position:fixed;z-index:47;pointer-events:none;font-size:28px;filter:drop-shadow(0 3px 8px rgba(0,0,0,.35))';
+          var x = (i%2===0) ? (10+Math.random()*40) : (W-50-Math.random()*40);
+          var y0=startY(), y1=scoreTopY();
+          el.style.left=x+'px'; el.style.top=y0+'px';
+          document.body.appendChild(el);
+          var t0=null,dur=2400;
+          function step(ts){
+            if(!t0)t0=ts;
+            var p=Math.min(1,(ts-t0)/dur);
+            var e=1-Math.pow(1-p,1.3);
+            el.style.top=(y0+(y1-y0)*e)+'px';
+            el.style.opacity=p<0.7?'1':String((1-p)/0.3);
+            if(p<1)requestAnimationFrame(step); else try{el.remove()}catch(e){}
+          }
+          requestAnimationFrame(step);
+        }, i*100);
+      })(i);
+    }
+  }
+  function postCheer(emoji, text){
+    var mid='current', name='Fan';
+    try {
+      var q=new URLSearchParams(location.search||'');
+      mid=q.get('m')||q.get('match')||localStorage.getItem('cricket_live_match_id')||'current';
+    } catch(e){}
+    try { name=localStorage.getItem('cricket_viewer_name')||localStorage.getItem('cricket_chat_name')||'Fan'; } catch(e){}
+    var payload={ name:name, emoji:emoji||'', text:text||emoji||'', match:mid, ts:Date.now(), mid: String(Date.now())+Math.random().toFixed(4) };
+    // local float immediately
+    if (emoji && emoji !== '💬') floatEmoji(emoji);
+    if (text && text !== emoji) floatMsg(name, text);
+    else if (emoji && !text) { /* emoji only */ }
+    else if (text) floatMsg(name, text);
+    // network
+    try {
+      fetch((location.origin||'')+'/floats?match='+encodeURIComponent(mid), {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      }).catch(function(){});
+    } catch(e){}
+    try {
+      if (typeof sendFloatOverWs === 'function') sendFloatOverWs(Object.assign({type:'float'}, payload));
+    } catch(e){}
+  }
+  function ensureCheer(){
+    var p=$('cheer-panel');
+    if(!p){
+      p=document.createElement('div');
+      p.id='cheer-panel';
+      p.style.cssText='display:none;margin:10px 12px 16px;padding:12px;border-radius:14px;background:rgba(15,23,42,.95);border:1px solid rgba(56,189,248,.35)';
+      p.innerHTML='<div id="cheer-emoji-row" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px"></div>'+
+        '<div style="display:flex;gap:8px"><input id="cheer-msg-input" maxlength="120" placeholder="Type a message..." style="flex:1;padding:10px;border-radius:10px;border:1px solid #475569;background:#0f172a;color:#f8fafc"/>'+
+        '<button type="button" id="cheer-send" style="padding:10px 14px;border:0;border-radius:10px;background:#38bdf8;color:#0c4a6e;font-weight:900">Send</button></div>';
+      var host=$('panel-live')||$('live-root')||document.body;
+      var over=host.querySelector('.over-box');
+      if(over&&over.parentNode) over.parentNode.insertBefore(p, over.nextSibling);
+      else host.appendChild(p);
+      ['👍','🔥','🎯','😮','🎉','🤩','❤️','👏','😂','🏏'].forEach(function(em){
+        var b=document.createElement('button');
+        b.type='button'; b.textContent=em;
+        b.style.cssText='width:42px;height:42px;border:0;border-radius:50%;font-size:22px;background:rgba(255,255,255,.08);cursor:pointer';
+        b.addEventListener('click', function(ev){ ev.preventDefault(); unlock(); postCheer(em, em); });
+        p.querySelector('#cheer-emoji-row').appendChild(b);
+      });
+      p.querySelector('#cheer-send').addEventListener('click', function(ev){
+        ev.preventDefault(); unlock();
+        var inp=$('cheer-msg-input'); var t=inp&&inp.value.trim();
+        if(!t) return;
+        postCheer('💬', t);
+        if(inp) inp.value='';
+      });
+    }
+    // force DOM order: over then cheer
+    try {
+      var host=$('panel-live')||document.body;
+      var over=host.querySelector('.over-box');
+      if(over && p.parentNode===over.parentNode && over.nextSibling!==p){
+        over.parentNode.insertBefore(p, over.nextSibling);
+      }
+    } catch(e){}
+    return p;
+  }
+  function wireCheers(){
+    var p=ensureCheer();
+    document.querySelectorAll('button,.btn,a').forEach(function(btn){
+      var t=(btn.textContent||'').replace(/\s+/g,' ').trim();
+      if(!/^cheers$/i.test(t) && t.toLowerCase().indexOf('cheers')<0) return;
+      if(btn._v114) return;
+      btn._v114=true;
+      btn.addEventListener('click', function(e){
+        try{ e.preventDefault(); e.stopPropagation(); }catch(err){}
+        unlock();
+        var panel=ensureCheer();
+        panel.style.display = panel.style.display==='block' ? 'none' : 'block';
+      }, true);
+    });
+  }
+
+  function onData(raw){
+    var d=unwrap(raw)||raw;
+    if(!d||typeof d!=='object') return;
+    paintThisOver(d);
+    stadOnData(d);
+  }
+  function hook(){
+    ['applyData','applyLiveData','onLiveUpdate'].forEach(function(n){
+      if(typeof window[n]!=='function'||window[n]._v114) return;
+      var o=window[n];
+      window[n]=function(data){
+        var r=o.apply(this,arguments);
+        try{ onData(data); }catch(e){}
+        return r;
+      };
+      window[n]._v114=true;
+    });
+  }
+  hook(); wireCheers();
+  setInterval(function(){ hook(); wireCheers(); }, 1500);
+
+  // banner
+  setTimeout(function(){
+    if(unlocked) return;
+    try{
+      var b=document.createElement('div');
+      b.id='v114-audio-tap';
+      b.style.cssText='position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:100050;background:#10b981;color:#042f2e;font-weight:900;padding:10px 16px;border-radius:999px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.35);cursor:pointer';
+      b.textContent='🔊 Tap for stadium & commentary sound';
+      b.onclick=function(){ unlock(); b.remove(); };
+      document.body.appendChild(b);
+    }catch(e){}
+  }, 1000);
 })();
 </script>
 
