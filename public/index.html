@@ -7255,18 +7255,21 @@ function placeBoundaryAnimationOnStriker(toast){
             thisOver: (function(){
                 try {
                     var needLegal = (totalBalls|0) % 6;
-                    if (needLegal === 0) return { balls: [], runs: 0, legal: 0 };
+                    // Prefer live thisOverBalls chip strip (includes WD/NB/W at start of over)
                     if (typeof thisOverBalls !== 'undefined' && Array.isArray(thisOverBalls) && thisOverBalls.length) {
                         var chips = thisOverBalls.slice();
                         var r0 = 0, leg0 = 0;
                         chips.forEach(function(c){
                             var s = String(c).toLowerCase();
                             if (s === 'w') { leg0++; }
-                            else if (s === 'wd' || s === 'nb' || s === 'wide') { r0 += 1; }
+                            else if (s === 'wd' || s === 'nb' || s === 'wide' || s.indexOf('wd')===0 || s.indexOf('nb')===0) { r0 += 1; }
                             else { var n = parseInt(s, 10); if (!isNaN(n)) { r0 += n; leg0++; } }
                         });
-                        if (leg0 <= needLegal + 1) return { balls: chips.map(String), runs: r0, legal: leg0 };
+                        // Always return current over chips (even when legal%6===0 after extras-only start)
+                        return { balls: chips.map(String), runs: r0, legal: leg0 };
                     }
+                    // Empty only when scorer cleared the over strip
+                    if (needLegal === 0) return { balls: [], runs: 0, legal: 0 };
                     var hist = deliveryHistory || [];
                     var overBalls = [], overRuns = 0, legal = 0;
                     for (var j = hist.length - 1; j >= 0; j--) {
