@@ -1813,6 +1813,46 @@ html[data-theme="blue"] #live-root .sb-table th {
 }
 </style>
 
+
+<style id="v113-ui">
+/* Stable distinct ball colours — never swap WD/W */
+#live-root .ob.w, #live-root .ob.wicket, .over-balls .ob.w, .over-balls .ob.wicket {
+  background: #7f1d1d !important; color: #fecaca !important; border-color: #ef4444 !important;
+}
+#live-root .ob.wd, #live-root .ob.wide, .over-balls .ob.wd, .over-balls .ob.wide {
+  background: #5b21b6 !important; color: #e9d5ff !important; border-color: #a78bfa !important;
+}
+#live-root .ob.nb, #live-root .ob.noball, .over-balls .ob.nb {
+  background: #9a3412 !important; color: #ffedd5 !important; border-color: #fb923c !important;
+}
+#live-root .ob.lb, .over-balls .ob.lb {
+  background: #155e75 !important; color: #cffafe !important; border-color: #22d3ee !important;
+}
+#live-root .ob.b4, #live-root .ob.four, .over-balls .ob.b4 {
+  background: #065f46 !important; color: #a7f3d0 !important; border-color: #34d399 !important;
+}
+#live-root .ob.b6, #live-root .ob.six, .over-balls .ob.b6 {
+  background: #7c2d12 !important; color: #fdba74 !important; border-color: #f59e0b !important;
+}
+#live-root .ob.b1, .over-balls .ob.b1 { background:#1e3a5f !important; color:#93c5fd !important; }
+#live-root .ob.b2, .over-balls .ob.b2 { background:#164e63 !important; color:#a5f3fc !important; }
+#live-root .ob.b3, .over-balls .ob.b3 { background:#365314 !important; color:#d9f99d !important; }
+#live-root .ob.b0, #live-root .ob.dot, .over-balls .ob.b0 {
+  background:#334155 !important; color:#e2e8f0 !important;
+}
+/* Commentary run highlights */
+#live-root .feed-item .hl.four, .hl.four { color:#34d399 !important; font-weight:900; }
+#live-root .feed-item .hl.six, .hl.six { color:#fbbf24 !important; font-weight:900; }
+#live-root .feed-item .hl.wicket, .hl.wicket { color:#f87171 !important; font-weight:900; }
+#live-root .feed-item .hl.run1, .hl.run2, .hl.run3 { color:#93c5fd !important; font-weight:800; }
+/* This over above cheers */
+#cheer-panel { order: 20; }
+.over-box, #over-box { order: 10; }
+#panel-live { display: flex; flex-direction: column; }
+/* Hide horizontal strips */
+.emoji-bar,.smile-strip,.emoji-rail,.fan-emoji-row,#emoji-bar,.smile-stripes { display:none!important; }
+</style>
+
 </head>
 <body data-theme="dark">
 
@@ -19320,6 +19360,447 @@ body[data-theme="dark"] #v97-wait { background: #1e293b; color: #e2e8f0; }
   try {
     if (window.lastData) onData(window.lastData);
   } catch(e){}
+})();
+</script>
+
+
+<script id="v113-integrate">
+(function(){
+  'use strict';
+  function $(id){ return document.getElementById(id); }
+  function unwrap(d){
+    if (!d || typeof d !== 'object') return null;
+    if (d.data && typeof d.data === 'object' &&
+        (d.data.runs != null || d.data.ts || d.data.balls != null || d.data.lastEvent))
+      return d.data;
+    return d;
+  }
+
+  // ========== STADIUM (live-6 mapping + WebAudio fallback) ==========
+  var AC = window.AudioContext || window.webkitAudioContext;
+  var _ctx = null;
+  function ensureCtx(){
+    if (!AC) return null;
+    if (!_ctx) _ctx = new AC();
+    if (_ctx.state === 'suspended') _ctx.resume();
+    return _ctx;
+  }
+  function noise(dur, vol, freq, type){
+    try {
+      var c = ensureCtx(); if (!c) return;
+      var n = Math.max(1, Math.floor(c.sampleRate * dur));
+      var buf = c.createBuffer(1, n, c.sampleRate);
+      var data = buf.getChannelData(0);
+      for (var i = 0; i < n; i++) data[i] = (Math.random()*2-1) * (1 - i/n*0.4);
+      var src = c.createBufferSource(); src.buffer = buf;
+      var f = c.createBiquadFilter(); f.type = type || 'lowpass'; f.frequency.value = freq || 1200;
+      var g = c.createGain();
+      var now = c.currentTime;
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(vol || 0.2, now + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      src.connect(f); f.connect(g); g.connect(c.destination);
+      src.start(); src.stop(now + dur + 0.05);
+    } catch(e){}
+  }
+  function fileSfx(key, vol, rate){
+    try {
+      if (typeof stadiumOn !== 'undefined' && !stadiumOn) return false;
+      if (typeof stadPlaySample === 'function') {
+        var a = stadPlaySample(key, vol, rate);
+        return !!a;
+      }
+    } catch(e){}
+    return false;
+  }
+  function sfxCheer(){ if (!fileSfx('cheer', 0.55, 1)) noise(1.1, 0.32, 2000); }
+  function sfxChant(){ if (!fileSfx('chant', 0.55, 1)) noise(1.0, 0.3, 900); }
+  function sfxWhistle(){
+    if (!fileSfx('whistle', 0.55, 1)) {
+      noise(0.3, 0.22, 2800, 'highpass');
+      setTimeout(function(){ noise(0.22, 0.16, 2400, 'highpass'); }, 100);
+    }
+  }
+  function sfxShort(){ if (!fileSfx('short', 0.12, 1)) noise(0.35, 0.05, 700); }
+  function sfxRoar(){
+    if (!fileSfx('cheer', 0.7, 0.95)) noise(1.6, 0.38, 1400);
+    setTimeout(function(){ if (!fileSfx('chant', 0.4, 1)) noise(0.8, 0.22, 900); }, 250);
+  }
+
+  // Override stadiumReact like live-6
+  try {
+    window.stadiumReact = function(ev, data){
+      try { if (typeof noteScoreActivity === 'function') noteScoreActivity('sfx'); } catch(e){}
+      try { if (typeof __idleMuted !== 'undefined' && __idleMuted) return; } catch(e){}
+      try { if (typeof stadiumOn !== 'undefined' && !stadiumOn) return; } catch(e){}
+      var e = String(ev || '').toLowerCase();
+      if (e === 'six' || e === '6' || e === 'four' || e === '4' || e === 'boundary') sfxCheer();
+      else if (e === 'wicket' || e === 'w' || e === 'out' || e.indexOf('hat') >= 0) sfxChant();
+      else if (e === 'fifty' || e === '100' || e === 'hundred' || e === 'century' || e === 'milestone') sfxCheer();
+      else if (e === 'whistle' || e === 'over') sfxWhistle();
+      else if (e === 'roar' || e === 'result' || e === 'matchend') sfxRoar();
+      // wide / nb / 1 / 2 / dot → no event SFX (ambient only)
+    };
+  } catch(e){}
+
+  var lastBalls = null, lastWk = null, lastEnded = false, lastOverKey = '';
+  function stadOnScore(d){
+    if (!d) return;
+    var balls = d.balls|0, wk = d.wickets|0;
+    var ev = String(d.lastEvent || '').toLowerCase();
+    // over start whistle: first legal of over
+    try {
+      var leg = d.thisOver && d.thisOver.legal;
+      if (leg === 1) {
+        var ok = 'ov' + Math.floor(balls / 6);
+        if (ok !== lastOverKey) { lastOverKey = ok; sfxWhistle(); }
+      }
+    } catch(e){}
+    if (lastBalls != null && balls > lastBalls) {
+      var mod = balls % 6;
+      if (mod === 1 && lastBalls % 6 === 0) {
+        var ok2 = 'ovB' + Math.floor(balls / 6);
+        if (ok2 !== lastOverKey) { lastOverKey = ok2; sfxWhistle(); }
+      }
+    }
+    if (ev === 'six' || ev === 'four' || ev === 'boundary') sfxCheer();
+    else if (ev === 'wicket' || ev === 'w' || (lastWk != null && wk > lastWk)) sfxChant();
+    else if (lastBalls != null && balls > lastBalls) sfxShort();
+    if (d.matchEnded && !lastEnded) { lastEnded = true; sfxRoar(); }
+    if (!d.matchEnded) lastEnded = false;
+    lastBalls = balls; lastWk = wk;
+  }
+
+  // ========== TTS DEDUP (single path) ==========
+  window.__lastSpokenScoreKey = window.__lastSpokenScoreKey || '';
+  function speakOnce(d){
+    if (!d) return;
+    try {
+      if (typeof ttsOn !== 'undefined' && !ttsOn) return;
+    } catch(e){}
+    var ev = String(d.lastEvent || '').toLowerCase();
+    var scoreKey = (d.balls|0) + ':' + (d.runs|0) + ':' + (d.wickets|0) + ':' + ev + ':' + (d.strikerRuns|0);
+    if (scoreKey && scoreKey === window.__lastSpokenScoreKey) return;
+    window.__lastSpokenScoreKey = scoreKey;
+
+    var arr = d.commentary || [];
+    var last = '';
+    if (Array.isArray(arr) && arr.length) {
+      var L = arr[arr.length - 1];
+      last = typeof L === 'string' ? L : (L && (L.text || L.line)) || '';
+    }
+    var toSay = String(last || '').replace(/\*/g,'').trim();
+    if (ev === 'wicket' || ev === 'w') {
+      if (!/wicket|out|caught|bowled|lbw|stumped|run.?out/i.test(toSay))
+        toSay = 'Wicket! ' + (d.strikerName || '') + ' is out.';
+    } else if (ev === 'six' && !toSay) toSay = 'Six runs!';
+    else if (ev === 'four' && !toSay) toSay = 'Four runs!';
+    if (!toSay) return;
+
+    // Prefer native speak once
+    try {
+      if (window.speechSynthesis) {
+        // cancel only duplicate queued same text
+        var u = new SpeechSynthesisUtterance(toSay);
+        u.rate = /wicket|six|four|fifty|hundred/i.test(ev) ? 1.08 : 0.98;
+        u.pitch = /wicket|six|four/i.test(ev) ? 1.15 : 1.03;
+        u.volume = 1;
+        try {
+          var voices = speechSynthesis.getVoices() || [];
+          var v = voices.find(function(x){ return /en-IN/i.test(x.lang); }) || voices.find(function(x){ return /^en/i.test(x.lang); });
+          if (v) u.voice = v;
+        } catch(e){}
+        speechSynthesis.speak(u);
+        return;
+      }
+    } catch(e){}
+  }
+  // Replace multi speak paths with single
+  try {
+    window.speakNewCommentary = function(data){ speakOnce(unwrap(data) || data); };
+  } catch(e){}
+
+  // ========== THIS OVER stable colors ==========
+  function ballClass(b){
+    var s = String(b == null ? '' : b).toUpperCase().trim();
+    if (s.indexOf('WD') >= 0 || s === 'WIDE') return 'ob wide wd';
+    if (s.indexOf('NB') >= 0) return 'ob noball nb';
+    if (s.indexOf('LB') >= 0) return 'ob lb';
+    if (s === 'W' || (s.charAt(0) === 'W' && s.indexOf('WD') < 0)) return 'ob wicket w';
+    if (s === '6' || s.charAt(0) === '6') return 'ob six b6';
+    if (s === '4' || s.charAt(0) === '4') return 'ob four b4';
+    if (s === '3') return 'ob b3';
+    if (s === '2') return 'ob b2';
+    if (s === '1') return 'ob b1';
+    if (s === '0' || s === '.' || s === '•') return 'ob dot b0';
+    return 'ob b0';
+  }
+  function paintThisOver(d){
+    if (!d) return;
+    var box = $('v-over-balls');
+    if (!box) return;
+    var ov = d.thisOver || {};
+    var balls = Array.isArray(ov) ? ov : (ov.balls || []);
+    if (!balls.length) return;
+    var html = balls.map(function(b){
+      var s = String(b);
+      return '<span class="' + ballClass(s) + '">' + s.replace(/</g,'') + '</span>';
+    }).join('');
+    // only update if changed — prevents colour flicker
+    if (box.getAttribute('data-sig') !== html) {
+      box.setAttribute('data-sig', html);
+      box.innerHTML = html;
+    }
+  }
+
+  // ========== COMMENTARY highlight runs ==========
+  function highlightRuns(html){
+    try {
+      return String(html)
+        .replace(/\b(FOUR|4 runs?)\b/gi, '<span class="hl four">$1</span>')
+        .replace(/\b(SIX|6 runs?)\b/gi, '<span class="hl six">$1</span>')
+        .replace(/\b(WICKET|OUT)\b/gi, '<span class="hl wicket">$1</span>');
+    } catch(e){ return html; }
+  }
+  function enhanceComm(){
+    try {
+      document.querySelectorAll('#comm-list .feed-item, #panel-commentary .feed-item').forEach(function(el){
+        if (el._hl) return;
+        el._hl = true;
+        el.innerHTML = highlightRuns(el.innerHTML);
+      });
+    } catch(e){}
+  }
+
+  // ========== FLOAT BUS (from live-6) — to top of score ==========
+  var __fbSeen = Object.create(null);
+  var __fbSeedUntil = Date.now() + 1200;
+  function __fbEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function scoreTopY(){
+    try {
+      var hero = $('v77-hero') || document.querySelector('.match-head') || document.querySelector('#v77-hero');
+      if (hero) return Math.max(8, hero.getBoundingClientRect().top - 8);
+      var head = document.querySelector('.score-card');
+      if (head) return Math.max(8, head.getBoundingClientRect().top - 8);
+    } catch(e){}
+    return 16;
+  }
+  function overStartY(){
+    try {
+      var over = document.querySelector('.over-box');
+      if (over) return over.getBoundingClientRect().top;
+    } catch(e){}
+    return window.innerHeight * 0.55;
+  }
+  function __fbBanner(name, text){
+    try {
+      document.querySelectorAll('.react-float, .v111-float, .v112-float, .v112-float-msg, [data-plain-cheer]').forEach(function(n){
+        try { n.remove(); } catch(e){}
+      });
+      var existing = document.querySelectorAll('[data-float-bus="1"]');
+      while (existing.length >= 2) { try { existing[0].remove(); } catch(e){} existing = document.querySelectorAll('[data-float-bus="1"]'); }
+      var el = document.createElement('div');
+      el.setAttribute('data-float-bus', '1');
+      var side = Math.random() < 0.5 ? 'left' : 'right';
+      el.style.cssText = 'position:fixed;z-index:48;pointer-events:none;background:linear-gradient(90deg,rgba(16,185,129,.95),rgba(59,130,246,.95));color:#fff;font-weight:800;font-size:13px;line-height:1.35;padding:10px 14px;border-radius:16px;max-width:min(88vw,340px);word-break:break-word;box-shadow:0 6px 18px rgba(0,0,0,.35)';
+      el.innerHTML = '<span style="opacity:.9;font-size:10px;margin-right:6px;text-transform:uppercase">' + __fbEsc(name||'Fan') + '</span> <span>' + __fbEsc(text||'') + '</span>';
+      var startY = overStartY(), endY = scoreTopY();
+      if (side === 'left') { el.style.left = '8px'; el.style.right = 'auto'; }
+      else { el.style.right = '8px'; el.style.left = 'auto'; }
+      el.style.top = startY + 'px';
+      document.body.appendChild(el);
+      var t0 = null, dur = 3000;
+      function step(ts){
+        if (!t0) t0 = ts;
+        var p = Math.min(1, (ts - t0) / dur);
+        var e = 1 - Math.pow(1 - p, 2);
+        el.style.top = (startY + (endY - startY) * e) + 'px';
+        el.style.opacity = String(p < 0.8 ? 1 : (1 - p) / 0.2);
+        if (p < 1) requestAnimationFrame(step);
+        else try { el.remove(); } catch(e){}
+      }
+      requestAnimationFrame(step);
+    } catch(e){}
+  }
+  function __fbEmojis(emoji){
+    try {
+      var n = 3 + Math.floor(Math.random() * 2);
+      var baseTop = overStartY();
+      var endTop = scoreTopY();
+      var W = window.innerWidth || 360;
+      for (var i = 0; i < n; i++) {
+        (function(i){
+          setTimeout(function(){
+            var el = document.createElement('div');
+            el.textContent = emoji;
+            el.style.cssText = 'position:fixed;z-index:47;pointer-events:none;font-size:26px;filter:drop-shadow(0 3px 8px rgba(0,0,0,.35))';
+            var lane = (i % 2 === 0) ? 'left' : 'right';
+            var x = lane === 'left' ? (6 + Math.random() * 28) : (W - 34 - Math.random() * 28);
+            var y = baseTop + Math.random() * 16;
+            el.style.left = x + 'px'; el.style.top = y + 'px';
+            document.body.appendChild(el);
+            var t0 = null, dur = 2600 + Math.random() * 600;
+            function step(ts){
+              if (!t0) t0 = ts;
+              var p = Math.min(1, (ts - t0) / dur);
+              var e = 1 - Math.pow(1 - p, 1.4);
+              el.style.top = (y + (endTop - y) * e) + 'px';
+              el.style.opacity = String(p < 0.75 ? 0.9 : 0.9 * ((1 - p) / 0.25));
+              if (p < 1) requestAnimationFrame(step);
+              else try { el.remove(); } catch(e){}
+            }
+            requestAnimationFrame(step);
+          }, i * 120);
+        })(i);
+      }
+    } catch(e){}
+  }
+  function __fbApply(list){
+    try {
+      list = list || [];
+      var now = Date.now();
+      list.forEach(function(m){
+        if (!m) return;
+        var mid = String(m.mid || '');
+        var t = String(m.text || '');
+        var em = String(m.emoji || '');
+        var fp = String(m.id || '') + '|' + (em || t) + '|' + String(Math.floor((Number(m.ts) || 0) / 2500));
+        if (mid && __fbSeen[mid]) return;
+        if (__fbSeen[fp]) return;
+        var tsNum = Number(m.ts); if (!isFinite(tsNum)) tsNum = 0;
+        var age = tsNum ? (now - tsNum) : 0;
+        if (age > 180000) { if (mid) __fbSeen[mid] = 1; __fbSeen[fp] = 1; return; }
+        if (now < __fbSeedUntil && age > 5000) { if (mid) __fbSeen[mid] = 1; __fbSeen[fp] = 1; return; }
+        if (mid) __fbSeen[mid] = 1;
+        __fbSeen[fp] = 1;
+        var isFloat = t.indexOf('__FLOAT__') >= 0 || !!em;
+        var payload = isFloat ? (em || t.replace('__FLOAT__', '')) : t;
+        var name = m.name || 'Fan';
+        if (isFloat || em) {
+          __fbEmojis(em || '👏');
+          if (payload && payload !== em) __fbBanner(name, payload);
+        } else if (payload) {
+          __fbBanner(name, payload);
+        }
+      });
+    } catch(e){}
+  }
+  try {
+    window.__fbBanner = __fbBanner;
+    window.__fbApply = __fbApply;
+    window.applyFloats = function(floats){ __fbApply(floats || []); };
+    window.floatCheerBanner = function(name, text){ __fbBanner(name, text); };
+  } catch(e){}
+
+  // Cheers UI
+  function ensureCheer(){
+    var p = $('cheer-panel');
+    if (!p) {
+      p = document.createElement('div');
+      p.id = 'cheer-panel';
+      p.style.cssText = 'display:none;margin:10px 12px 16px;padding:12px;border-radius:14px;background:rgba(15,23,42,.95);border:1px solid rgba(56,189,248,.3)';
+      p.innerHTML = '<div id="cheer-emoji-row" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px"></div>' +
+        '<div style="display:flex;gap:8px"><input id="cheer-msg-input" maxlength="120" placeholder="Type a message..." style="flex:1;padding:10px;border-radius:10px;border:1px solid #475569;background:#0f172a;color:#f8fafc"/>' +
+        '<button type="button" id="cheer-send" style="padding:10px 14px;border:0;border-radius:10px;background:#38bdf8;color:#0c4a6e;font-weight:900">Send</button></div>';
+      var host = $('panel-live') || $('live-root') || document.body;
+      // place after this over
+      var over = host.querySelector('.over-box');
+      if (over && over.parentNode) over.parentNode.insertBefore(p, over.nextSibling);
+      else host.appendChild(p);
+      ['👍','🔥','🎯','😮','🎉','🤩','❤️','👏','😂','🏏'].forEach(function(em){
+        var b = document.createElement('button');
+        b.type = 'button'; b.textContent = em;
+        b.style.cssText = 'width:40px;height:40px;border:0;border-radius:50%;font-size:20px;background:rgba(255,255,255,.08);cursor:pointer';
+        b.onclick = function(){
+          __fbEmojis(em);
+          postCheer(em, em);
+        };
+        p.querySelector('#cheer-emoji-row').appendChild(b);
+      });
+      $('cheer-send').onclick = function(){
+        var inp = $('cheer-msg-input');
+        var t = inp && inp.value.trim();
+        if (!t) return;
+        __fbBanner('You', t);
+        postCheer('💬', t);
+        if (inp) inp.value = '';
+      };
+    }
+    // ensure order: this over then cheers
+    try {
+      var host = $('panel-live');
+      var over = host && host.querySelector('.over-box');
+      if (over && p && over.nextSibling !== p) {
+        over.parentNode.insertBefore(p, over.nextSibling);
+      }
+    } catch(e){}
+    return p;
+  }
+  function postCheer(emoji, text){
+    try {
+      var mid = 'current';
+      try {
+        var q = new URLSearchParams(location.search || '');
+        mid = q.get('m') || q.get('match') || localStorage.getItem('cricket_live_match_id') || 'current';
+      } catch(e){}
+      var name = 'Fan';
+      try { name = localStorage.getItem('cricket_viewer_name') || 'Fan'; } catch(e){}
+      var body = JSON.stringify({ name: name, emoji: emoji, text: text, match: mid, ts: Date.now() });
+      fetch(location.origin + '/floats?match=' + encodeURIComponent(mid), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body
+      }).catch(function(){});
+    } catch(e){}
+  }
+  function wireCheers(){
+    ensureCheer();
+    document.querySelectorAll('button,.btn').forEach(function(btn){
+      if (!/cheers/i.test(btn.textContent || '') || btn._v113) return;
+      btn._v113 = true;
+      btn.addEventListener('click', function(e){
+        try { e.preventDefault(); e.stopPropagation(); } catch(err){}
+        unlock();
+        var p = ensureCheer();
+        p.style.display = p.style.display === 'block' ? 'none' : 'block';
+      }, true);
+    });
+  }
+
+  function unlock(){
+    try { stadiumOn = true; window.stadiumOn = true; ttsOn = true; window.ttsOn = true; } catch(e){}
+    try { localStorage.setItem('cricket_stadium_on','1'); localStorage.setItem('cricket_tts_on','1'); } catch(e){}
+    try { if (typeof __idleMuted !== 'undefined') __idleMuted = false; } catch(e){}
+    ensureCtx();
+    try { if (typeof stadUnlock === 'function') stadUnlock(); } catch(e){}
+    try { if (typeof stadStartAmbient === 'function') stadStartAmbient(); } catch(e){}
+  }
+  ['pointerdown','touchstart','click'].forEach(function(ev){
+    document.addEventListener(ev, unlock, { capture: true, passive: true });
+  });
+
+  function onData(raw){
+    var d = unwrap(raw) || raw;
+    if (!d || typeof d !== 'object') return;
+    paintThisOver(d);
+    stadOnScore(d);
+    speakOnce(d);
+    enhanceComm();
+  }
+  function hook(){
+    ['applyData','applyLiveData','onLiveUpdate'].forEach(function(n){
+      if (typeof window[n] !== 'function' || window[n]._v113) return;
+      var o = window[n];
+      window[n] = function(data){
+        var r = o.apply(this, arguments);
+        try { onData(data); } catch(e){}
+        return r;
+      };
+      window[n]._v113 = true;
+    });
+  }
+
+  hook();
+  wireCheers();
+  setInterval(function(){ hook(); wireCheers(); enhanceComm(); }, 1200);
 })();
 </script>
 
