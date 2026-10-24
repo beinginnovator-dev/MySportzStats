@@ -13137,7 +13137,7 @@ function printHistoryMatch(){
         try {
             if (!voiceCommentaryEnabled || !text || !window.speechSynthesis) return;
             window.speechSynthesis.cancel();
-            var u = new SpeechSynthesisUtterance(String(text||'').replace(/\*+/g,' ').replace(/\s+/g,' ').trim().slice(0, 280));
+            var u = new SpeechSynthesisUtterance(String(text||'').replace(/[*＊]/g,' ').replace(/\basterisks?\b/gi,' ').replace(/\s+/g,' ').trim().slice(0, 280));
             var voice = pickSystemVoice(systemVoiceGender);
             if (voice) u.voice = voice;
             u.rate = 1.05;

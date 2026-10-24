@@ -11584,22 +11584,17 @@ try{mountDashboards()}catch(e){}
   // Clean text so TTS never says "asterisk" / star / underscore junk
   function cleanForSpeech(text){
     text = String(text || '');
-    // remove markdown bold/italic stars and standalone *
-    text = text.replace(/\*+/g, ' ');
-    // common on-strike markers
-    text = text.replace(/\(\s*\*\s*\)/g, ' ');
-    text = text.replace(/\basterisk\b/gi, ' ');
-    // underscores / pipes used in labels
-    text = text.replace(/[_|]+/g, ' ');
-    // "Name *" or "Name*"
-    text = text.replace(/(\w)\s*\*/g, '$1');
+    text = text.replace(/[*＊⁎∗✱✲]/g, ' ');
+    text = text.replace(/\basterisks?\b/gi, ' ');
+    text = text.replace(/\basterix\b/gi, ' ');
+    text = text.replace(/\basterous\b/gi, ' ');
+    text = text.replace(/[_|#~`]+/g, ' ');
     text = text.replace(/\s+/g, ' ').trim();
-    // spoken-friendly abbreviations
     text = text.replace(/\bNB\b/gi, 'no ball');
     text = text.replace(/\bWD\b/gi, 'wide');
     text = text.replace(/\bLBW\b/gi, 'L B W');
-    text = text.replace(/\bSR\b/gi, 'strike rate');
-    return text;
+    if (text.indexOf('*') >= 0) text = text.split('*').join(' ');
+    return text.replace(/\s+/g, ' ').trim();
   }
 
   function latestLine(data){
@@ -11770,6 +11765,114 @@ try{mountDashboards()}catch(e){}
 
   hook();
   setInterval(hook, 2000);
+})();
+</script>
+
+
+<script id="v154-tts-smiley-js">
+(function(){
+  'use strict';
+  function stripStars(t){
+    t = String(t||'');
+    t = t.replace(/[*＊⁎∗✱✲]/g, ' ');
+    t = t.replace(/\basterisks?\b/gi, ' ');
+    t = t.replace(/\basterix\b/gi, ' ');
+    t = t.replace(/\basterous\b/gi, ' ');
+    t = t.replace(/\s+/g, ' ').trim();
+    return t.split('*').join('');
+  }
+  try {
+    if (window.speechSynthesis && !speechSynthesis._v154speak) {
+      var _speak = speechSynthesis.speak.bind(speechSynthesis);
+      speechSynthesis.speak = function(u){
+        try { if (u && typeof u.text === 'string') u.text = stripStars(u.text); } catch(e){}
+        return _speak(u);
+      };
+      speechSynthesis._v154speak = true;
+    }
+  } catch(e){}
+
+  function showFloat(text, emoji, who){
+    try {
+      var el = document.createElement('div');
+      el.className = 'cheer-float ' + (who === 'bowl' ? 'for-bowl' : 'for-bat');
+      el.innerHTML = '<span class="cf-emoji">'+(emoji||'👏')+'</span>' + String(text||'');
+      el.style.marginLeft = (10 + Math.random()*24 - 12) + 'px';
+      document.body.appendChild(el);
+      setTimeout(function(){ try{ el.remove(); }catch(e){} }, 3200);
+    } catch(e){}
+  }
+
+  function sideFromEvent(d){
+    var ev = String((d && d.lastEvent) || '').toLowerCase();
+    // Bowler on dots/wickets; batsman only on boundaries; else default bat for manual tap on boundary context
+    if (ev === 'wicket' || ev === 'w' || ev === 'dot' || ev === '0') return 'bowl';
+    if (ev === 'four' || ev === 'six' || ev === '4' || ev === '6' || ev === 'boundary') return 'bat';
+    return 'bowl'; // neutral taps lean to bowler pressure unless last event was boundary
+  }
+
+  function bindSmileys(){
+    var rail = document.getElementById('emoji-rail');
+    if (!rail) return;
+    rail.querySelectorAll('.er[data-emoji]').forEach(function(node){
+      if (node._v154) return;
+      node._v154 = true;
+      node.addEventListener('click', function(e){
+        e.preventDefault(); e.stopPropagation();
+        var em = node.getAttribute('data-emoji') || '👏';
+        var d = window.__lastLiveData || {};
+        var who = sideFromEvent(d);
+        // single click: auto side; if user wants bowler specifically, alternate when last was bat
+        var st = stripStars(d.strikerName || 'Striker');
+        var bw = stripStars(d.bowlerName || 'Bowler');
+        if (who === 'bowl') showFloat('Appreciation for ' + bw + ' — great bowling!', em, 'bowl');
+        else showFloat('Appreciation for ' + st + ' — well played!', em, 'bat');
+      });
+      node.addEventListener('dblclick', function(e){
+        e.preventDefault(); e.stopPropagation();
+        var em = node.getAttribute('data-emoji') || '🎯';
+        var d = window.__lastLiveData || {};
+        var bw = stripStars(d.bowlerName || 'Bowler');
+        showFloat('Huge cheer for ' + bw + '!', em, 'bowl');
+      });
+    });
+  }
+
+  var lastKey = '';
+  function autoCheer(d){
+    if (!d) return;
+    var ev = String(d.lastEvent||'').toLowerCase();
+    var key = (d.balls|0)+':'+ev;
+    if (!ev || key===lastKey) return;
+    lastKey = key;
+    var st = stripStars(d.strikerName||'Striker');
+    var bw = stripStars(d.bowlerName||'Bowler');
+    // Bowler: dots + wickets only | Batsman: boundaries only
+    if (ev==='wicket'||ev==='w') showFloat('Wicket! Brilliant from '+bw, '🎯', 'bowl');
+    else if (ev==='dot'||ev==='0') showFloat('Dot ball — tight bowling from '+bw, '👏', 'bowl');
+    else if (ev==='six'||ev==='6') showFloat('Six! What a hit by '+st, '🔥', 'bat');
+    else if (ev==='four'||ev==='4'||ev==='boundary') showFloat('Four! Class shot by '+st, '🥳', 'bat');
+    // no cheers for 1/2/3/wides/noballs
+  }
+
+  function hook(){
+    bindSmileys();
+    ['applyData','applyLiveData','onLiveUpdate'].forEach(function(n){
+      if (typeof window[n] !== 'function' || window[n]._v154) return;
+      var o = window[n];
+      window[n] = function(data){
+        var r = o.apply(this, arguments);
+        try {
+          var d = data && data.data && (data.data.runs!=null||data.data.lastEvent) ? data.data : data;
+          if (d) { window.__lastLiveData = d; autoCheer(d); }
+        } catch(e){}
+        return r;
+      };
+      window[n]._v154 = true;
+    });
+  }
+  hook();
+  setInterval(hook, 2500);
 })();
 </script>
 
