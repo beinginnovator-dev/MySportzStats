@@ -5361,7 +5361,17 @@ body[data-theme="sports1"] .dual-sub {
       out=out.replace(/\b([012])\s*रन\b/g,function(m,n){return'<span class="hl run'+n+'">'+n+' रन</span>'});
       return out;
     }
-    function formatCommentaryLine(line){line=String(line||'').trim();if(!line)return{title:'',body:''};var dash=line.split(/\s+[—–]\s+/);if(dash.length>=2&&dash[0].length<100)return{title:dash[0].replace(/^\*+/,'').trim(),body:dash.slice(1).join(' — ').replace(/^\*+\s*/,'').trim()};var m=line.match(/^(.+?(?:\d+(?:st|nd|rd|th)\s+ball))[.\s*—–-]*(.*)$/i);if(m)return{title:m[1].replace(/^\*+/,'').trim(),body:(m[2]||'').replace(/^\*+\s*/,'').trim()};return{title:line.replace(/^\*+/,'').trim(),body:''}}
+    function formatCommentaryLine(line){
+      line=String(line||'').trim();
+      if(!line)return{title:'',body:''};
+      // strip markdown/star markers used for on-strike so TTS does not say "asterisk"
+      line=line.replace(/\*+/g,' ').replace(/\s+/g,' ').trim();
+      var dash=line.split(/\s+[—–-]\s+/);
+      if(dash.length>=2&&dash[0].length<100)return{title:dash[0].trim(),body:dash.slice(1).join(' — ').trim()};
+      var m=line.match(/^(.+?(?:\d+(?:st|nd|rd|th)\s+ball))[.\s—–-]*(.*)$/i);
+      if(m)return{title:m[1].trim(),body:(m[2]||'').trim()};
+      return{title:line.trim(),body:''};
+    }
     function batTable(rows,currentName){
       if(!rows||!rows.length)return'<tr><td colspan="6" class="empty">No batting yet</td></tr>';
       var cur=(currentName||'').toLowerCase();
@@ -11563,6 +11573,203 @@ try{mountDashboards()}catch(e){}
 
   hook();
   setInterval(hook, 2500);
+})();
+</script>
+
+
+<script id="v153-tts-fix-js">
+(function(){
+  'use strict';
+
+  // Clean text so TTS never says "asterisk" / star / underscore junk
+  function cleanForSpeech(text){
+    text = String(text || '');
+    // remove markdown bold/italic stars and standalone *
+    text = text.replace(/\*+/g, ' ');
+    // common on-strike markers
+    text = text.replace(/\(\s*\*\s*\)/g, ' ');
+    text = text.replace(/\basterisk\b/gi, ' ');
+    // underscores / pipes used in labels
+    text = text.replace(/[_|]+/g, ' ');
+    // "Name *" or "Name*"
+    text = text.replace(/(\w)\s*\*/g, '$1');
+    text = text.replace(/\s+/g, ' ').trim();
+    // spoken-friendly abbreviations
+    text = text.replace(/\bNB\b/gi, 'no ball');
+    text = text.replace(/\bWD\b/gi, 'wide');
+    text = text.replace(/\bLBW\b/gi, 'L B W');
+    text = text.replace(/\bSR\b/gi, 'strike rate');
+    return text;
+  }
+
+  function latestLine(data){
+    if (!data) return '';
+    var arr = [];
+    try {
+      if (typeof ttsLang !== 'undefined' && ttsLang === 'hi')
+        arr = data.commentaryHi || data.commentary || [];
+      else
+        arr = data.commentary || data.commentaryHi || [];
+    } catch(e){ arr = data.commentary || []; }
+    if (!Array.isArray(arr)) arr = [];
+    var last = arr.length ? String(arr[arr.length - 1]) : '';
+    // prefer explicit lastCommentary fields
+    if (data.lastCommentary) last = String(data.lastCommentary);
+    if (data.latestCommentary) last = String(data.latestCommentary);
+    return last;
+  }
+
+  function buildSpeechText(data){
+    var last = latestLine(data);
+    var toSay = '';
+    try {
+      if (typeof formatCommentaryLine === 'function' && last) {
+        var parts = formatCommentaryLine(last);
+        toSay = (parts.title || '') + (parts.body ? ('. ' + parts.body) : '');
+      }
+    } catch(e){}
+    if (!toSay) toSay = last;
+
+    // Fallback from event if empty
+    if (!toSay || toSay.length < 3) {
+      var ev = String(data.lastEvent || '').toLowerCase();
+      var st = cleanForSpeech(data.strikerName || 'batsman');
+      var bw = cleanForSpeech(data.bowlerName || 'bowler');
+      if (ev === 'six' || ev === '6') toSay = st + ' hits a six';
+      else if (ev === 'four' || ev === '4' || ev === 'boundary') toSay = st + ' hits a four';
+      else if (ev === 'wicket' || ev === 'w') toSay = 'Wicket. ' + bw + ' gets the breakthrough';
+      else if (ev === 'wide') toSay = 'Wide ball from ' + bw;
+      else if (ev === 'noball' || ev === 'no-ball') toSay = 'No ball from ' + bw;
+      else if (ev === 'one' || ev === '1') toSay = 'One run to ' + st;
+      else if (ev === 'two' || ev === '2') toSay = 'Two runs to ' + st;
+      else if (ev === 'three' || ev === '3') toSay = 'Three runs to ' + st;
+      else if (ev === 'dot' || ev === '0') toSay = 'Dot ball from ' + bw;
+    }
+
+    toSay = cleanForSpeech(toSay);
+    // strip leading ball labels like "12.3: " for cleaner speech optional keep
+    return toSay;
+  }
+
+  var lastKey = '';
+  var speaking = false;
+
+  function speakLatest(data){
+    try {
+      if (!data) return;
+      // respect toggle if clearly off
+      var on = true;
+      try {
+        if (typeof ttsOn !== 'undefined') on = !!ttsOn;
+        if (typeof window.ttsOn !== 'undefined') on = !!window.ttsOn;
+      } catch(e){}
+      if (!on) return;
+      if (!window.speechSynthesis) return;
+
+      var ev = String(data.lastEvent || '').toLowerCase();
+      var key = (data.balls|0) + ':' + (data.runs|0) + ':' + (data.wickets|0) + ':' + ev + ':' + (data.strikerRuns|0);
+      // also include last line hash so same score different text still updates
+      var line = latestLine(data);
+      var lineKey = key + ':' + cleanForSpeech(line).slice(0, 48);
+      if (lineKey === lastKey) return;
+      lastKey = lineKey;
+      window.__lastSpokenScoreKey = key;
+
+      var text = buildSpeechText(data);
+      if (!text || text.length < 2) return;
+
+      // Cancel any lagging queue — only latest ball
+      try {
+        speechSynthesis.cancel();
+        speaking = false;
+      } catch(e){}
+
+      var u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.05;
+      u.pitch = 1;
+      u.volume = 1;
+      try {
+        var voices = speechSynthesis.getVoices() || [];
+        var pref = voices.find(function(v){ return /en-IN/i.test(v.lang); })
+          || voices.find(function(v){ return /en-GB/i.test(v.lang); })
+          || voices.find(function(v){ return /^en/i.test(v.lang); })
+          || voices[0];
+        if (pref) u.voice = pref;
+      } catch(e){}
+
+      u.onend = function(){ speaking = false; };
+      u.onerror = function(){ speaking = false; };
+
+      // small delay after cancel so browser accepts new utterance
+      speaking = true;
+      setTimeout(function(){
+        try {
+          if (speechSynthesis.paused) speechSynthesis.resume();
+          speechSynthesis.speak(u);
+        } catch(e){ speaking = false; }
+      }, 30);
+    } catch(e){}
+  }
+
+  // Override speakNewCommentary to cleaned path
+  window.speakNewCommentary = function(data){
+    try {
+      var d = data && data.data && (data.data.runs != null || data.data.commentary) ? data.data : data;
+      speakLatest(d);
+    } catch(e){}
+  };
+
+  // Also intercept applyData
+  function hook(){
+    ['applyData','applyLiveData','onLiveUpdate'].forEach(function(n){
+      if (typeof window[n] !== 'function' || window[n]._v153tts) return;
+      var o = window[n];
+      window[n] = function(data){
+        var r = o.apply(this, arguments);
+        try {
+          var d = data && data.data && (data.data.runs != null || data.data.commentary) ? data.data : data;
+          // only speak when ball/event advances
+          if (d && (d.lastEvent || (d.commentary && d.commentary.length))) {
+            speakLatest(d);
+          }
+        } catch(e){}
+        return r;
+      };
+      window[n]._v153tts = true;
+    });
+  }
+
+  // Patch formatCommentaryLine globally if present
+  try {
+    window.formatCommentaryLine = function(line){
+      line = String(line||'').trim();
+      if (!line) return {title:'', body:''};
+      line = line.replace(/\*+/g,' ').replace(/\s+/g,' ').trim();
+      var dash = line.split(/\s+[—–-]\s+/);
+      if (dash.length >= 2 && dash[0].length < 100)
+        return { title: dash[0].trim(), body: dash.slice(1).join(' — ').trim() };
+      var m = line.match(/^(.+?(?:\d+(?:st|nd|rd|th)\s+ball))[.\s—–-]*(.*)$/i);
+      if (m) return { title: m[1].trim(), body: (m[2]||'').trim() };
+      return { title: line.trim(), body: '' };
+    };
+  } catch(e){}
+
+  // unlock
+  function unlock(){
+    try {
+      if (!window.speechSynthesis) return;
+      var u = new SpeechSynthesisUtterance(' ');
+      u.volume = 0.01;
+      speechSynthesis.speak(u);
+      speechSynthesis.cancel();
+    } catch(e){}
+  }
+  ['pointerdown','touchstart','click'].forEach(function(ev){
+    document.addEventListener(ev, unlock, { capture:true, passive:true });
+  });
+
+  hook();
+  setInterval(hook, 2000);
 })();
 </script>
 

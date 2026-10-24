@@ -8676,7 +8676,7 @@ function recordDelivery(runs, type, isW, bound, dismissal, zone, fielder) {
                 type: type, dismissal: dismissal, fielder: fielder, zone: zone, isLegal: isLegal, label: label
             });
             commentaryLog.push(smartLine);
-            try { speakCommentaryLine(smartLine, { isW: isW, bound: bound, runs: runs, type: type, zone: zone, dismissal: dismissal, fielder: fielder }); } catch(eVoice) {}
+            try { speakCommentaryLine(String(smartLine||'').replace(/\*+/g,' '), { isW: isW, bound: bound, runs: runs, type: type, zone: zone, dismissal: dismissal, fielder: fielder }); } catch(eVoice) {}
             // End-of-over separator line (italic style in feed + WhatsApp)
             var overEndLine = null;
             if (isLegal && totalBalls > 0 && totalBalls % 6 === 0) {
@@ -13137,7 +13137,7 @@ function printHistoryMatch(){
         try {
             if (!voiceCommentaryEnabled || !text || !window.speechSynthesis) return;
             window.speechSynthesis.cancel();
-            var u = new SpeechSynthesisUtterance(String(text).slice(0, 280));
+            var u = new SpeechSynthesisUtterance(String(text||'').replace(/\*+/g,' ').replace(/\s+/g,' ').trim().slice(0, 280));
             var voice = pickSystemVoice(systemVoiceGender);
             if (voice) u.voice = voice;
             u.rate = 1.05;
