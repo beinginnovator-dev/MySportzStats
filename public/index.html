@@ -7046,6 +7046,8 @@ function placeBoundaryAnimationOnStriker(toast){
               var _outs=(p.dismissals|0)||(p.outs|0)||(p.isOut?1:0); if(_outs>0) avg=Math.round(((p.runs|0)/_outs)*100)/100;
             } catch(eA){}
             return {
+            currentOverBalls: (typeof currentOverBalls!=='undefined' && Array.isArray(currentOverBalls)) ? currentOverBalls.map(function(c){ return (c && typeof c==='object') ? {label:c.label,runs:c.runs|0,legal:c.legal!==false} : {label:String(c),runs:0,legal:true}; }) : [],
+
                 name: p.name, runs: p.runs|0, balls: p.balls|0, fours: p.fours|0, sixes: p.sixes|0,
                 isOut: !!p.isOut, howOut: how || (p.isOut ? '' : 'not out'),
                 avg: avg, sr: (p.balls|0) ? Math.round(((p.runs|0)/(p.balls|0))*10000)/100 : 0
@@ -7135,6 +7137,7 @@ function placeBoundaryAnimationOnStriker(toast){
             strikerName: st ? st.name : '',
             strikerRuns: st ? (st.runs|0) : 0,
             strikerBalls: st ? (st.balls|0) : 0,
+            strikerDots: st ? (st.dots|0) : 0,
             strikerFours: st ? (st.fours|0) : 0,
             strikerSixes: st ? (st.sixes|0) : 0,
             nonStrikerName: (function(){
@@ -7153,6 +7156,7 @@ function placeBoundaryAnimationOnStriker(toast){
                     return ns ? (ns.runs|0) : 0;
                 } catch(e){ return 0; }
             })(),
+            nonStrikerDots: (function(){ try{ var ns=null; /* filled below */ return 0;}catch(e){return 0;}})(),
             nonStrikerBalls: (function(){
                 try {
                     var nsEl = document.getElementById('select-nonstriker');
@@ -7254,22 +7258,44 @@ function placeBoundaryAnimationOnStriker(toast){
             })(),
             thisOver: (function(){
                 try {
-                    var needLegal = (totalBalls|0) % 6;
-                    // Prefer live thisOverBalls chip strip (includes WD/NB/W at start of over)
-                    if (typeof thisOverBalls !== 'undefined' && Array.isArray(thisOverBalls) && thisOverBalls.length) {
-                        var chips = thisOverBalls.slice();
-                        var r0 = 0, leg0 = 0;
-                        chips.forEach(function(c){
-                            var s = String(c).toLowerCase();
-                            if (s === 'w') { leg0++; }
-                            else if (s === 'wd' || s === 'nb' || s === 'wide' || s.indexOf('wd')===0 || s.indexOf('nb')===0) { r0 += 1; }
-                            else { var n = parseInt(s, 10); if (!isNaN(n)) { r0 += n; leg0++; } }
+                    // Mirror scorer "This Over" strip exactly (currentOverBalls)
+                    var src = (typeof currentOverBalls !== 'undefined' && Array.isArray(currentOverBalls))
+                      ? currentOverBalls
+                      : ((typeof thisOverBalls !== 'undefined' && Array.isArray(thisOverBalls)) ? thisOverBalls : []);
+                    if (src && src.length) {
+                        var chips = [], r0 = 0, leg0 = 0;
+                        src.forEach(function(c){
+                            var lab = '';
+                            var runs = 0;
+                            var legal = true;
+                            if (c && typeof c === 'object') {
+                                lab = String(c.label != null ? c.label : (c.chipLabel != null ? c.chipLabel : c.ball != null ? c.ball : ''));
+                                runs = c.runs != null ? (c.runs|0) : 0;
+                                legal = c.legal !== false;
+                                // WD/NB must count at least 1 run if scorer sent 0
+                                var lu = lab.toUpperCase();
+                                if ((lu.indexOf('WD')===0 || lu==='WIDE') && runs < 1) runs = 1;
+                                if (lu.indexOf('NB')===0 && runs < 1) runs = 1;
+                                if (lu === 'W' || (lu.charAt(0)==='W' && lu.indexOf('WD')<0)) legal = true;
+                            } else {
+                                lab = String(c);
+                                var s = lab.toLowerCase();
+                                if (s === 'w') { runs = 0; legal = true; }
+                                else if (s === 'wd' || s === 'wide' || s.indexOf('wd') === 0) { runs = 1; legal = false; }
+                                else if (s === 'nb' || s.indexOf('nb') === 0) { runs = 1; legal = false; }
+                                else { var n = parseInt(s, 10); runs = isNaN(n) ? 0 : n; legal = true; }
+                            }
+                            if (!lab) lab = String(runs);
+                            chips.push(lab);
+                            r0 += runs;
+                            if (legal) leg0++;
                         });
-                        // Always return current over chips (even when legal%6===0 after extras-only start)
-                        return { balls: chips.map(String), runs: r0, legal: leg0 };
+                        return { balls: chips, runs: r0, legal: leg0 };
                     }
-                    // Empty only when scorer cleared the over strip
-                    if (needLegal === 0) return { balls: [], runs: 0, legal: 0 };
+                    // Empty strip on scorer → empty on live
+                    return { balls: [], runs: 0, legal: 0 };
+                    var needLegal = (totalBalls|0) % 6; // kept for hist fallback below
+                    if (false && needLegal === 0) return { balls: [], runs: 0, legal: 0 };
                     var hist = deliveryHistory || [];
                     var overBalls = [], overRuns = 0, legal = 0;
                     for (var j = hist.length - 1; j >= 0; j--) {
@@ -8199,8 +8225,110 @@ function shareViewerLink() {
                         options: fOpts,
                         onSelect: function(fielderName) {
                             try { modalQueue = []; } catch(eQ3){}
-                            window.__pickerCooldownUntil = Date.now() + 1500;
-                            recordDelivery(0, 'legal', true, 0, d, null, fielderName);
+                            // Run out: ask valid runs 0-6, who is out, who gets the runs
+                            if (!isRunOut) {
+                              window.__pickerCooldownUntil = Date.now() + 1500;
+                              recordDelivery(0, 'legal', true, 0, d, null, fielderName);
+                              return;
+                            }
+                            var runOpts = [0,1,2,3,4,5,6].map(function(n){
+                              return { label: String(n) + (n===1?' run':' runs'), value: String(n) };
+                            });
+                            showModal({
+                              type: 'select',
+                              title: 'Valid runs completed?',
+                              message: 'Runs before run out (0–6). These count for the batsman who completed them.',
+                              icon: '🏃',
+                              options: runOpts,
+                              onSelect: function(runVal) {
+                                try { modalQueue = []; } catch(eQ4){}
+                                var runsRO = parseInt(runVal, 10);
+                                if (isNaN(runsRO) || runsRO < 0) runsRO = 0;
+                                if (runsRO > 6) runsRO = 6;
+                                var ssEl2 = document.getElementById('select-striker');
+                                var nsId2 = (typeof getNonStrikerId === 'function') ? getNonStrikerId() : null;
+                                var stP = (players||[]).find(function(p){ return p && ssEl2 && p.id === ssEl2.value; });
+                                var nsP = (players||[]).find(function(p){ return p && nsId2 && p.id === nsId2; });
+                                var stName = (stP && stP.name) ? stP.name : 'Striker';
+                                var nsName = (nsP && nsP.name) ? nsP.name : 'Non-striker';
+                                var whoOpts = [
+                                  { label: 'Striker — ' + stName, value: 'striker' },
+                                  { label: 'Non-striker — ' + nsName, value: 'non' }
+                                ];
+                                showModal({
+                                  type: 'select',
+                                  title: 'Who was run out?',
+                                  message: 'Select the batsman who is out',
+                                  icon: '🚫',
+                                  options: whoOpts,
+                                  onSelect: function(whoOut) {
+                                    try { modalQueue = []; } catch(eQ5){}
+                                    function finishRO(whoRuns) {
+                                      window.__pickerCooldownUntil = Date.now() + 1500;
+                                      // Credit runs to chosen batsman; dismiss chosen batsman
+                                      var boundRO = (runsRO === 4 || runsRO === 6) ? runsRO : 0;
+                                      // Always record via striker path first
+                                      recordDelivery(runsRO, 'legal', true, boundRO, d, null, fielderName);
+                                      try {
+                                        var ss = document.getElementById('select-striker');
+                                        var st = (players||[]).find(function(p){ return p && ss && p.id === ss.value; });
+                                        var ns = (players||[]).find(function(p){ return p && nsId2 && p.id === nsId2; });
+                                        // Fix runs attribution if needed
+                                        if (whoRuns === 'non' && st && ns && runsRO > 0) {
+                                          st.runs = Math.max(0, (st.runs|0) - runsRO);
+                                          if (boundRO === 4) st.fours = Math.max(0, (st.fours|0) - 1);
+                                          if (boundRO === 6) st.sixes = Math.max(0, (st.sixes|0) - 1);
+                                          // balls already counted on striker for the delivery — keep ball on striker
+                                          ns.runs = (ns.runs|0) + runsRO;
+                                          if (boundRO === 4) ns.fours = (ns.fours|0) + 1;
+                                          if (boundRO === 6) ns.sixes = (ns.sixes|0) + 1;
+                                        }
+                                        // Fix who is out
+                                        if (whoOut === 'non' && st && ns) {
+                                          st.isOut = false;
+                                          st.howOut = null;
+                                          ns.isOut = true;
+                                          ns.howOut = d;
+                                          ns.outFielder = fielderName;
+                                          // update last FOW entry if present
+                                          try {
+                                            if (fallOfWickets && fallOfWickets.length) {
+                                              var fw = fallOfWickets[fallOfWickets.length - 1];
+                                              if (fw) {
+                                                fw.batsman = ns.name;
+                                                fw.name = ns.name;
+                                                fw.dismissal = d;
+                                                fw.fielder = fielderName;
+                                              }
+                                            }
+                                          } catch(eF){}
+                                        } else if (st) {
+                                          st.howOut = d;
+                                          st.outFielder = fielderName;
+                                        }
+                                        try { if (typeof renderAll === 'function') renderAll(); } catch(eR){}
+                                        try { if (typeof publishLiveViewerState === 'function') publishLiveViewerState(); } catch(eP){}
+                                      } catch(eFix){}
+                                    }
+                                    if (runsRO === 0) {
+                                      finishRO(whoOut === 'non' ? 'striker' : 'striker');
+                                    } else {
+                                      showModal({
+                                        type: 'select',
+                                        title: 'Runs credited to?',
+                                        message: runsRO + ' run' + (runsRO===1?'':'s') + ' — which batsman?',
+                                        icon: '🏏',
+                                        options: whoOpts,
+                                        onSelect: function(whoRuns) {
+                                          try { modalQueue = []; } catch(eQ6){}
+                                          finishRO(whoRuns);
+                                        }
+                                      });
+                                    }
+                                  }
+                                });
+                              }
+                            });
                         }
                     });
                 } else {
@@ -8502,7 +8630,11 @@ function recordDelivery(runs, type, isW, bound, dismissal, zone, fielder) {
             if(!activeStNb && st){ activeStNb = ensureBattingStint(st); }
             if(st && batRunsNb){ st.runs += batRunsNb; if(bound===4) st.fours++; if(bound===6) st.sixes++; }
             if(activeStNb && batRunsNb){ activeStNb.runs += batRunsNb; if(bound===4) activeStNb.fours++; if(bound===6) activeStNb.sixes++; }
-            if(bw) bw.bowlRuns += (runs|0);
+            if(bw){
+                bw.bowlRuns += (runs|0);
+                bw.noballs = (bw.noballs|0) + 1;
+                bw.bowlNoBalls = (bw.bowlNoBalls|0) + 1;
+            }
             totalScore += (runs|0);
             // label already NB; enrich over chip
             try {
@@ -8510,6 +8642,7 @@ function recordDelivery(runs, type, isW, bound, dismissal, zone, fielder) {
                 if (lastB && lastB.label === 'NB' && batRunsNb > 0) lastB.label = 'NB+'+batRunsNb;
             } catch(eL){}
         } else {
+            // wide (and any other non-legal non-NB)
             if (bw) {
                 bw.bowlRuns += (runs|0);
                 if (type === 'wide' || type === 'WD' || label === 'WD') {
