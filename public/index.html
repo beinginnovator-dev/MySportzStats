@@ -8618,8 +8618,18 @@ function recordDelivery(runs, type, isW, bound, dismissal, zone, fielder) {
             // Update stint as well
             let activeSt = getActiveStint(st);
             if(!activeSt && st){ activeSt = ensureBattingStint(st); }
-            if(st){ st.runs+=runs; st.balls++; if(bound===4) st.fours++; if(bound===6) st.sixes++; }
-            if(activeSt){ activeSt.runs+=runs; activeSt.balls++; if(bound===4) activeSt.fours++; if(bound===6) activeSt.sixes++; }
+            if(st){
+              st.runs+=runs; st.balls++;
+              if(bound===4) st.fours++;
+              if(bound===6) st.sixes++;
+              if(runs===0 && !isW) st.dots=(st.dots|0)+1; // dot ball faced
+            }
+            if(activeSt){
+              activeSt.runs+=runs; activeSt.balls++;
+              if(bound===4) activeSt.fours++;
+              if(bound===6) activeSt.sixes++;
+              if(runs===0 && !isW) activeSt.dots=(activeSt.dots|0)+1;
+            }
 
             if(bw){ bw.bowlBalls++; bw.bowlRuns+=runs; if(isW && isBowlerCreditedWicket(dismissal)) bw.wickets++; if(runs===0) bw.dots=(bw.dots||0)+1; }
             if(isW) totalWickets++;
