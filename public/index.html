@@ -7377,6 +7377,7 @@ function placeBoundaryAnimationOnStriker(toast){
                     return rows;
                 } catch(eP) { return []; }
             })(),
+            matchHistory: (function(){ try { return (typeof loadAllMatchHistory==='function'?loadAllMatchHistory():JSON.parse(localStorage.getItem(HISTORY_KEY||'cricket_match_history')||'[]'))||[]; } catch(e){ return []; } })(),
             matchHistorySummary: (function(){
                 try {
                     var hist = [];
