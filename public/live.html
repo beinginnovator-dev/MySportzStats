@@ -3922,6 +3922,290 @@ body[data-theme="sports1"] #panel-comm .feed-item .body {
 .vlog-offline { color:#94a3b8; font-weight:700; }
 </style>
 
+
+<style id="v164-fix">
+/* Top bar always visible */
+.score-card-topbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  width: 100% !important;
+  padding-bottom: 8px !important;
+  margin-bottom: 6px !important;
+  border-bottom: 1px solid rgba(255,255,255,.22) !important;
+}
+.score-card-topbar .sc-live {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  color: #4ade80 !important;
+  min-width: 70px !important;
+}
+.score-card-topbar .sc-live i {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #22c55e; box-shadow: 0 0 10px #22c55e;
+  animation: v164pulse 1.2s infinite;
+}
+@keyframes v164pulse { 50% { opacity: .35; } }
+.score-card-topbar .sc-match-title {
+  flex: 1 !important;
+  text-align: center !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  letter-spacing: .1em !important;
+  text-transform: uppercase !important;
+  color: #fef08a !important;
+}
+.score-card-topbar .sc-clock-line {
+  display: block !important;
+  margin-top: 3px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: rgba(255,255,255,.92) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+.score-card-topbar .sc-clock-line .clock-live { color: #86efac !important; font-weight: 900 !important; }
+.score-card-topbar .sc-gear {
+  border: 1px solid rgba(255,255,255,.35) !important;
+  background: rgba(255,255,255,.12) !important;
+  color: #fff !important;
+  border-radius: 999px !important;
+  width: 34px; height: 34px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Sports1: black player names in tables */
+body[data-theme="sports1"] .sb-table td.nm,
+body[data-theme="sports1"] .sb-table td:first-child,
+body[data-theme="sports1"] .sc-table td:first-child,
+body[data-theme="sports1"] .cap-table td:nth-child(2),
+body[data-theme="sports1"] .sb-table td {
+  color: #0f172a !important;
+}
+body[data-theme="sports1"] .sb-table td.nm {
+  color: #000 !important;
+  font-weight: 800 !important;
+}
+
+/* Event banners */
+#runs-banner {
+  position: fixed !important;
+  left: 50% !important;
+  top: 18% !important;
+  transform: translateX(-50%) !important;
+  z-index: 9950 !important;
+  pointer-events: none !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  font-size: 20px !important;
+  padding: 12px 22px !important;
+  border-radius: 16px !important;
+  opacity: 0 !important;
+  max-width: 90vw !important;
+  text-align: center !important;
+  box-shadow: 0 10px 28px rgba(0,0,0,.25) !important;
+}
+#runs-banner.show {
+  opacity: 1 !important;
+  animation: v164banner 1.4s ease-out forwards !important;
+}
+#runs-banner.runs { background: linear-gradient(135deg, #1d4ed8, #3b82f6) !important; }
+#runs-banner.wicket { background: linear-gradient(135deg, #b91c1c, #ef4444) !important; }
+#runs-banner.extra { background: linear-gradient(135deg, #6d28d9, #a855f7) !important; } /* purple wide/nb/lb */
+#runs-banner.dot { background: linear-gradient(135deg, #334155, #64748b) !important; }
+@keyframes v164banner {
+  0% { transform: translateX(-50%) scale(.9); opacity: 0; }
+  12% { transform: translateX(-50%) scale(1.04); opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) scale(.98); }
+}
+
+/* Match end on scoreboard */
+#match-end-banner {
+  order: 4 !important;
+  margin: 8px 6px 4px !important;
+  padding: 12px 14px !important;
+  border-radius: 16px !important;
+  background: linear-gradient(135deg, #c2410c, #ea580c) !important;
+  color: #fff !important;
+  text-align: center !important;
+  box-shadow: 0 8px 24px rgba(234,88,12,.35) !important;
+  display: none;
+}
+#match-end-banner.show { display: block !important; }
+#match-end-banner .me-label {
+  font-size: 11px; font-weight: 900; letter-spacing: .12em;
+  text-transform: uppercase; color: #fde68a; margin-bottom: 4px;
+}
+#match-end-banner .me-result {
+  font-size: 16px; font-weight: 900; margin: 4px 0;
+}
+#match-end-banner .me-meta {
+  font-size: 12px; opacity: .95; margin-top: 4px;
+}
+#match-end-banner .me-pom {
+  font-size: 12px; font-weight: 800; color: #fde68a; margin-top: 6px;
+}
+
+/* Kill white overlay double animations */
+#anim-overlay, #anim-overlay .burst, #event-anim-layer {
+  display: none !important;
+}
+</style>
+
+
+<style id="v165-topbar-force">
+#score-card-topbar.score-card-topbar,
+.score-card > #score-card-topbar {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 8px 4px 10px !important;
+  margin: 0 0 6px !important;
+  border-bottom: 1px solid rgba(255,255,255,.25) !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+  z-index: 20 !important;
+  order: 0 !important;
+  height: auto !important;
+  min-height: 48px !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+}
+#score-card-topbar .sc-live,
+#score-card-topbar .sc-match-title,
+#score-card-topbar .sc-gear {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+#score-card-topbar .sc-match-title {
+  display: block !important;
+  flex: 1 !important;
+  text-align: center !important;
+}
+#score-card-topbar .sc-clock-line {
+  display: block !important;
+  visibility: visible !important;
+}
+/* Do not hide topbar via older rules */
+.score-card-topbar.hidden { display: flex !important; }
+</style>
+
+
+<style id="v167-layout-settings">
+/* MATCH centered on vertical axis with VS */
+.score-card {
+  position: relative !important;
+}
+.score-card-topbar {
+  display: grid !important;
+  grid-template-columns: 1fr auto 1fr !important;
+  align-items: center !important;
+  width: 100% !important;
+  gap: 6px !important;
+}
+.score-card-topbar .sc-live {
+  justify-self: start !important;
+}
+.score-card-topbar .sc-match-title {
+  justify-self: center !important;
+  text-align: center !important;
+  grid-column: 2 !important;
+}
+.score-card-topbar .sc-gear {
+  justify-self: end !important;
+  grid-column: 3 !important;
+}
+/* Align MATCH column with VS in teams row */
+.score-card .teams {
+  display: grid !important;
+  grid-template-columns: 1fr auto 1fr !important;
+  align-items: center !important;
+}
+.score-card .teams-vs,
+.score-card .teams .teams-vs {
+  grid-column: 2 !important;
+  text-align: center !important;
+  justify-self: center !important;
+}
+.score-card .team-card.team-a { grid-column: 1 !important; }
+.score-card .team-card.team-b { grid-column: 3 !important; }
+
+/* Settings dropdown — high contrast on all themes */
+.live-settings-dropdown,
+#live-settings-panel {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(148,163,184,.45) !important;
+  border-radius: 14px !important;
+  min-width: 210px !important;
+  z-index: 10050 !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,.4) !important;
+}
+.live-settings-dropdown .lsd-item,
+#live-settings-panel .lsd-item {
+  color: #f8fafc !important;
+  background: transparent !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  text-align: left !important;
+  width: 100% !important;
+  border: none !important;
+  padding: 11px 12px !important;
+  border-radius: 10px !important;
+  cursor: pointer !important;
+}
+.live-settings-dropdown .lsd-item:hover,
+.live-settings-dropdown .lsd-item.active {
+  background: rgba(56,189,248,.22) !important;
+  color: #e0f2fe !important;
+}
+.live-settings-dropdown .lsd-sep {
+  height: 1px !important;
+  background: rgba(148,163,184,.35) !important;
+  margin: 4px 8px !important;
+}
+
+/* Theme-wide text visibility safety */
+body[data-theme="light"] .lsd-item,
+body[data-theme="sports1"] .lsd-item,
+body[data-theme="sports2"] .lsd-item,
+body[data-theme="dark"] .lsd-item {
+  color: #f8fafc !important;
+}
+/* Blue/light score panel text already light; below-board text */
+body[data-theme="light"] .sb-table td,
+body[data-theme="light"] .panel,
+body[data-theme="light"] .feed-item {
+  color: #0f172a !important;
+}
+body[data-theme="sports1"] .sb-table td.nm,
+body[data-theme="sports1"] .sb-table td:first-child {
+  color: #000 !important;
+  font-weight: 800 !important;
+}
+
+/* Viewers log */
+.vlog-table { width:100%; border-collapse:collapse; font-size:12px; color:var(--text,#0f172a); }
+.vlog-table th, .vlog-table td { padding:8px 6px; border-bottom:1px solid var(--line,#cbd5e1); text-align:left; }
+.vlog-online { color:#16a34a !important; font-weight:800 !important; }
+.vlog-offline { color:#64748b !important; font-weight:700 !important; }
+</style>
+
 </head>
 <body>
 
@@ -3962,11 +4246,23 @@ body[data-theme="sports1"] #panel-comm .feed-item .body {
     <div id="no-data" class="wait-only">Waiting for score updates…</div>
     <div id="live-root" class="hidden">
       <div class="score-card">
+<div id="score-card-topbar" class="score-card-topbar" style="display:flex!important;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:8px 4px 10px;margin:0 0 6px;border-bottom:1px solid rgba(255,255,255,.25);box-sizing:border-box;position:relative;z-index:5;">
+  <span class="sc-live" style="display:inline-flex!important;align-items:center;gap:6px;font-size:12px;font-weight:900;color:#4ade80;min-width:72px;">
+    <i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 10px #22c55e;"></i>
+    <span id="sc-live-txt">LIVE · 0</span>
+  </span>
+  <span class="sc-match-title" id="sc-match-title" style="flex:1;text-align:center;font-size:12px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#fef08a;line-height:1.3;">
+    MATCH
+    <span class="sc-clock-line" id="sc-clock-line" style="display:block;margin-top:3px;font-size:11px;font-weight:700;letter-spacing:0;text-transform:none;color:rgba(255,255,255,.92);font-variant-numeric:tabular-nums;">
+      (Started — · <span class="clock-live" id="sc-timer" style="color:#86efac;font-weight:900;">00:00:00</span>)
+    </span>
+  </span>
+  <button type="button" class="sc-gear" id="sc-gear-btn" title="Settings" style="border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;border-radius:999px;width:34px;height:34px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;">⚙️</button>
+</div>
+
 <div id="live-settings-panel" class="live-settings-dropdown hidden" role="menu">
-  <button type="button" class="lsd-item" data-act="tts-on">Commentary sound: ON</button>
-  <button type="button" class="lsd-item" data-act="tts-off">Commentary sound: OFF</button>
-  <button type="button" class="lsd-item" data-act="stad-on">Stadium sound: ON</button>
-  <button type="button" class="lsd-item" data-act="stad-off">Stadium sound: OFF</button>
+  <button type="button" class="lsd-item" data-act="sound-on">🔊 Sound: ON</button>
+  <button type="button" class="lsd-item" data-act="sound-off">🔇 Sound: OFF</button>
   <div class="lsd-sep"></div>
   <button type="button" class="lsd-item" data-act="theme-light">Theme: Blue</button>
   <button type="button" class="lsd-item" data-act="theme-sports1">Theme: Sports 1</button>
@@ -5918,7 +6214,7 @@ body[data-theme="sports1"] #panel-comm .feed-item .body {
     var __lastOverKeyWhistle='';
     var __stadAmbientAudio=null;
     var __stadUnlocked=false;
-    var STAD_SFX_VER = 'v10';
+    var STAD_SFX_VER = 'v11';
     var STAD_SFX = {
       short: '/sounds/crowd_short.mp3?'+STAD_SFX_VER,
       cheer: '/sounds/crowd_cheer.mp3?'+STAD_SFX_VER,
@@ -13433,6 +13729,891 @@ try{mountDashboards()}catch(e){}
   hook();
   setInterval(function(){ try{ recordSelfVisit(); }catch(e){} }, 30000);
   setInterval(hook, 3000);
+})();
+</script>
+
+
+<script id="v164-fix-js">
+(function(){
+  'use strict';
+  if (window.__v164) return;
+  window.__v164 = true;
+
+  function $(id){ return document.getElementById(id); }
+  function unwrap(d){
+    if (!d || typeof d !== 'object') return null;
+    if (d.data && typeof d.data === 'object' && (d.data.runs != null || d.data.ts || d.data.lastEvent))
+      return d.data;
+    return d;
+  }
+
+  /* ===== Network: never hang on bad signal ===== */
+  // Patch fetch with short timeout + abort
+  try {
+    if (!window.fetch._v164) {
+      var _fetch = window.fetch.bind(window);
+      window.fetch = function(input, init){
+        init = init || {};
+        var ctrl = new AbortController();
+        var t = setTimeout(function(){ try{ ctrl.abort(); }catch(e){} }, 4500);
+        if (init.signal) {
+          // respect existing signal
+        } else {
+          init.signal = ctrl.signal;
+        }
+        return _fetch(input, init).then(function(r){
+          clearTimeout(t);
+          return r;
+        }).catch(function(err){
+          clearTimeout(t);
+          // soft fail — do not throw uncaught to UI thread loops
+          return { ok:false, status:0, json: function(){ return Promise.resolve(null); }, text: function(){ return Promise.resolve(''); } };
+        });
+      };
+      window.fetch._v164 = true;
+    }
+  } catch(e){}
+
+  // Throttle viewers paint hard
+  var lastViewersAt = 0;
+  if (typeof window.renderViewers === 'function' && !window.renderViewers._v164) {
+    var _rv = window.renderViewers;
+    window.renderViewers = function(list, count){
+      var now = Date.now();
+      if (now - lastViewersAt < 2500) return;
+      lastViewersAt = now;
+      try {
+        if (!navigator.onLine) {
+          // offline: only update count label, skip heavy table
+          var t = $('sc-live-txt');
+          if (t) t.textContent = 'LIVE · ' + (count|0);
+          return;
+        }
+        return _rv.apply(this, arguments);
+      } catch(e){}
+    };
+    window.renderViewers._v164 = true;
+  }
+
+  /* ===== Top bar: LIVE + viewers + MATCH timer + settings ===== */
+  function ensureTopbar(){
+    var card = document.querySelector('.score-card');
+    if (!card) return;
+    var bar = $('score-card-topbar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'score-card-topbar';
+      bar.className = 'score-card-topbar';
+      bar.innerHTML =
+        '<span class="sc-live"><i></i><span id="sc-live-txt">LIVE · 0</span></span>'+
+        '<span class="sc-match-title" id="sc-match-title">MATCH'+
+          '<span class="sc-clock-line" id="sc-clock-line">(Started — · <span class="clock-live" id="sc-timer">00:00:00</span>)</span>'+
+        '</span>'+
+        '<button type="button" class="sc-gear" id="sc-gear-btn" title="Settings">⚙️</button>';
+      card.insertBefore(bar, card.firstChild);
+    }
+    var g = $('sc-gear-btn');
+    if (g && !g._v164) {
+      g._v164 = true;
+      g.onclick = function(e){
+        e.preventDefault(); e.stopPropagation();
+        if (typeof toggleLiveSettings === 'function') toggleLiveSettings();
+      };
+    }
+  }
+
+  function fmtHMS(ms){
+    ms = Math.max(0, ms|0);
+    var s = Math.floor(ms/1000);
+    var h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+    function z(n){ return (n<10?'0':'')+n; }
+    return z(h)+':'+z(m)+':'+z(sec);
+  }
+  function fmtHM(ts){
+    try {
+      var d = new Date(ts);
+      if (isNaN(d.getTime())) return '—';
+      var h=d.getHours(), m=d.getMinutes();
+      return (h<10?'0':'')+h+':'+(m<10?'0':'')+m;
+    } catch(e){ return '—'; }
+  }
+  function syncClock(){
+    ensureTopbar();
+    var line = $('sc-clock-line');
+    if (!line) return;
+    var d = window.__lastLiveData || {};
+    var startTs = d.matchStartTs || d.startTs || d.startedAt || d.matchStartedAt || null;
+    if (typeof startTs === 'string' && /^\d+$/.test(startTs)) startTs = parseInt(startTs,10);
+    var startLabel = startTs ? fmtHM(startTs) : '—';
+    var elapsedLabel = '00:00:00';
+    if (startTs) elapsedLabel = fmtHMS(Date.now() - startTs);
+    else if (d.elapsedMs != null) elapsedLabel = fmtHMS(d.elapsedMs|0);
+    else {
+      var src = $('v-match-clock');
+      var tx = src ? src.textContent : '';
+      var m1 = tx && tx.match(/Started\s*([0-9]{1,2}:[0-9]{2})/i);
+      if (m1) startLabel = m1[1];
+      var m2 = tx && tx.match(/(\d{1,2}:\d{2}:\d{2})/);
+      if (m2) elapsedLabel = m2[1];
+    }
+    line.innerHTML = '(Started '+startLabel+' · <span class="clock-live" id="sc-timer">'+elapsedLabel+'</span>)';
+  }
+  function setLiveCount(n){
+    var t = $('sc-live-txt');
+    if (t) t.textContent = 'LIVE · ' + (n|0);
+  }
+
+  /* ===== Match end banner on scoreboard ===== */
+  function ensureMatchEnd(){
+    var card = document.querySelector('.score-card');
+    if (!card) return null;
+    var el = $('match-end-banner');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'match-end-banner';
+      var teams = $('score-teams') || card.querySelector('.teams');
+      if (teams && teams.parentNode === card) {
+        card.insertBefore(el, teams.nextSibling);
+      } else card.appendChild(el);
+    }
+    return el;
+  }
+  function paintMatchEnd(d){
+    var el = ensureMatchEnd();
+    if (!el || !d) return;
+    var ended = !!(d.matchEnded || d.matchEnd || d.status === 'completed' || d.status === 'ended');
+    var result = d.matchResult || d.resultText || d.result || '';
+    if (!ended && !result) {
+      el.classList.remove('show');
+      el.style.display = 'none';
+      return;
+    }
+    if (!result && ended) result = 'Match completed';
+    var ta = d.teamA || d.teamAName || 'Team A';
+    var tb = d.teamB || d.teamBName || 'Team B';
+    var sa = d.teamARuns != null ? (d.teamARuns+'/'+(d.teamAWickets||0)) : '';
+    var sb = d.teamBRuns != null ? (d.teamBRuns+'/'+(d.teamBWickets||0)) : '';
+    var oa = d.teamAOvers || d.oversA || '';
+    var ob = d.teamBOvers || d.oversB || '';
+    var pom = d.playerOfMatch || d.pom || d.manOfMatch || '';
+    el.innerHTML =
+      '<div class="me-label">Match result</div>'+
+      '<div class="me-result">'+String(result).replace(/</g,'')+'</div>'+
+      '<div class="me-meta">'+String(ta).replace(/</g,'')+(sa?': '+sa:'')+(oa?' ('+oa+')':'')+
+      ' · '+String(tb).replace(/</g,'')+(sb?': '+sb:'')+(ob?' ('+ob+')':'')+'</div>'+
+      (pom ? '<div class="me-pom">★ Player of the match: '+String(pom).replace(/</g,'')+'</div>' : '');
+    el.classList.add('show');
+    el.style.display = 'block';
+  }
+
+  /* ===== Event banners: single, coloured ===== */
+  var lastBannerKey = '';
+  function ensureBanner(){
+    var b = $('runs-banner');
+    if (!b) {
+      b = document.createElement('div');
+      b.id = 'runs-banner';
+      document.body.appendChild(b);
+    }
+    return b;
+  }
+  function showBanner(text, kind){
+    var key = kind + ':' + text;
+    // allow same text only after key advances via lastBannerKey from ball
+    var b = ensureBanner();
+    b.textContent = text;
+    b.className = 'show ' + (kind || 'runs');
+    setTimeout(function(){ try{ b.classList.remove('show'); }catch(e){} }, 1450);
+  }
+
+  function dismissalText(d){
+    var how = d.lastDismissal || d.dismissal || d.howOut || d.wicketType || '';
+    try {
+      var fow = d.fallOfWickets || [];
+      if (fow.length) {
+        var last = fow[fow.length-1];
+        if (!how || String(how).toLowerCase()==='w' || String(how).toLowerCase()==='out')
+          how = last.dismissal || last.howOut || last.how || how;
+        if (last.fielder && how && String(how).toLowerCase().indexOf(String(last.fielder).toLowerCase())<0)
+          how = how + (how ? ' — ' : '') + last.fielder;
+      }
+    } catch(e){}
+    how = String(how||'OUT').replace(/[*＊]/g,' ').replace(/\s+/g,' ').trim();
+    return how || 'OUT';
+  }
+
+  var lastEventKey = '';
+  function handleEvent(d){
+    if (!d) return;
+    var ev = String(d.lastEvent||'').toLowerCase();
+    var key = (d.balls|0)+':'+ev+':'+(d.runs|0)+':'+(d.wickets|0)+':'+(d.strikerRuns|0);
+    if (!ev || key === lastEventKey) return;
+    lastEventKey = key;
+
+    // suppress double white animations
+    try {
+      var ov = $('anim-overlay'); if (ov) { ov.style.display='none'; ov.innerHTML=''; }
+      var el = $('event-anim-layer'); if (el) el.innerHTML='';
+    } catch(e){}
+
+    if (ev==='wicket'||ev==='w'||ev==='out') {
+      showBanner('WICKET · ' + dismissalText(d), 'wicket');
+    } else if (ev==='six'||ev==='6') {
+      showBanner('6 RUNS', 'runs');
+    } else if (ev==='four'||ev==='4'||ev==='boundary') {
+      showBanner('4 RUNS', 'runs');
+    } else if (ev==='three'||ev==='3') {
+      showBanner('3 RUNS', 'runs');
+    } else if (ev==='two'||ev==='2') {
+      showBanner('2 RUNS', 'runs');
+    } else if (ev==='one'||ev==='1'||ev==='single') {
+      showBanner('1 RUN', 'runs');
+    } else if (ev==='five'||ev==='5') {
+      showBanner('5 RUNS', 'runs');
+    } else if (ev==='dot'||ev==='0') {
+      showBanner('DOT BALL', 'dot');
+    } else if (ev==='wide'||ev==='wd') {
+      showBanner('WIDE', 'extra');
+    } else if (ev==='noball'||ev==='no-ball'||ev==='nb') {
+      showBanner('NO BALL', 'extra');
+    } else if (ev==='legbye'||ev==='lb'||ev==='leg-bye') {
+      showBanner('LEG BYE', 'extra');
+    } else if (ev==='bye') {
+      showBanner('BYE', 'extra');
+    }
+  }
+
+  /* ===== TTS: speak over.ball + event clearly ===== */
+  function cleanSpeech(t){
+    t = String(t||'');
+    t = t.replace(/[*＊]/g,' ').replace(/\basterisks?\b/gi,' ');
+    t = t.replace(/\s+/g,' ').trim();
+    return t;
+  }
+  function overBallLabel(d){
+    var balls = d.balls|0;
+    var ov = Math.floor(balls / 6);
+    var b = balls % 6;
+    // after legal ball, balls already incremented — label is that ball
+    if (b === 0 && balls > 0) { ov = ov - 1; b = 6; }
+    return ov + ' point ' + b;
+  }
+  var lastTtsKey = '';
+  function speakBall(d){
+    try {
+      var on = true;
+      try {
+        var v = localStorage.getItem('cricket_tts_on');
+        if (v === '0' || v === 'false') on = false;
+        if (typeof ttsOn !== 'undefined') on = !!ttsOn;
+        if (typeof window.ttsOn !== 'undefined') on = !!window.ttsOn;
+      } catch(e){}
+      if (!on || !window.speechSynthesis) return;
+
+      var ev = String(d.lastEvent||'').toLowerCase();
+      var key = (d.balls|0)+':'+ev+':'+(d.runs|0)+':'+(d.wickets|0);
+      if (!ev || key === lastTtsKey) return;
+      lastTtsKey = key;
+
+      var st = cleanSpeech(d.strikerName||'batsman');
+      var bw = cleanSpeech(d.bowlerName||'bowler');
+      var label = overBallLabel(d);
+      var phrase = '';
+
+      if (ev==='wicket'||ev==='w') {
+        phrase = label + '. Wicket. ' + cleanSpeech(dismissalText(d));
+      } else if (ev==='six'||ev==='6') {
+        phrase = label + '. Six runs to ' + st;
+      } else if (ev==='four'||ev==='4'||ev==='boundary') {
+        phrase = label + '. Four runs to ' + st;
+      } else if (ev==='three'||ev==='3') {
+        phrase = label + '. Three runs';
+      } else if (ev==='two'||ev==='2') {
+        phrase = label + '. Two runs';
+      } else if (ev==='one'||ev==='1'||ev==='single') {
+        phrase = label + '. One run';
+      } else if (ev==='dot'||ev==='0') {
+        phrase = label + '. Dot ball';
+      } else if (ev==='wide'||ev==='wd') {
+        phrase = label + '. Wide';
+      } else if (ev==='noball'||ev==='nb'||ev==='no-ball') {
+        phrase = label + '. No ball';
+      } else if (ev==='legbye'||ev==='lb') {
+        phrase = label + '. Leg bye';
+      } else {
+        // fallback to last commentary line
+        var arr = d.commentary || [];
+        var last = arr.length ? cleanSpeech(arr[arr.length-1]) : '';
+        if (last) phrase = label + '. ' + last;
+        else return;
+      }
+
+      try { speechSynthesis.cancel(); } catch(e){}
+      var u = new SpeechSynthesisUtterance(phrase);
+      u.rate = 1.05;
+      setTimeout(function(){ try{ speechSynthesis.speak(u); }catch(e){} }, 40);
+    } catch(e){}
+  }
+
+  /* ===== Data path ===== */
+  function onData(raw){
+    var d = unwrap(raw) || raw;
+    if (!d || typeof d !== 'object') return;
+    window.__lastLiveData = d;
+    ensureTopbar();
+    syncClock();
+    handleEvent(d);
+    speakBall(d);
+    paintMatchEnd(d);
+    if (d.viewers != null) setLiveCount(d.viewers);
+    else if (d.viewerCount != null) setLiveCount(d.viewerCount);
+  }
+
+  function hook(){
+    ensureTopbar();
+    ensureMatchEnd();
+    ['applyData','applyLiveData','onLiveUpdate'].forEach(function(n){
+      if (typeof window[n] !== 'function' || window[n]._v164b) return;
+      var o = window[n];
+      window[n] = function(data){
+        var r;
+        try { r = o.apply(this, arguments); } catch(e){ r = undefined; }
+        try { onData(data); } catch(e){}
+        return r;
+      };
+      window[n]._v164b = true;
+    });
+  }
+
+  // Online/offline soft handling
+  window.addEventListener('offline', function(){
+    try {
+      var t = $('sc-live-txt');
+      if (t && t.textContent.indexOf('OFFLINE')<0) t.textContent = (t.textContent||'LIVE') + ' · OFFLINE';
+    } catch(e){}
+  });
+
+  hook();
+  setInterval(hook, 3000);
+  setInterval(syncClock, 1000);
+  ensureTopbar();
+})();
+</script>
+
+
+<script id="v165-topbar-force-js">
+(function(){
+  'use strict';
+  function $(id){ return document.getElementById(id); }
+
+  function buildTopbar(){
+    var card = document.querySelector('.score-card');
+    if (!card) return null;
+    var bar = $('score-card-topbar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'score-card-topbar';
+      bar.className = 'score-card-topbar';
+      bar.innerHTML =
+        '<span class="sc-live"><i></i><span id="sc-live-txt">LIVE · 0</span></span>'+
+        '<span class="sc-match-title" id="sc-match-title">MATCH'+
+          '<span class="sc-clock-line" id="sc-clock-line">(Started — · <span class="clock-live" id="sc-timer">00:00:00</span>)</span>'+
+        '</span>'+
+        '<button type="button" class="sc-gear" id="sc-gear-btn" title="Settings">⚙️</button>';
+      card.insertBefore(bar, card.firstChild);
+    } else if (bar.parentNode !== card) {
+      card.insertBefore(bar, card.firstChild);
+    } else if (card.firstElementChild !== bar) {
+      card.insertBefore(bar, card.firstChild);
+    }
+    // force visible styles inline (beats conflicting CSS)
+    bar.style.cssText = 'display:flex!important;visibility:visible!important;opacity:1!important;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:8px 4px 10px;margin:0 0 6px;border-bottom:1px solid rgba(255,255,255,.25);box-sizing:border-box;position:relative;z-index:20;order:0;min-height:48px;';
+    if (!$('sc-live-txt') || !$('sc-timer') || !$('sc-gear-btn')) {
+      bar.innerHTML =
+        '<span class="sc-live" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:900;color:#4ade80"><i style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block"></i><span id="sc-live-txt">LIVE · 0</span></span>'+
+        '<span class="sc-match-title" style="flex:1;text-align:center;font-size:12px;font-weight:900;color:#fef08a;letter-spacing:.1em">MATCH<span class="sc-clock-line" id="sc-clock-line" style="display:block;margin-top:3px;font-size:11px;font-weight:700;letter-spacing:0;text-transform:none;color:rgba(255,255,255,.92)">(Started — · <span id="sc-timer" style="color:#86efac;font-weight:900">00:00:00</span>)</span></span>'+
+        '<button type="button" class="sc-gear" id="sc-gear-btn" style="border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;border-radius:999px;width:34px;height:34px">⚙️</button>';
+    }
+    var g = $('sc-gear-btn');
+    if (g && !g._v165) {
+      g._v165 = true;
+      g.addEventListener('click', function(e){
+        e.preventDefault(); e.stopPropagation();
+        if (typeof toggleLiveSettings === 'function') toggleLiveSettings();
+        else {
+          var p = $('live-settings-panel');
+          if (p) p.classList.toggle('hidden');
+        }
+      });
+    }
+    return bar;
+  }
+
+  function fmtHMS(ms){
+    ms = Math.max(0, ms|0);
+    var s = Math.floor(ms/1000);
+    var h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+    function z(n){ return (n<10?'0':'')+n; }
+    return z(h)+':'+z(m)+':'+z(sec);
+  }
+  function fmtHM(ts){
+    try {
+      var d = new Date(ts);
+      if (isNaN(d.getTime())) return '—';
+      var h=d.getHours(), m=d.getMinutes();
+      return (h<10?'0':'')+h+':'+(m<10?'0':'')+m;
+    } catch(e){ return '—'; }
+  }
+
+  function sync(){
+    buildTopbar();
+    var d = window.__lastLiveData || window.lastData || {};
+    var startTs = d.matchStartTs || d.startTs || d.startedAt || d.matchStartedAt || null;
+    if (typeof startTs === 'string' && /^\d+$/.test(startTs)) startTs = parseInt(startTs, 10);
+    var startLabel = startTs ? fmtHM(startTs) : '—';
+    var elapsed = '00:00:00';
+    if (startTs) elapsed = fmtHMS(Date.now() - startTs);
+    else if (d.elapsedMs != null) elapsed = fmtHMS(d.elapsedMs|0);
+    else {
+      var src = $('v-match-clock');
+      var tx = src ? (src.textContent||'') : '';
+      var m1 = tx.match(/Started\s*([0-9]{1,2}:[0-9]{2})/i);
+      if (m1) startLabel = m1[1];
+      var m2 = tx.match(/(\d{1,2}:\d{2}:\d{2})/);
+      if (m2) elapsed = m2[1];
+    }
+    var line = $('sc-clock-line');
+    if (line) {
+      line.innerHTML = '(Started '+startLabel+' · <span id="sc-timer" style="color:#86efac;font-weight:900">'+elapsed+'</span>)';
+    }
+    var n = window.__lastViewerCount;
+    if (n == null && d.viewers != null) n = d.viewers;
+    if (n == null && d.viewerCount != null) n = d.viewerCount;
+    if (n != null) {
+      var t = $('sc-live-txt');
+      if (t) t.textContent = 'LIVE · ' + (n|0);
+    }
+  }
+
+  // Hook viewer count
+  if (typeof window.renderViewers === 'function' && !window.renderViewers._v165) {
+    var _rv = window.renderViewers;
+    window.renderViewers = function(list, count){
+      try { _rv.apply(this, arguments); } catch(e){}
+      window.__lastViewerCount = count|0;
+      var t = $('sc-live-txt');
+      if (t) t.textContent = 'LIVE · ' + (count|0);
+    };
+    window.renderViewers._v165 = true;
+  }
+
+  function hookData(){
+    ['applyData','applyLiveData','onLiveUpdate'].forEach(function(n){
+      if (typeof window[n] !== 'function' || window[n]._v165) return;
+      var o = window[n];
+      window[n] = function(data){
+        var r = o.apply(this, arguments);
+        try {
+          var d = data && data.data && (data.data.runs!=null||data.data.ts) ? data.data : data;
+          if (d && typeof d === 'object') window.__lastLiveData = d;
+        } catch(e){}
+        try { sync(); } catch(e){}
+        return r;
+      };
+      window[n]._v165 = true;
+    });
+  }
+
+  function boot(){
+    buildTopbar();
+    sync();
+    hookData();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+  // also run immediately
+  try { boot(); } catch(e){}
+  setInterval(function(){ try{ sync(); hookData(); }catch(e){} }, 1000);
+})();
+</script>
+
+
+<script id="v166-over-whistle-js">
+(function(){
+  'use strict';
+  if (window.__v166Whistle) return;
+  window.__v166Whistle = true;
+
+  var lastOverKey = '';
+  var whistleUrl = '/sounds/crowd_whistle.mp3?v11';
+  var audio = null;
+
+  function stadiumEnabled(){
+    try {
+      var v = localStorage.getItem('cricket_stadium_on');
+      if (v === '0' || v === 'false') return false;
+      if (typeof stadiumOn !== 'undefined' && stadiumOn === false) return false;
+      if (typeof window.stadiumOn !== 'undefined' && window.stadiumOn === false) return false;
+    } catch(e){}
+    return true;
+  }
+
+  function playWhistle(){
+    if (!stadiumEnabled()) return;
+    try {
+      // Prefer existing sample player
+      if (typeof stadPlaySample === 'function') {
+        var r = stadPlaySample('whistle', 0.65, 1);
+        if (r) return;
+      }
+    } catch(e){}
+    try {
+      if (!audio) {
+        audio = new Audio(whistleUrl);
+        audio.preload = 'auto';
+        try { audio.setAttribute('playsinline',''); } catch(e){}
+      }
+      audio.volume = 0.7;
+      audio.currentTime = 0;
+      var p = audio.play();
+      if (p && p.catch) p.catch(function(){});
+    } catch(e){}
+  }
+
+  function checkOverStart(d){
+    if (!d || d.matchEnded) return;
+    var balls = d.balls|0;
+    var inns = d.innings|0;
+    // New over starts when balls % 6 === 0 after completing previous over,
+    // or first ball of over when balls%6===1 (after increment on first legal ball)
+    var ballInOver = balls % 6;
+    var overNum = Math.floor(balls / 6);
+    // Trigger at first ball of an over (ballInOver===1), or at balls===0 start of innings once
+    var key;
+    if (ballInOver === 1) {
+      key = inns + '-over-' + overNum;
+    } else if (balls === 0 && inns >= 1) {
+      key = inns + '-over-start-0';
+    } else {
+      // also detect transition: previous balls ended with %6===0 and now increased
+      return;
+    }
+    if (key === lastOverKey) return;
+    lastOverKey = key;
+    playWhistle();
+  }
+
+  // Also when currentOverBalls goes from empty/full cycle to first ball
+  var lastOverBallsLen = -1;
+  function checkFromOverArray(d){
+    if (!d) return;
+    var arr = [];
+    if (d.thisOver && Array.isArray(d.thisOver.balls)) arr = d.thisOver.balls;
+    else if (Array.isArray(d.currentOverBalls)) arr = d.currentOverBalls;
+    var len = arr.length;
+    // new over when length drops (previous over cleared) then first ball arrives
+    if (lastOverBallsLen > 0 && len === 1) {
+      var key = 'arr-'+(d.innings|0)+'-'+(d.balls|0);
+      if (key !== lastOverKey) {
+        lastOverKey = key;
+        playWhistle();
+      }
+    }
+    lastOverBallsLen = len;
+  }
+
+  function onData(raw){
+    var d = raw && raw.data && (raw.data.runs!=null||raw.data.balls!=null) ? raw.data : raw;
+    if (!d || typeof d !== 'object') return;
+    checkOverStart(d);
+    checkFromOverArray(d);
+    // call original if present
+    try {
+      if (typeof stadiumMaybeOverWhistle === 'function') stadiumMaybeOverWhistle(d);
+    } catch(e){}
+  }
+
+  function hook(){
+    ['applyData','applyLiveData','onLiveUpdate'].forEach(function(n){
+      if (typeof window[n] !== 'function' || window[n]._v166w) return;
+      var o = window[n];
+      window[n] = function(data){
+        var r = o.apply(this, arguments);
+        try { onData(data); } catch(e){}
+        return r;
+      };
+      window[n]._v166w = true;
+    });
+  }
+
+  // Preload
+  try {
+    audio = new Audio(whistleUrl);
+    audio.preload = 'auto';
+  } catch(e){}
+
+  hook();
+  setInterval(hook, 3000);
+})();
+</script>
+
+
+<script id="v167-layout-settings-js">
+(function(){
+  'use strict';
+  function $(id){ return document.getElementById(id); }
+
+  /* Single sound master switch */
+  function soundOn(){
+    try {
+      var v = localStorage.getItem('cricket_sound_master');
+      if (v === null || v === undefined || v === '') {
+        // migrate from old flags
+        var t = localStorage.getItem('cricket_tts_on');
+        var s = localStorage.getItem('cricket_stadium_on');
+        if (t === '0' || s === '0') return false;
+        return true;
+      }
+      return v !== '0' && v !== 'false';
+    } catch(e){ return true; }
+  }
+  function setSound(on){
+    try {
+      localStorage.setItem('cricket_sound_master', on ? '1' : '0');
+      localStorage.setItem('cricket_tts_on', on ? '1' : '0');
+      localStorage.setItem('cricket_stadium_on', on ? '1' : '0');
+    } catch(e){}
+    try { window.ttsOn = on; if (typeof ttsOn !== 'undefined') ttsOn = on; } catch(e){}
+    try { window.stadiumOn = on; if (typeof stadiumOn !== 'undefined') stadiumOn = on; } catch(e){}
+    if (!on) {
+      try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch(e){}
+      try { if (typeof stadStopAmbient === 'function') stadStopAmbient(); } catch(e){}
+    }
+  }
+
+  function ensureSettingsHTML(){
+    var p = $('live-settings-panel');
+    if (!p) return;
+    if (!p.querySelector('[data-act="sound-on"]')) {
+      p.innerHTML =
+        '<button type="button" class="lsd-item" data-act="sound-on">🔊 Sound: ON</button>'+
+        '<button type="button" class="lsd-item" data-act="sound-off">🔇 Sound: OFF</button>'+
+        '<div class="lsd-sep"></div>'+
+        '<button type="button" class="lsd-item" data-act="theme-light">Theme: Blue</button>'+
+        '<button type="button" class="lsd-item" data-act="theme-sports1">Theme: Sports 1</button>'+
+        '<button type="button" class="lsd-item" data-act="theme-sports2">Theme: Sports 2</button>'+
+        '<button type="button" class="lsd-item" data-act="theme-dark">Theme: Dark</button>';
+    }
+  }
+
+  function highlight(){
+    var on = soundOn();
+    var th = 'light';
+    try { th = localStorage.getItem('cricket_live_theme_v1') || document.body.getAttribute('data-theme') || 'light'; } catch(e){}
+    document.querySelectorAll('#live-settings-panel .lsd-item').forEach(function(btn){
+      var act = btn.getAttribute('data-act') || '';
+      var active = false;
+      if (act === 'sound-on') active = on;
+      if (act === 'sound-off') active = !on;
+      if (act === 'theme-light') active = th === 'light';
+      if (act === 'theme-sports1') active = th === 'sports1';
+      if (act === 'theme-sports2') active = th === 'sports2';
+      if (act === 'theme-dark') active = th === 'dark';
+      btn.classList.toggle('active', active);
+    });
+  }
+
+  function setTheme(name){
+    document.body.setAttribute('data-theme', name);
+    document.body.classList.remove('theme-sports1','theme-sports2');
+    if (name === 'sports1' || name === 'sports2') document.body.classList.add('theme-'+name);
+    try { localStorage.setItem('cricket_live_theme_v1', name); } catch(e){}
+  }
+
+  function closeSettings(){
+    var p = $('live-settings-panel');
+    if (p) p.classList.add('hidden');
+  }
+
+  function onItem(act){
+    if (act === 'sound-on') setSound(true);
+    if (act === 'sound-off') setSound(false);
+    if (act === 'theme-light') setTheme('light');
+    if (act === 'theme-sports1') setTheme('sports1');
+    if (act === 'theme-sports2') setTheme('sports2');
+    if (act === 'theme-dark') setTheme('dark');
+    highlight();
+    closeSettings();
+  }
+
+  function bindSettings(){
+    ensureSettingsHTML();
+    var p = $('live-settings-panel');
+    if (p && !p._v167) {
+      p._v167 = true;
+      p.addEventListener('click', function(e){
+        var btn = e.target.closest('.lsd-item');
+        if (!btn) return;
+        e.preventDefault(); e.stopPropagation();
+        onItem(btn.getAttribute('data-act'));
+      });
+    }
+    highlight();
+  }
+
+  // Gate both TTS and stadium through master
+  try {
+    if (window.speechSynthesis && !speechSynthesis._v167) {
+      var _speak = speechSynthesis.speak.bind(speechSynthesis);
+      speechSynthesis.speak = function(u){
+        if (!soundOn()) return;
+        return _speak(u);
+      };
+      speechSynthesis._v167 = true;
+    }
+  } catch(e){}
+  try {
+    if (typeof window.stadPlaySample === 'function' && !window.stadPlaySample._v167) {
+      var _ps = window.stadPlaySample;
+      window.stadPlaySample = function(){
+        if (!soundOn()) return null;
+        return _ps.apply(this, arguments);
+      };
+      window.stadPlaySample._v167 = true;
+    }
+  } catch(e){}
+
+  /* Viewers log: in/out, activity, online/offline */
+  function esc(s){ return String(s==null?'':s).replace(/</g,''); }
+  function fmt(ts){
+    try {
+      var d = new Date(ts);
+      if (isNaN(d.getTime())) return '—';
+      return d.toLocaleString();
+    } catch(e){ return '—'; }
+  }
+
+  function paintViewersLog(){
+    var host = $('sum-viewers-table') || $('sum-viewers');
+    if (!host) return;
+    var list = [];
+    try {
+      // from presence render
+      list = (window.__lastViewerList || []).map(function(v){
+        return {
+          name: v.name || v.displayName || 'Viewer',
+          status: (v.online === false || v.status === 'offline') ? 'offline' : 'online',
+          joinedAt: v.joinedAt || v.firstSeen || null,
+          leftAt: v.leftAt || null,
+          lastSeen: v.lastSeen || Date.now(),
+          activity: v.activity || v.tab || 'watching'
+        };
+      });
+    } catch(e){}
+    // local visit store
+    try {
+      var mid = String((window.__lastLiveData||{}).matchId || 'live');
+      var store = JSON.parse(localStorage.getItem('cricket_match_visitors_v1')||'{}')||{};
+      (store[mid]||[]).forEach(function(v){
+        if (!list.some(function(x){ return x.name === v.name; })) list.push(v);
+      });
+    } catch(e){}
+
+    list.sort(function(a,b){
+      if (a.status !== b.status) return a.status === 'online' ? -1 : 1;
+      return (b.lastSeen||0) - (a.lastSeen||0);
+    });
+
+    var h = '<table class="vlog-table"><thead><tr><th>Viewer</th><th>Status</th><th>In</th><th>Out</th><th>Last activity</th><th>Activity</th></tr></thead><tbody>';
+    if (!list.length) h += '<tr><td colspan="6" style="padding:12px">No viewer activity yet</td></tr>';
+    list.forEach(function(v){
+      h += '<tr>'
+        + '<td>'+esc(v.name)+'</td>'
+        + '<td class="'+(v.status==='online'?'vlog-online':'vlog-offline')+'">'+(v.status==='online'?'Online':'Offline')+'</td>'
+        + '<td>'+esc(fmt(v.joinedAt))+'</td>'
+        + '<td>'+esc(v.leftAt?fmt(v.leftAt):(v.status==='offline'?'—':'—'))+'</td>'
+        + '<td>'+esc(fmt(v.lastSeen))+'</td>'
+        + '<td>'+esc(v.activity||'—')+'</td>'
+        + '</tr>';
+    });
+    h += '</tbody></table>';
+    if (host.id === 'sum-viewers') {
+      host.innerHTML = '<div class="sec-title">👁 Viewers log</div><div id="sum-viewers-table">'+h+'</div>';
+    } else host.innerHTML = h;
+  }
+
+  // ensure summary has viewers subtab
+  function ensureSumViewers(){
+    var sub = document.querySelector('#panel-sum .subtabs');
+    if (!sub) return;
+    if (!$('st-viewers')) {
+      sub.innerHTML =
+        '<button type="button" class="subtab on" id="st-sum">Match results</button>'+
+        '<button type="button" class="subtab" id="st-viewers">Viewers</button>';
+    }
+    var bv = $('st-viewers');
+    if (bv && !bv._v167) {
+      bv._v167 = true;
+      bv.onclick = function(){
+        var sum=$('sum-sum'), view=$('sum-viewers');
+        if(sum){ sum.classList.add('hidden'); sum.style.display='none'; }
+        if(view){ view.classList.remove('hidden'); view.style.display='block'; }
+        $('st-sum') && $('st-sum').classList.remove('on');
+        bv.classList.add('on');
+        paintViewersLog();
+      };
+    }
+    var bs = $('st-sum');
+    if (bs && !bs._v167) {
+      bs._v167 = true;
+      bs.onclick = function(){
+        var sum=$('sum-sum'), view=$('sum-viewers');
+        if(view){ view.classList.add('hidden'); view.style.display='none'; }
+        if(sum){ sum.classList.remove('hidden'); sum.style.display='block'; }
+        bv && bv.classList.remove('on');
+        bs.classList.add('on');
+      };
+    }
+    if (!$('sum-viewers')) {
+      var panel = $('panel-sum');
+      if (panel) {
+        var div = document.createElement('div');
+        div.id = 'sum-viewers';
+        div.className = 'hidden';
+        div.innerHTML = '<div class="sec-title">👁 Viewers log</div><div id="sum-viewers-table"></div>';
+        panel.appendChild(div);
+      }
+    }
+  }
+
+  if (typeof window.renderViewers === 'function' && !window.renderViewers._v167) {
+    var _rv = window.renderViewers;
+    window.renderViewers = function(list, count){
+      try { _rv.apply(this, arguments); } catch(e){}
+      window.__lastViewerList = list || [];
+      window.__lastViewerCount = count|0;
+      try {
+        if ($('st-viewers') && $('st-viewers').classList.contains('on')) paintViewersLog();
+      } catch(e){}
+      var t = $('sc-live-txt');
+      if (t) t.textContent = 'LIVE · ' + (count|0);
+    };
+    window.renderViewers._v167 = true;
+  }
+
+  // Apply sound state on load
+  setSound(soundOn());
+
+  function boot(){
+    bindSettings();
+    ensureSumViewers();
+  }
+  boot();
+  setInterval(boot, 2500);
 })();
 </script>
 
