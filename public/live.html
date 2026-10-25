@@ -3541,7 +3541,7 @@ body[data-theme="sports1"] .dual-sub {
   opacity: 0;
   transition: opacity .2s ease;
 }
-#runs-banner.show { opacity: 1; animation: runsPop 1.3s ease-out forwards; }
+#runs-banner.show { opacity: 1; animation: runsPop 1.2s ease-out forwards; }
 @keyframes runsPop {
   0% { transform: translateX(-50%) scale(.85); opacity: 0; }
   15% { transform: translateX(-50%) scale(1.05); opacity: 1; }
@@ -3850,7 +3850,7 @@ body[data-theme="sports1"] #panel-comm .feed-item .body {
 }
 #runs-banner.show {
   opacity: 1 !important;
-  animation: runsPop 1.3s ease-out forwards !important;
+  animation: runsPop 1.2s ease-out forwards !important;
 }
 #runs-banner.wicket {
   background: linear-gradient(135deg, #b91c1c, #ef4444) !important;
@@ -4015,7 +4015,7 @@ body[data-theme="sports1"] .sb-table td.nm {
 }
 #runs-banner.show {
   opacity: 1 !important;
-  animation: v164banner 1.4s ease-out forwards !important;
+  animation: v164banner 1.2s ease-out forwards !important;
 }
 #runs-banner.runs { background: linear-gradient(135deg, #1d4ed8, #3b82f6) !important; }
 #runs-banner.wicket { background: linear-gradient(135deg, #b91c1c, #ef4444) !important; }
@@ -6214,7 +6214,7 @@ body[data-theme="sports1"] .sb-table td:first-child {
     var __lastOverKeyWhistle='';
     var __stadAmbientAudio=null;
     var __stadUnlocked=false;
-    var STAD_SFX_VER = 'v11';
+    var STAD_SFX_VER = 'v13';
     var STAD_SFX = {
       short: '/sounds/crowd_short.mp3?'+STAD_SFX_VER,
       cheer: '/sounds/crowd_cheer.mp3?'+STAD_SFX_VER,
@@ -14249,7 +14249,7 @@ try{mountDashboards()}catch(e){}
   window.__v166Whistle = true;
 
   var lastOverKey = '';
-  var whistleUrl = '/sounds/crowd_whistle.mp3?v11';
+  var whistleUrl = '/sounds/crowd_whistle.mp3?v13';
   var audio = null;
 
   function stadiumEnabled(){
@@ -14267,7 +14267,7 @@ try{mountDashboards()}catch(e){}
     try {
       // Prefer existing sample player
       if (typeof stadPlaySample === 'function') {
-        var r = stadPlaySample('whistle', 0.28, 1);
+        var r = stadPlaySample('whistle', 0.14, 1);
         if (r) return;
       }
     } catch(e){}
@@ -14277,7 +14277,7 @@ try{mountDashboards()}catch(e){}
         audio.preload = 'auto';
         try { audio.setAttribute('playsinline',''); } catch(e){}
       }
-      audio.volume = 0.28;
+      audio.volume = 0.14;
       audio.currentTime = 0;
       var p = audio.play();
       if (p && p.catch) p.catch(function(){});
@@ -14659,7 +14659,7 @@ try{mountDashboards()}catch(e){}
     b.style.animation = 'none';
     void b.offsetWidth;
     b.style.animation = 'v168pop 1.45s ease-out forwards';
-    setTimeout(function(){ try{ b.style.opacity='0'; }catch(e){} }, 1500);
+    setTimeout(function(){ try{ b.style.opacity='0'; b.classList.remove('show'); }catch(e){} }, 1200);
   }
   try {
     if (!document.getElementById('v168-banner-style')) {
@@ -14807,21 +14807,21 @@ try{mountDashboards()}catch(e){}
       if (typeof window.stadiumOn !== 'undefined' && window.stadiumOn === false) return;
 
       if (!whistleAudio) {
-        whistleAudio = new Audio('/sounds/crowd_whistle.mp3?v12');
+        whistleAudio = new Audio('/sounds/crowd_whistle.mp3?v13');
         whistleAudio.preload = 'auto';
         try { whistleAudio.setAttribute('playsinline',''); } catch(e){}
       }
-      whistleAudio.volume = 0.28; // quieter, less distortion
+      whistleAudio.volume = 0.14; // quieter, less distortion
       try { whistleAudio.currentTime = 0; } catch(e){}
       var p = whistleAudio.play();
       if (p && p.catch) p.catch(function(){});
       // fade in slightly
       try {
-        whistleAudio.volume = 0.12;
+        whistleAudio.volume = 0.05;
         var steps = 0;
         var iv = setInterval(function(){
           steps++;
-          try { whistleAudio.volume = Math.min(0.28, 0.12 + steps*0.03); } catch(e){}
+          try { whistleAudio.volume = Math.min(0.14, 0.05 + steps*0.015); } catch(e){}
           if (steps >= 6) clearInterval(iv);
         }, 40);
       } catch(e){}
@@ -14878,6 +14878,345 @@ try{mountDashboards()}catch(e){}
   }
   hook();
   setInterval(hook, 2500);
+})();
+</script>
+
+
+<script id="v169-banner-viewers-js">
+(function(){
+  'use strict';
+  if (window.__v169) return;
+  window.__v169 = true;
+
+  function $(id){ return document.getElementById(id); }
+  function unwrap(d){
+    if (!d||typeof d!=='object') return null;
+    if (d.data && typeof d.data==='object' && (d.data.runs!=null||d.data.balls!=null)) return d.data;
+    return d;
+  }
+  function esc(s){ return String(s==null?'':s).replace(/</g,''); }
+  function fmt(ts){
+    if (!ts) return '—';
+    try {
+      var d = new Date(typeof ts === 'number' ? ts : Date.parse(ts));
+      if (isNaN(d.getTime())) return '—';
+      return d.toLocaleString();
+    } catch(e){ return '—'; }
+  }
+
+  /* Unified banner — same 1.2s vanish for ALL events */
+  var BANNER_MS = 1200;
+  var lastBannerKey = '';
+  function ensureBanner(){
+    var b = $('runs-banner');
+    if (!b) {
+      b = document.createElement('div');
+      b.id = 'runs-banner';
+      document.body.appendChild(b);
+    }
+    b.style.cssText = 'position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:12000;pointer-events:none;color:#fff;font-weight:900;font-size:20px;padding:12px 22px;border-radius:16px;opacity:0;max-width:90vw;text-align:center;box-shadow:0 10px 28px rgba(0,0,0,.3)';
+    return b;
+  }
+  function showBanner(text, kind){
+    var key = kind+':'+text+':'+Date.now();
+    // dedupe same ball via lastBannerKey set by caller
+    var b = ensureBanner();
+    b.textContent = text;
+    var bg = 'linear-gradient(135deg,#1d4ed8,#3b82f6)';
+    if (kind === 'wicket') bg = 'linear-gradient(135deg,#b91c1c,#ef4444)';
+    else if (kind === 'extra') bg = 'linear-gradient(135deg,#6d28d9,#a855f7)';
+    else if (kind === 'dot') bg = 'linear-gradient(135deg,#334155,#64748b)';
+    b.style.background = bg;
+    b.style.animation = 'none';
+    void b.offsetWidth;
+    b.style.opacity = '1';
+    b.style.animation = 'v169pop 1.2s ease-out forwards';
+    clearTimeout(b._hideT);
+    b._hideT = setTimeout(function(){
+      try { b.style.opacity = '0'; } catch(e){}
+    }, BANNER_MS);
+  }
+  try {
+    if (!document.getElementById('v169-style')) {
+      var st = document.createElement('style');
+      st.id = 'v169-style';
+      st.textContent = '@keyframes v169pop{0%{transform:translateX(-50%) scale(.92);opacity:0}10%{transform:translateX(-50%) scale(1.04);opacity:1}70%{opacity:1}100%{transform:translateX(-50%) scale(.98);opacity:0}}';
+      document.head.appendChild(st);
+    }
+  } catch(e){}
+
+  /* Soft distant over whistle */
+  var lastOverKey = '';
+  var whistle = null;
+  function playDistantWhistle(){
+    try {
+      var master = localStorage.getItem('cricket_sound_master');
+      var stad = localStorage.getItem('cricket_stadium_on');
+      if (master === '0' || stad === '0') return;
+      if (typeof window.stadiumOn !== 'undefined' && window.stadiumOn === false) return;
+      if (!whistle) {
+        whistle = new Audio('/sounds/crowd_whistle.mp3?v13');
+        whistle.preload = 'auto';
+        try { whistle.setAttribute('playsinline',''); } catch(e){}
+      }
+      try { whistle.pause(); whistle.currentTime = 0; } catch(e){}
+      whistle.volume = 0.05;
+      var p = whistle.play();
+      if (p && p.catch) p.catch(function(){});
+      // gentle rise to soft distant level
+      var step = 0;
+      var iv = setInterval(function(){
+        step++;
+        try { whistle.volume = Math.min(0.14, 0.05 + step * 0.015); } catch(e){}
+        if (step >= 6) clearInterval(iv);
+      }, 50);
+    } catch(e){}
+  }
+  function checkOver(d){
+    if (!d || d.matchEnded) return;
+    var balls = d.balls|0;
+    var inns = d.innings|0;
+    var ballInOver = balls % 6;
+    var overNum = Math.floor(balls / 6);
+    if (ballInOver !== 1) return;
+    var key = inns + '-o-' + overNum;
+    if (key === lastOverKey) return;
+    lastOverKey = key;
+    playDistantWhistle();
+  }
+
+  /* Viewers log — robust local + live merge */
+  var VISIT_KEY = 'cricket_match_visitors_v1';
+  function loadVisits(){
+    try { return JSON.parse(localStorage.getItem(VISIT_KEY)||'{}')||{}; } catch(e){ return {}; }
+  }
+  function saveVisits(s){ try{ localStorage.setItem(VISIT_KEY, JSON.stringify(s)); }catch(e){} }
+
+  function matchId(d){
+    d = d || window.__lastLiveData || {};
+    return String(d.matchId || d.matchNo || ((d.teamA||d.teamAName||'A')+'|'+(d.teamB||d.teamBName||'B')+'|'+(d.matchStartTs||'live')));
+  }
+
+  function recordSelf(){
+    var d = window.__lastLiveData || {};
+    var mid = matchId(d);
+    var name = 'Viewer';
+    try {
+      name = localStorage.getItem('cricket_viewer_name') || localStorage.getItem('viewerName') || name;
+    } catch(e){}
+    var sid = '';
+    try {
+      sid = localStorage.getItem('cricket_viewer_sid');
+      if (!sid) {
+        sid = 'v_' + Math.random().toString(36).slice(2, 10);
+        localStorage.setItem('cricket_viewer_sid', sid);
+      }
+    } catch(e){ sid = 'v_' + Date.now(); }
+
+    var store = loadVisits();
+    if (!store[mid]) store[mid] = [];
+    var list = store[mid];
+    var now = Date.now();
+    var row = list.find(function(x){ return x.id === sid; });
+    if (row) {
+      row.lastSeen = now;
+      row.status = 'online';
+      row.activity = 'watching live';
+      if (!row.joinedAt) row.joinedAt = now;
+    } else {
+      list.unshift({
+        id: sid,
+        name: name,
+        joinedAt: now,
+        leftAt: null,
+        lastSeen: now,
+        status: 'online',
+        activity: 'watching live'
+      });
+    }
+    // stale offline
+    list.forEach(function(x){
+      if (x.id !== sid && x.status === 'online' && x.lastSeen && now - x.lastSeen > 120000) {
+        x.status = 'offline';
+        x.leftAt = x.lastSeen;
+      }
+    });
+    store[mid] = list.slice(0, 200);
+    saveVisits(store);
+    return list;
+  }
+
+  function collectViewers(){
+    var mid = matchId(window.__lastLiveData);
+    var map = {};
+    // local store
+    try {
+      (loadVisits()[mid] || []).forEach(function(v){
+        map[v.id || v.name] = Object.assign({}, v);
+      });
+    } catch(e){}
+    // live list from presence
+    try {
+      (window.__lastViewerList || []).forEach(function(v){
+        var id = v.id || v.sessionId || v.name || v.displayName;
+        var name = v.name || v.displayName || 'Viewer';
+        var prev = map[id] || map[name] || {};
+        map[id] = {
+          id: id,
+          name: name,
+          joinedAt: v.joinedAt || v.firstSeen || prev.joinedAt || Date.now(),
+          leftAt: v.leftAt || prev.leftAt || null,
+          lastSeen: v.lastSeen || Date.now(),
+          status: (v.online === false || v.status === 'offline') ? 'offline' : 'online',
+          activity: v.activity || v.tab || prev.activity || 'watching'
+        };
+      });
+    } catch(e){}
+    // also scan DOM viewer rows if any
+    try {
+      document.querySelectorAll('#panel-fan tr, #sum-viewers-table tr, .viewer-row').forEach(function(tr){
+        var cells = tr.querySelectorAll('td');
+        if (cells.length >= 1) {
+          var name = (cells[0].textContent||'').trim();
+          if (name && name !== 'Viewer' && !map[name]) {
+            map[name] = { id: name, name: name, status: 'online', joinedAt: Date.now(), lastSeen: Date.now(), activity: 'watching' };
+          }
+        }
+      });
+    } catch(e){}
+    var list = Object.keys(map).map(function(k){ return map[k]; });
+    list.sort(function(a,b){
+      if (a.status !== b.status) return a.status === 'online' ? -1 : 1;
+      return (b.lastSeen||0) - (a.lastSeen||0);
+    });
+    return list;
+  }
+
+  function paintViewers(){
+    ensureViewersUI();
+    var list = collectViewers();
+    var host = $('sum-viewers-table');
+    if (!host) return;
+    var h = '<table class="vlog-table" style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+      + '<th style="text-align:left;padding:8px 6px">Viewer</th>'
+      + '<th style="text-align:left;padding:8px 6px">Status</th>'
+      + '<th style="text-align:left;padding:8px 6px">In</th>'
+      + '<th style="text-align:left;padding:8px 6px">Out</th>'
+      + '<th style="text-align:left;padding:8px 6px">Last seen</th>'
+      + '<th style="text-align:left;padding:8px 6px">Activity</th>'
+      + '</tr></thead><tbody>';
+    if (!list.length) {
+      h += '<tr><td colspan="6" style="padding:14px">No viewers yet — open this live link on another device/browser to record a visit.</td></tr>';
+    } else {
+      list.forEach(function(v){
+        var online = v.status === 'online';
+        h += '<tr>'
+          + '<td style="padding:8px 6px">'+esc(v.name)+'</td>'
+          + '<td style="padding:8px 6px;font-weight:800;color:'+(online?'#16a34a':'#64748b')+'">'+(online?'Online':'Offline')+'</td>'
+          + '<td style="padding:8px 6px">'+esc(fmt(v.joinedAt))+'</td>'
+          + '<td style="padding:8px 6px">'+esc(v.leftAt?fmt(v.leftAt):'—')+'</td>'
+          + '<td style="padding:8px 6px">'+esc(fmt(v.lastSeen))+'</td>'
+          + '<td style="padding:8px 6px">'+esc(v.activity||'—')+'</td>'
+          + '</tr>';
+      });
+    }
+    h += '</tbody></table>';
+    host.innerHTML = h;
+  }
+
+  function ensureViewersUI(){
+    var panel = $('panel-sum');
+    if (!panel) return;
+    var sub = panel.querySelector('.subtabs');
+    if (sub && !$('st-viewers')) {
+      sub.innerHTML =
+        '<button type="button" class="subtab on" id="st-sum">Match results</button>'+
+        '<button type="button" class="subtab" id="st-viewers">Viewers</button>';
+    }
+    if (!$('sum-viewers')) {
+      var div = document.createElement('div');
+      div.id = 'sum-viewers';
+      div.className = 'hidden';
+      div.innerHTML = '<div style="padding:8px 10px;font-weight:900">👁 Viewers log</div><div id="sum-viewers-table"></div>';
+      panel.appendChild(div);
+    } else if (!$('sum-viewers-table')) {
+      $('sum-viewers').innerHTML = '<div style="padding:8px 10px;font-weight:900">👁 Viewers log</div><div id="sum-viewers-table"></div>';
+    }
+    var bv = $('st-viewers');
+    if (bv && !bv._v169) {
+      bv._v169 = true;
+      bv.addEventListener('click', function(){
+        var sum=$('sum-sum'), view=$('sum-viewers');
+        if (sum){ sum.classList.add('hidden'); sum.style.display='none'; }
+        if (view){ view.classList.remove('hidden'); view.style.display='block'; }
+        if ($('st-sum')) $('st-sum').classList.remove('on');
+        bv.classList.add('on');
+        recordSelf();
+        paintViewers();
+      });
+    }
+    var bs = $('st-sum');
+    if (bs && !bs._v169) {
+      bs._v169 = true;
+      bs.addEventListener('click', function(){
+        var sum=$('sum-sum'), view=$('sum-viewers');
+        if (view){ view.classList.add('hidden'); view.style.display='none'; }
+        if (sum){ sum.classList.remove('hidden'); sum.style.display='block'; }
+        if (bv) bv.classList.remove('on');
+        bs.classList.add('on');
+      });
+    }
+  }
+
+  // Hook presence
+  if (typeof window.renderViewers === 'function' && !window.renderViewers._v169) {
+    var _rv = window.renderViewers;
+    window.renderViewers = function(list, count){
+      try { _rv.apply(this, arguments); } catch(e){}
+      window.__lastViewerList = list || [];
+      window.__lastViewerCount = count|0;
+      try {
+        var t = $('sc-live-txt');
+        if (t) t.textContent = 'LIVE · ' + (count|0);
+      } catch(e){}
+      try {
+        if ($('st-viewers') && $('st-viewers').classList.contains('on')) paintViewers();
+      } catch(e){}
+    };
+    window.renderViewers._v169 = true;
+  }
+
+  function onData(raw){
+    var d = unwrap(raw)||raw;
+    if (!d||typeof d!=='object') return;
+    window.__lastLiveData = d;
+    checkOver(d);
+    recordSelf();
+  }
+
+  function hook(){
+    ensureViewersUI();
+    recordSelf();
+    ['applyData','applyLiveData','onLiveUpdate'].forEach(function(n){
+      if (typeof window[n] !== 'function' || window[n]._v169b) return;
+      var o = window[n];
+      window[n] = function(data){
+        var r = o.apply(this, arguments);
+        try { onData(data); } catch(e){}
+        return r;
+      };
+      window[n]._v169b = true;
+    });
+  }
+
+  // Override showBanner from older scripts to unified timing when possible
+  window.showBanner = showBanner;
+  window.paintViewersLog = paintViewers;
+  window.paintViewersSummary = paintViewers;
+
+  hook();
+  setInterval(function(){ try{ recordSelf(); }catch(e){} }, 20000);
+  setInterval(hook, 3000);
 })();
 </script>
 
