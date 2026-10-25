@@ -14267,7 +14267,7 @@ try{mountDashboards()}catch(e){}
     try {
       // Prefer existing sample player
       if (typeof stadPlaySample === 'function') {
-        var r = stadPlaySample('whistle', 0.65, 1);
+        var r = stadPlaySample('whistle', 0.28, 1);
         if (r) return;
       }
     } catch(e){}
@@ -14277,7 +14277,7 @@ try{mountDashboards()}catch(e){}
         audio.preload = 'auto';
         try { audio.setAttribute('playsinline',''); } catch(e){}
       }
-      audio.volume = 0.7;
+      audio.volume = 0.28;
       audio.currentTime = 0;
       var p = audio.play();
       if (p && p.catch) p.catch(function(){});
@@ -14614,6 +14614,270 @@ try{mountDashboards()}catch(e){}
   }
   boot();
   setInterval(boot, 2500);
+})();
+</script>
+
+
+<script id="v168-events-tts-js">
+(function(){
+  'use strict';
+  if (window.__v168ev) return;
+  window.__v168ev = true;
+
+  function $(id){ return document.getElementById(id); }
+  function unwrap(d){
+    if (!d||typeof d!=='object') return null;
+    if (d.data && typeof d.data==='object' && (d.data.runs!=null||d.data.balls!=null||d.data.lastEvent)) return d.data;
+    return d;
+  }
+  function clean(t){
+    return String(t||'').replace(/[*＊]/g,' ').replace(/\basterisks?\b/gi,' ').replace(/\s+/g,' ').trim();
+  }
+
+  /* Banner */
+  function ensureBanner(){
+    var b = $('runs-banner');
+    if (!b) {
+      b = document.createElement('div');
+      b.id = 'runs-banner';
+      b.style.cssText = 'position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:12000;pointer-events:none;color:#fff;font-weight:900;font-size:20px;padding:12px 22px;border-radius:16px;opacity:0;max-width:90vw;text-align:center;box-shadow:0 10px 28px rgba(0,0,0,.3)';
+      document.body.appendChild(b);
+    }
+    return b;
+  }
+  function showBanner(text, kind){
+    var b = ensureBanner();
+    b.textContent = text;
+    // colors
+    var bg = 'linear-gradient(135deg,#1d4ed8,#3b82f6)'; // runs blue
+    if (kind === 'wicket') bg = 'linear-gradient(135deg,#b91c1c,#ef4444)';
+    else if (kind === 'extra') bg = 'linear-gradient(135deg,#6d28d9,#a855f7)'; // purple wide/nb/lb
+    else if (kind === 'dot') bg = 'linear-gradient(135deg,#334155,#64748b)';
+    b.style.background = bg;
+    b.style.opacity = '1';
+    b.className = 'show ' + kind;
+    b.style.animation = 'none';
+    void b.offsetWidth;
+    b.style.animation = 'v168pop 1.45s ease-out forwards';
+    setTimeout(function(){ try{ b.style.opacity='0'; }catch(e){} }, 1500);
+  }
+  try {
+    if (!document.getElementById('v168-banner-style')) {
+      var st = document.createElement('style');
+      st.id = 'v168-banner-style';
+      st.textContent = '@keyframes v168pop{0%{transform:translateX(-50%) scale(.9);opacity:0}12%{transform:translateX(-50%) scale(1.05);opacity:1}75%{opacity:1}100%{transform:translateX(-50%) scale(.98);opacity:0}}'
+        + '#anim-overlay,#anim-overlay .burst,#event-anim-layer{display:none!important}';
+      document.head.appendChild(st);
+    }
+  } catch(e){}
+
+  function lastChip(d){
+    var arr = [];
+    if (d.thisOver && Array.isArray(d.thisOver.balls)) arr = d.thisOver.balls;
+    else if (Array.isArray(d.currentOverBalls)) {
+      arr = d.currentOverBalls.map(function(c){ return (c && typeof c==='object') ? (c.label||c.chip||'') : c; });
+    }
+    if (!arr.length) return '';
+    return String(arr[arr.length-1]||'');
+  }
+
+  function detectEvent(d){
+    var ev = String(d.lastEvent||'').toLowerCase();
+    if (ev && ev !== 'null' && ev !== 'undefined') return ev;
+    var chip = lastChip(d).toUpperCase();
+    if (!chip) return '';
+    if (chip === 'W' || chip.indexOf('W')===0 && chip.indexOf('WD')<0) return 'wicket';
+    if (chip.indexOf('WD')>=0) return 'wide';
+    if (chip.indexOf('NB')>=0) return 'noball';
+    if (chip.indexOf('LB')>=0) return 'legbye';
+    if (chip === '6') return 'six';
+    if (chip === '5') return 'five';
+    if (chip === '4') return 'four';
+    if (chip === '3') return 'three';
+    if (chip === '2') return 'two';
+    if (chip === '1') return 'one';
+    if (chip === '0' || chip === '•' || chip === '.') return 'dot';
+    return '';
+  }
+
+  function dismissalText(d){
+    var how = d.lastDismissal || d.dismissal || d.howOut || d.wicketType || '';
+    try {
+      var fow = d.fallOfWickets || [];
+      if (fow.length) {
+        var last = fow[fow.length-1];
+        if (!how || /^w(icket)?$/i.test(how) || /^out$/i.test(how))
+          how = last.dismissal || last.howOut || last.how || how;
+        if (last.fielder && how && String(how).toLowerCase().indexOf(String(last.fielder).toLowerCase())<0)
+          how += (how ? ' — ' : '') + last.fielder;
+      }
+    } catch(e){}
+    return clean(how || 'OUT');
+  }
+
+  var lastKey = '';
+  function handle(d){
+    var ev = detectEvent(d);
+    if (!ev) return;
+    var key = (d.balls|0)+':'+ev+':'+(d.runs|0)+':'+(d.wickets|0)+':'+lastChip(d);
+    if (key === lastKey) return;
+    lastKey = key;
+
+    // kill white double anim
+    try {
+      var ov=$('anim-overlay'); if(ov){ ov.style.display='none'; ov.innerHTML=''; }
+      var el=$('event-anim-layer'); if(el) el.innerHTML='';
+    } catch(e){}
+
+    if (ev==='wicket'||ev==='w'||ev==='out') {
+      showBanner('WICKET · ' + dismissalText(d), 'wicket');
+    } else if (ev==='six'||ev==='6') showBanner('6 RUNS', 'runs');
+    else if (ev==='four'||ev==='4'||ev==='boundary') showBanner('4 RUNS', 'runs');
+    else if (ev==='three'||ev==='3') showBanner('3 RUNS', 'runs');
+    else if (ev==='two'||ev==='2') showBanner('2 RUNS', 'runs');
+    else if (ev==='one'||ev==='1') showBanner('1 RUN', 'runs');
+    else if (ev==='five'||ev==='5') showBanner('5 RUNS', 'runs');
+    else if (ev==='dot'||ev==='0') showBanner('DOT BALL', 'dot');
+    else if (ev==='wide'||ev==='wd') showBanner('WIDE', 'extra');
+    else if (ev==='noball'||ev==='nb'||ev==='no-ball') showBanner('NO BALL', 'extra');
+    else if (ev==='legbye'||ev==='lb'||ev==='leg-bye') showBanner('LEG BYE', 'extra');
+    else if (ev==='bye') showBanner('BYE', 'extra');
+  }
+
+  /* TTS: over . ball + event */
+  function overBallWords(d){
+    var balls = d.balls|0;
+    var ov = Math.floor(balls/6);
+    var b = balls % 6;
+    if (b === 0 && balls > 0) { ov = ov - 1; b = 6; }
+    return ov + ' point ' + b;
+  }
+  var lastTts = '';
+  function speak(d){
+    try {
+      var master = localStorage.getItem('cricket_sound_master');
+      var ttsFlag = localStorage.getItem('cricket_tts_on');
+      if (master === '0' || ttsFlag === '0') return;
+      if (typeof window.ttsOn !== 'undefined' && window.ttsOn === false) return;
+      if (!window.speechSynthesis) return;
+
+      var ev = detectEvent(d);
+      if (!ev) return;
+      var key = (d.balls|0)+':'+ev+':'+(d.runs|0)+':'+(d.wickets|0);
+      if (key === lastTts) return;
+      lastTts = key;
+
+      var label = overBallWords(d);
+      var st = clean(d.strikerName||'batsman');
+      var phrase = label + '. ';
+      if (ev==='wicket'||ev==='w') phrase += 'Wicket. ' + dismissalText(d);
+      else if (ev==='six') phrase += 'Six runs to ' + st;
+      else if (ev==='four') phrase += 'Four runs to ' + st;
+      else if (ev==='three') phrase += 'Three runs';
+      else if (ev==='two') phrase += 'Two runs';
+      else if (ev==='one') phrase += 'One run';
+      else if (ev==='five') phrase += 'Five runs';
+      else if (ev==='dot') phrase += 'Dot ball';
+      else if (ev==='wide') phrase += 'Wide';
+      else if (ev==='noball') phrase += 'No ball';
+      else if (ev==='legbye') phrase += 'Leg bye';
+      else if (ev==='bye') phrase += 'Bye';
+      else {
+        var arr = d.commentary||[];
+        var last = arr.length ? clean(arr[arr.length-1]) : '';
+        if (last) phrase += last;
+        else return;
+      }
+      try { speechSynthesis.cancel(); } catch(e){}
+      var u = new SpeechSynthesisUtterance(phrase);
+      u.rate = 1.05;
+      u.volume = 1;
+      setTimeout(function(){ try{ speechSynthesis.speak(u); }catch(e){} }, 30);
+    } catch(e){}
+  }
+
+  /* Quieter over whistle — lower volume, soft start */
+  var lastOverKey = '';
+  var whistleAudio = null;
+  function playSoftWhistle(){
+    try {
+      var master = localStorage.getItem('cricket_sound_master');
+      var stad = localStorage.getItem('cricket_stadium_on');
+      if (master === '0' || stad === '0') return;
+      if (typeof window.stadiumOn !== 'undefined' && window.stadiumOn === false) return;
+
+      if (!whistleAudio) {
+        whistleAudio = new Audio('/sounds/crowd_whistle.mp3?v12');
+        whistleAudio.preload = 'auto';
+        try { whistleAudio.setAttribute('playsinline',''); } catch(e){}
+      }
+      whistleAudio.volume = 0.28; // quieter, less distortion
+      try { whistleAudio.currentTime = 0; } catch(e){}
+      var p = whistleAudio.play();
+      if (p && p.catch) p.catch(function(){});
+      // fade in slightly
+      try {
+        whistleAudio.volume = 0.12;
+        var steps = 0;
+        var iv = setInterval(function(){
+          steps++;
+          try { whistleAudio.volume = Math.min(0.28, 0.12 + steps*0.03); } catch(e){}
+          if (steps >= 6) clearInterval(iv);
+        }, 40);
+      } catch(e){}
+    } catch(e){}
+  }
+  function checkOver(d){
+    var balls = d.balls|0;
+    var inns = d.innings|0;
+    var ballInOver = balls % 6;
+    var overNum = Math.floor(balls / 6);
+    if (ballInOver !== 1 && !(balls===0 && inns>=1)) return;
+    var key = inns + '-o-' + overNum + '-' + ballInOver;
+    if (key === lastOverKey) return;
+    lastOverKey = key;
+    playSoftWhistle();
+  }
+
+  // Override loud whistle from v166
+  window.__v166Whistle = true; // prevent duplicate module re-init issues
+  try {
+    // lower volume on any stadPlaySample('whistle')
+    if (typeof window.stadPlaySample === 'function' && !window.stadPlaySample._v168) {
+      var _ps = window.stadPlaySample;
+      window.stadPlaySample = function(key, vol, rate){
+        if (String(key) === 'whistle') {
+          vol = Math.min(vol == null ? 0.28 : vol, 0.28);
+        }
+        return _ps.call(this, key, vol, rate);
+      };
+      window.stadPlaySample._v168 = true;
+    }
+  } catch(e){}
+
+  function onData(raw){
+    var d = unwrap(raw)||raw;
+    if (!d||typeof d!=='object') return;
+    window.__lastLiveData = d;
+    handle(d);
+    speak(d);
+    checkOver(d);
+  }
+
+  function hook(){
+    ['applyData','applyLiveData','onLiveUpdate'].forEach(function(n){
+      if (typeof window[n] !== 'function' || window[n]._v168) return;
+      var o = window[n];
+      window[n] = function(data){
+        var r = o.apply(this, arguments);
+        try { onData(data); } catch(e){}
+        return r;
+      };
+      window[n]._v168 = true;
+    });
+  }
+  hook();
+  setInterval(hook, 2500);
 })();
 </script>
 

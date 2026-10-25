@@ -7453,6 +7453,15 @@ function placeBoundaryAnimationOnStriker(toast){
             })(),
             lastRuns: (function(){ try { var h=deliveryHistory||[]; var d=h[h.length-1]; return d?(d.runs|0):null; } catch(e){ return null; } })(),
             lastChip: (function(){ try { var h=deliveryHistory||[]; var d=h[h.length-1]; return d?String(d.chipLabel||''):''; } catch(e){ return ''; } })(),
+            lastDismissal: (function(){
+                try {
+                    var hist = deliveryHistory || [];
+                    if (!hist.length) return '';
+                    var d = hist[hist.length - 1];
+                    if (!d || !d.isWicket) return '';
+                    return String(d.dismissal || d.howOut || d.wicketType || 'Out');
+                } catch(e){ return ''; }
+            })(),
             lastEvent: (function(){
                 try {
                     var hist = deliveryHistory || [];
@@ -7461,9 +7470,19 @@ function placeBoundaryAnimationOnStriker(toast){
                     if (!d) return null;
                     if (d.isWicket) return 'wicket';
                     var r = d.runs|0;
-                    var lab = String(d.chipLabel||'');
+                    var lab = String(d.chipLabel||d.label||'').toUpperCase();
+                    var typ = String(d.type||d.extraType||'').toLowerCase();
+                    if (lab.indexOf('WD')>=0 || typ==='wide') return 'wide';
+                    if (lab.indexOf('NB')>=0 || typ==='noball' || typ==='no-ball') return 'noball';
+                    if (lab.indexOf('LB')>=0 || typ==='legbye' || typ==='leg-bye') return 'legbye';
+                    if (lab.indexOf('B')===0 && lab.indexOf('NB')<0 && typ==='bye') return 'bye';
                     if (r === 6 || lab === '6') return 'six';
+                    if (r === 5 || lab === '5') return 'five';
                     if (r === 4 || lab === '4') return 'four';
+                    if (r === 3 || lab === '3') return 'three';
+                    if (r === 2 || lab === '2') return 'two';
+                    if (r === 1 || lab === '1') return 'one';
+                    if (r === 0 || lab === '0' || lab === '•' || lab === '.') return 'dot';
                     // Milestone on this ball (striker total)
                     try {
                       var ss = document.getElementById('select-striker');
