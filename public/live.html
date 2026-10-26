@@ -4285,6 +4285,201 @@ body[data-theme="sports1"] .sb-table th {
 #anim-overlay, #event-anim-layer { display: none !important; }
 </style>
 
+
+<style id="v171-stable">
+/* VS-centered event banner */
+#vs-event-banner {
+  position: absolute !important;
+  left: 50% !important;
+  top: 58% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 45 !important;
+  pointer-events: none !important;
+  min-width: 120px;
+  max-width: 80%;
+  padding: 12px 18px !important;
+  border-radius: 14px !important;
+  font-weight: 900 !important;
+  font-size: 18px !important;
+  text-align: center !important;
+  color: #1c1917 !important;
+  background: #fdba74 !important; /* light orange */
+  border: 2px solid rgba(255,255,255,.55) !important;
+  box-shadow: 0 8px 22px rgba(0,0,0,.22) !important;
+  opacity: 0 !important;
+  transition: opacity .2s ease;
+}
+#vs-event-banner.show {
+  opacity: 1 !important;
+  animation: v171vs 3s ease-out forwards !important;
+}
+#vs-event-banner.wicket {
+  background: #fca5a5 !important; /* light red */
+  color: #450a0a !important;
+}
+@keyframes v171vs {
+  0% { transform: translate(-50%,-50%) scale(.92); opacity: 0; }
+  8% { transform: translate(-50%,-50%) scale(1.04); opacity: 1; }
+  78% { opacity: 1; }
+  100% { transform: translate(-50%,-50%) scale(1); opacity: 0; }
+}
+/* Hide old banners / white bursts */
+#runs-banner, #anim-overlay, #event-anim-layer, #anim-text {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+.score-card { position: relative !important; }
+
+/* Sports1 table text black */
+body[data-theme="sports1"] .sb-table td,
+body[data-theme="sports1"] .sb-table .dual-main,
+body[data-theme="sports1"] .sb-table .dual-sub {
+  color: #000 !important;
+}
+</style>
+
+
+<style id="v172-ui">
+/* Hide ALL duplicate match result banners except #match-end-cover on scoreboard */
+#match-end-banner,
+.match-result-banner,
+.result-banner,
+.live-match-result,
+#panel-live .match-result,
+#panel-live [class*="match-result"],
+#panel-live [id*="match-result"],
+#panel-live .result-card {
+  display: none !important;
+}
+/* Single scoreboard result overlay covering VS / scores */
+#match-end-cover {
+  position: absolute !important;
+  left: 8px !important;
+  right: 8px !important;
+  top: 48px !important;
+  bottom: auto !important;
+  z-index: 35 !important;
+  border-radius: 16px !important;
+  background: linear-gradient(135deg, #c2410c, #ea580c 50%, #f97316) !important;
+  color: #fff !important;
+  text-align: center !important;
+  padding: 14px 12px !important;
+  box-shadow: 0 10px 28px rgba(234,88,12,.4) !important;
+  display: none;
+}
+#match-end-cover.show { display: block !important; }
+#match-end-cover .mec-label {
+  font-size: 11px; font-weight: 900; letter-spacing: .12em;
+  text-transform: uppercase; color: #fde68a; margin-bottom: 4px;
+}
+#match-end-cover .mec-result { font-size: 17px; font-weight: 900; margin: 4px 0; }
+#match-end-cover .mec-scores { font-size: 12px; opacity: .95; }
+#match-end-cover .mec-pom { margin-top: 8px; font-size: 13px; font-weight: 800; color: #fef08a; }
+
+/* VS event banner */
+#vs-event-banner {
+  position: absolute !important;
+  left: 50% !important;
+  top: 56% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 40 !important;
+}
+
+/* Scorecard team subtabs */
+.sc-team-tabs {
+  display: flex !important;
+  gap: 8px !important;
+  margin: 8px !important;
+}
+.sc-team-tabs .subtab {
+  flex: 1 !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--line, #cbd5e1) !important;
+  background: var(--card, #fff) !important;
+  color: var(--text, #0f172a) !important;
+  font-weight: 800 !important;
+  padding: 10px !important;
+  cursor: pointer !important;
+}
+.sc-team-tabs .subtab.on {
+  background: #0d9488 !important;
+  color: #fff !important;
+  border-color: #0d9488 !important;
+}
+.sc-pane.hidden { display: none !important; }
+</style>
+
+
+<style id="v173-vs-anim">
+/* Event animation ONLY on main score VS zone */
+.score-card .teams,
+#score-teams {
+  position: relative !important;
+}
+#vs-event-banner {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 50 !important;
+  pointer-events: none !important;
+  min-width: 110px;
+  max-width: 70%;
+  padding: 12px 16px !important;
+  border-radius: 14px !important;
+  font-weight: 900 !important;
+  font-size: 17px !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+  color: #fff !important;
+  border: 2px solid rgba(255,255,255,.45) !important;
+  box-shadow: 0 10px 24px rgba(0,0,0,.28) !important;
+  opacity: 0 !important;
+  /* default runs / light orange-amber like boundary buttons */
+  background: linear-gradient(135deg, #f59e0b, #ea580c) !important;
+}
+#vs-event-banner.show {
+  opacity: 1 !important;
+  animation: v173vs 3s ease-out forwards !important;
+}
+/* Scorer-like colors */
+#vs-event-banner.ev-runs {
+  background: linear-gradient(135deg, #f59e0b, #ea580c) !important; /* 1-3 / general */
+  color: #fff !important;
+}
+#vs-event-banner.ev-four {
+  background: linear-gradient(135deg, #22c55e, #15803d) !important; /* green 4 */
+  color: #fff !important;
+}
+#vs-event-banner.ev-six {
+  background: linear-gradient(135deg, #a855f7, #7c3aed) !important; /* purple 6 */
+  color: #fff !important;
+}
+#vs-event-banner.ev-dot {
+  background: linear-gradient(135deg, #64748b, #475569) !important; /* grey dot */
+  color: #fff !important;
+}
+#vs-event-banner.ev-extra {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9) !important; /* purple wide/nb/lb */
+  color: #fff !important;
+}
+#vs-event-banner.ev-wicket {
+  background: linear-gradient(135deg, #ef4444, #b91c1c) !important; /* red wicket */
+  color: #fff !important;
+}
+@keyframes v173vs {
+  0% { transform: translate(-50%,-50%) scale(.9); opacity: 0; }
+  8% { transform: translate(-50%,-50%) scale(1.05); opacity: 1; }
+  78% { opacity: 1; }
+  100% { transform: translate(-50%,-50%) scale(1); opacity: 0; }
+}
+/* Kill any banners outside score teams area */
+#runs-banner {
+  display: none !important;
+}
+</style>
+
 </head>
 <body>
 
@@ -6577,6 +6772,7 @@ body[data-theme="sports1"] .sb-table th {
 
     /** Whistle only on 1st or 2nd ball of a new over */
     function stadiumMaybeOverWhistle(data){
+      return; // v171: disabled loud whistle — soft whistle handled separately
       if(!stadiumOn || !data || data.matchEnded) return;
       try{
         var ballsN = data.balls|0;
@@ -15705,6 +15901,942 @@ try{mountDashboards()}catch(e){}
 
   hook();
   setInterval(hook, 2500);
+})();
+</script>
+
+
+<script id="v171-stable-js">
+(function(){
+  'use strict';
+  if (window.__v171stable) return;
+  window.__v171stable = true;
+
+  function $(id){ return document.getElementById(id); }
+  function unwrap(d){
+    if (!d || typeof d !== 'object') return null;
+    if (d.data && typeof d.data === 'object' && (d.data.runs != null || d.data.balls != null || d.data.commentary))
+      return d.data;
+    return d;
+  }
+  function clean(t){
+    return String(t||'').replace(/[*＊]/g,' ').replace(/\basterisks?\b/gi,' ').replace(/\s+/g,' ').trim();
+  }
+
+  /* ---- Kill conflicting loud audio paths ---- */
+  try { window.stadiumMaybeOverWhistle = function(){}; } catch(e){}
+  try {
+    // Block ambient forever
+    window.stadStartAmbient = function(){};
+    if (typeof stadStopAmbient === 'function') try{ stadStopAmbient(); }catch(e){}
+    if (window.__stadAmbientAudio) {
+      try { window.__stadAmbientAudio.pause(); window.__stadAmbientAudio = null; } catch(e){}
+    }
+  } catch(e){}
+
+  // Soft-wrap stadPlaySample: whistle very quiet; ignore short/ambient keys that spam
+  try {
+    if (typeof window.stadPlaySample === 'function') {
+      var _ps = window.stadPlaySample;
+      window.stadPlaySample = function(key, vol, rate){
+        var k = String(key||'').toLowerCase();
+        // never play continuous/short crowd on every ball
+        if (k === 'short' || k === 'ambient') return null;
+        if (k === 'whistle') {
+          // route to soft whistle only
+          playSoftWhistle();
+          return null;
+        }
+        // boundaries/wickets only, moderated volume
+        if (k === 'cheer' || k === 'chant') {
+          vol = Math.min(vol == null ? 0.35 : vol, 0.35);
+          return _ps.call(this, key, vol, rate);
+        }
+        return _ps.call(this, key, vol, rate);
+      };
+    }
+  } catch(e){}
+
+  /* ---- Soft distant over whistle (single instance) ---- */
+  var whistleAudio = null;
+  var whistlePlaying = false;
+  var lastOverKey = '';
+  function playSoftWhistle(){
+    try {
+      var master = localStorage.getItem('cricket_sound_master');
+      var stad = localStorage.getItem('cricket_stadium_on');
+      if (master === '0' || stad === '0') return;
+      if (typeof window.stadiumOn !== 'undefined' && window.stadiumOn === false) return;
+      if (whistlePlaying) return;
+
+      if (!whistleAudio) {
+        whistleAudio = new Audio('/sounds/crowd_whistle.mp3?v15');
+        whistleAudio.preload = 'auto';
+        try { whistleAudio.setAttribute('playsinline',''); } catch(e){}
+        whistleAudio.addEventListener('ended', function(){ whistlePlaying = false; });
+        whistleAudio.addEventListener('error', function(){ whistlePlaying = false; });
+      }
+      try { whistleAudio.pause(); whistleAudio.currentTime = 0; } catch(e){}
+      whistleAudio.volume = 0.04; // soft / distant
+      whistlePlaying = true;
+      var p = whistleAudio.play();
+      if (p && p.catch) p.catch(function(){ whistlePlaying = false; });
+      // stop after 2.5s even if file longer — distant brief cue
+      setTimeout(function(){
+        try {
+          if (whistleAudio) {
+            // fade out
+            var v = whistleAudio.volume;
+            var iv = setInterval(function(){
+              v -= 0.01;
+              if (v <= 0.01) {
+                clearInterval(iv);
+                try { whistleAudio.pause(); } catch(e){}
+                whistlePlaying = false;
+              } else {
+                try { whistleAudio.volume = v; } catch(e){}
+              }
+            }, 40);
+          }
+        } catch(e){ whistlePlaying = false; }
+      }, 2200);
+    } catch(e){ whistlePlaying = false; }
+  }
+
+  function checkOverStart(d){
+    if (!d || d.matchEnded) return;
+    var balls = d.balls|0;
+    var inns = d.innings|0;
+    // first legal ball of over
+    if ((balls % 6) !== 1) return;
+    var key = inns + ':' + Math.floor(balls/6);
+    if (key === lastOverKey) return;
+    lastOverKey = key;
+    playSoftWhistle();
+  }
+
+  /* ---- Correct event detection (W is wicket, not dot) ---- */
+  function lastChip(d){
+    var arr = [];
+    if (d.thisOver && Array.isArray(d.thisOver.balls)) arr = d.thisOver.balls;
+    else if (Array.isArray(d.currentOverBalls)) {
+      arr = d.currentOverBalls.map(function(c){
+        return c && typeof c === 'object' ? (c.label || c.chip || '') : c;
+      });
+    }
+    if (!arr.length) return '';
+    return String(arr[arr.length - 1] || '').trim();
+  }
+
+  function detectEvent(d){
+    // Prefer explicit lastEvent when valid
+    var ev = String(d.lastEvent || '').toLowerCase().trim();
+    var chip = lastChip(d).toUpperCase();
+
+    // Chip is most reliable for "this ball"
+    if (chip) {
+      // Wicket: plain W or starts with W but not WD
+      if (chip === 'W' || chip === 'WICKET' || (/^W/.test(chip) && chip.indexOf('WD') < 0 && chip.indexOf('WIDE') < 0)) {
+        return 'wicket';
+      }
+      if (chip.indexOf('WD') >= 0 || chip === 'WIDE') return 'wide';
+      if (chip.indexOf('NB') >= 0) return 'noball';
+      if (chip.indexOf('LB') >= 0) return 'legbye';
+      if (chip === '6') return 'six';
+      if (chip === '5') return 'five';
+      if (chip === '4') return 'four';
+      if (chip === '3') return 'three';
+      if (chip === '2') return 'two';
+      if (chip === '1') return 'one';
+      if (chip === '0' || chip === '•' || chip === '.' || chip === 'DOT') return 'dot';
+    }
+
+    if (ev === 'wicket' || ev === 'w' || ev === 'out') return 'wicket';
+    if (ev === 'six' || ev === '4' || ev === 'four' || ev === 'three' || ev === 'two' || ev === 'one' ||
+        ev === 'dot' || ev === 'wide' || ev === 'noball' || ev === 'legbye' || ev === 'bye' ||
+        ev === 'five' || ev === 'boundary') return ev === '4' ? 'four' : ev;
+    return '';
+  }
+
+  function dismissalText(d){
+    var how = d.lastDismissal || d.dismissal || d.howOut || '';
+    try {
+      var fow = d.fallOfWickets || [];
+      if (fow.length) {
+        var last = fow[fow.length - 1];
+        if (!how || /^w/i.test(how) || /^out$/i.test(how))
+          how = last.dismissal || last.howOut || last.how || how;
+        if (last.fielder && how && String(how).toLowerCase().indexOf(String(last.fielder).toLowerCase()) < 0)
+          how += (how ? ' — ' : '') + last.fielder;
+      }
+    } catch(e){}
+    return clean(how || 'OUT');
+  }
+
+  /* ---- VS banner ---- */
+  function ensureBanner(){
+    var card = document.querySelector('.score-card');
+    var b = $('vs-event-banner');
+    if (!b) {
+      b = document.createElement('div');
+      b.id = 'vs-event-banner';
+      if (card) card.appendChild(b);
+      else document.body.appendChild(b);
+    } else if (card && b.parentNode !== card) {
+      card.appendChild(b);
+    }
+    return b;
+  }
+  var lastBannerKey = '';
+  function showVsBanner(text, isWicket){
+    var b = ensureBanner();
+    b.textContent = text;
+    b.classList.toggle('wicket', !!isWicket);
+    b.classList.remove('show');
+    void b.offsetWidth;
+    b.classList.add('show');
+    clearTimeout(b._t);
+    b._t = setTimeout(function(){ try{ b.classList.remove('show'); }catch(e){} }, 3000);
+  }
+
+  var lastEvKey = '';
+  function handleEvent(d){
+    var ev = detectEvent(d);
+    if (!ev) return;
+    var key = (d.balls|0) + ':' + ev + ':' + (d.runs|0) + ':' + (d.wickets|0) + ':' + lastChip(d);
+    if (key === lastEvKey) return;
+    lastEvKey = key;
+
+    if (ev === 'wicket') showVsBanner('WICKET · ' + dismissalText(d), true);
+    else if (ev === 'six') showVsBanner('6 RUNS', false);
+    else if (ev === 'four' || ev === 'boundary') showVsBanner('4 RUNS', false);
+    else if (ev === 'three') showVsBanner('3 RUNS', false);
+    else if (ev === 'two') showVsBanner('2 RUNS', false);
+    else if (ev === 'one') showVsBanner('1 RUN', false);
+    else if (ev === 'five') showVsBanner('5 RUNS', false);
+    else if (ev === 'dot') showVsBanner('DOT BALL', false);
+    else if (ev === 'wide') showVsBanner('WIDE', false);
+    else if (ev === 'noball') showVsBanner('NO BALL', false);
+    else if (ev === 'legbye') showVsBanner('LEG BYE', false);
+    else if (ev === 'bye') showVsBanner('BYE', false);
+  }
+
+  /* ---- Commentary TTS: full line, default on, no stuck queue ---- */
+  var lastTtsKey = '';
+  var ttsBusyUntil = 0;
+  function soundAllowed(){
+    try {
+      var master = localStorage.getItem('cricket_sound_master');
+      var tts = localStorage.getItem('cricket_tts_on');
+      if (master === '0') return false;
+      if (tts === '0') return false;
+      if (typeof window.ttsOn !== 'undefined' && window.ttsOn === false) return false;
+    } catch(e){}
+    return true;
+  }
+  // default sound on
+  try {
+    if (localStorage.getItem('cricket_tts_on') === null)
+      localStorage.setItem('cricket_tts_on', '1');
+    if (localStorage.getItem('cricket_sound_master') === null)
+      localStorage.setItem('cricket_sound_master', '1');
+    window.ttsOn = true;
+  } catch(e){}
+
+  function speakCommentary(d){
+    if (!soundAllowed() || !window.speechSynthesis) return;
+    var arr = d.commentary || [];
+    var line = arr.length ? clean(arr[arr.length - 1]) : '';
+    if (!line) return;
+    var key = (d.balls|0) + ':' + line.slice(0, 80);
+    if (key === lastTtsKey) return;
+    // don't stack — if still speaking same second, cancel and play latest only
+    lastTtsKey = key;
+    try { speechSynthesis.cancel(); } catch(e){}
+    var u = new SpeechSynthesisUtterance(line);
+    u.rate = 1.0;
+    u.volume = 1;
+    ttsBusyUntil = Date.now() + Math.min(8000, line.length * 60);
+    setTimeout(function(){
+      try { speechSynthesis.speak(u); } catch(e){}
+    }, 40);
+  }
+
+  // Override speakNewCommentary to full line only
+  window.speakNewCommentary = function(data){
+    try {
+      var d = unwrap(data) || data;
+      if (d) speakCommentary(d);
+    } catch(e){}
+  };
+
+  /* ---- Stable viewers list ---- */
+  var stableViewers = [];
+  var stableViewersSig = '';
+  function mergeViewers(list){
+    list = list || [];
+    var map = {};
+    // keep previous
+    stableViewers.forEach(function(v){
+      var id = v.id || v.name;
+      map[id] = Object.assign({}, v);
+    });
+    list.forEach(function(v){
+      var id = v.id || v.sessionId || v.name || v.displayName;
+      var name = v.name || v.displayName || 'Viewer';
+      var prev = map[id] || {};
+      map[id] = {
+        id: id,
+        name: name,
+        joinedAt: v.joinedAt || v.firstSeen || prev.joinedAt || Date.now(),
+        leftAt: v.leftAt || null,
+        lastSeen: v.lastSeen || Date.now(),
+        status: (v.online === false || v.status === 'offline') ? 'offline' : 'online',
+        activity: v.activity || v.tab || prev.activity || 'watching'
+      };
+    });
+    // mark stale offline without removing (stable list)
+    var now = Date.now();
+    Object.keys(map).forEach(function(id){
+      var v = map[id];
+      if (v.status === 'online' && v.lastSeen && now - v.lastSeen > 180000) {
+        v.status = 'offline';
+        if (!v.leftAt) v.leftAt = v.lastSeen;
+      }
+    });
+    stableViewers = Object.keys(map).map(function(k){ return map[k]; });
+    stableViewers.sort(function(a,b){
+      if (a.status !== b.status) return a.status === 'online' ? -1 : 1;
+      return (b.lastSeen||0) - (a.lastSeen||0);
+    });
+    return stableViewers;
+  }
+
+  function paintViewersStable(){
+    var host = $('sum-viewers-table');
+    if (!host) {
+      ensureViewersUI();
+      host = $('sum-viewers-table');
+    }
+    if (!host) return;
+    var list = mergeViewers(window.__lastViewerList || []);
+    var sig = list.map(function(v){ return v.id+':'+v.status+':'+v.lastSeen; }).join('|');
+    if (sig === stableViewersSig) return; // no DOM flicker
+    stableViewersSig = sig;
+
+    function ftime(ts){
+      if (!ts) return '—';
+      try { var d = new Date(ts); return isNaN(d.getTime())?'—':d.toLocaleString(); } catch(e){ return '—'; }
+    }
+    var h = '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+      + '<th style="text-align:left;padding:8px">Viewer</th><th style="text-align:left;padding:8px">Status</th>'
+      + '<th style="text-align:left;padding:8px">In</th><th style="text-align:left;padding:8px">Out</th>'
+      + '<th style="text-align:left;padding:8px">Last seen</th><th style="text-align:left;padding:8px">Activity</th>'
+      + '</tr></thead><tbody>';
+    if (!list.length) h += '<tr><td colspan="6" style="padding:12px">No viewers yet</td></tr>';
+    list.forEach(function(v){
+      var online = v.status === 'online';
+      h += '<tr><td style="padding:8px">' + String(v.name||'').replace(/</g,'') + '</td>'
+        + '<td style="padding:8px;font-weight:800;color:'+(online?'#16a34a':'#64748b')+'">'+(online?'Online':'Offline')+'</td>'
+        + '<td style="padding:8px">'+ftime(v.joinedAt)+'</td>'
+        + '<td style="padding:8px">'+(v.leftAt?ftime(v.leftAt):'—')+'</td>'
+        + '<td style="padding:8px">'+ftime(v.lastSeen)+'</td>'
+        + '<td style="padding:8px">'+String(v.activity||'—').replace(/</g,'')+'</td></tr>';
+    });
+    h += '</tbody></table>';
+    host.innerHTML = h;
+  }
+
+  function ensureViewersUI(){
+    var panel = $('panel-sum');
+    if (!panel) return;
+    if (!$('sum-viewers')) {
+      var div = document.createElement('div');
+      div.id = 'sum-viewers';
+      div.className = 'hidden';
+      div.innerHTML = '<div style="padding:8px 10px;font-weight:900">👁 Viewers log</div><div id="sum-viewers-table"></div>';
+      panel.appendChild(div);
+    } else if (!$('sum-viewers-table')) {
+      $('sum-viewers').innerHTML = '<div style="padding:8px 10px;font-weight:900">👁 Viewers log</div><div id="sum-viewers-table"></div>';
+    }
+    var sub = panel.querySelector('.subtabs');
+    if (sub && !$('st-viewers')) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'subtab'; b.id = 'st-viewers'; b.textContent = 'Viewers';
+      sub.appendChild(b);
+    }
+  }
+
+  function openViewers(){
+    ensureViewersUI();
+    try { if (typeof setViewerTab === 'function') setViewerTab('sum'); } catch(e){}
+    var sum = $('sum-sum'), view = $('sum-viewers');
+    if (sum) { sum.classList.add('hidden'); sum.style.setProperty('display','none','important'); }
+    if (view) { view.classList.remove('hidden'); view.style.setProperty('display','block','important'); }
+    if ($('st-sum')) $('st-sum').classList.remove('on');
+    if ($('st-viewers')) $('st-viewers').classList.add('on');
+    paintViewersStable();
+  }
+
+  document.addEventListener('click', function(e){
+    var btn = e.target && e.target.closest && e.target.closest('#st-viewers, button');
+    if (!btn) return;
+    var label = (btn.textContent||'').trim().toLowerCase();
+    if (btn.id === 'st-viewers' || label === 'viewers') {
+      e.preventDefault(); e.stopPropagation();
+      openViewers();
+    }
+  }, true);
+
+  if (typeof window.renderViewers === 'function' && !window.renderViewers._v171) {
+    var _rv = window.renderViewers;
+    window.renderViewers = function(list, count){
+      // throttle heavy work
+      window.__lastViewerList = list || [];
+      window.__lastViewerCount = count|0;
+      try {
+        var t = $('sc-live-txt');
+        if (t) t.textContent = 'LIVE · ' + (count|0);
+      } catch(e){}
+      // only paint if viewers panel open
+      try {
+        if ($('st-viewers') && $('st-viewers').classList.contains('on')) paintViewersStable();
+      } catch(e){}
+      // still call original lightly
+      try { _rv.apply(this, arguments); } catch(e){}
+    };
+    window.renderViewers._v171 = true;
+  }
+
+  function onData(raw){
+    var d = unwrap(raw) || raw;
+    if (!d || typeof d !== 'object') return;
+    window.__lastLiveData = d;
+    handleEvent(d);
+    speakCommentary(d);
+    checkOverStart(d);
+  }
+
+  function hook(){
+    ensureBanner();
+    ensureViewersUI();
+    ['applyData','applyLiveData','onLiveUpdate'].forEach(function(n){
+      if (typeof window[n] !== 'function' || window[n]._v171) return;
+      var o = window[n];
+      window[n] = function(data){
+        var r;
+        try { r = o.apply(this, arguments); } catch(e){}
+        try { onData(data); } catch(e){}
+        return r;
+      };
+      window[n]._v171 = true;
+    });
+  }
+
+  // Neutralize older showBanner that might show wrong type
+  window.showBanner = function(text, kind){
+    var isW = kind === 'wicket' || /wicket/i.test(String(text||''));
+    showVsBanner(String(text||''), isW);
+  };
+
+  hook();
+  setInterval(hook, 3000);
+})();
+</script>
+
+
+<script id="v172-ui-js">
+(function(){
+  'use strict';
+  if (window.__v172) return;
+  window.__v172 = true;
+
+  function $(id){ return document.getElementById(id); }
+  function unwrap(d){
+    if (!d||typeof d!=='object') return null;
+    if (d.data && typeof d.data==='object' && (d.data.runs!=null||d.data.balls!=null||d.data.matchEnded)) return d.data;
+    return d;
+  }
+  function esc(s){ return String(s==null?'':s).replace(/</g,''); }
+
+  /* Remove duplicate result banners from live content area */
+  function stripDuplicateResults(){
+    try {
+      document.querySelectorAll('#panel-live .match-result-banner, #panel-live .result-banner, #panel-live [class*="result-card"], #match-end-banner').forEach(function(n){
+        n.style.display = 'none';
+        n.classList.add('hidden');
+      });
+      // hide any orange gradient cards that say MATCH RESULT inside panel-live
+      document.querySelectorAll('#panel-live div').forEach(function(n){
+        var t = (n.textContent||'').trim();
+        if (/^MATCH RESULT/i.test(t) && t.length < 200) {
+          // likely a banner block
+          var bg = window.getComputedStyle(n).backgroundColor || '';
+          if (n.children.length && n.children.length < 8) {
+            n.style.display = 'none';
+          }
+        }
+      });
+    } catch(e){}
+  }
+
+  /* One result banner on scoreboard covering scores */
+  function ensureCover(){
+    var card = document.querySelector('.score-card');
+    if (!card) return null;
+    var el = $('match-end-cover');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'match-end-cover';
+      card.appendChild(el);
+    }
+    return el;
+  }
+  function paintMatchEnd(d){
+    stripDuplicateResults();
+    var el = ensureCover();
+    if (!el || !d) return;
+    var ended = !!(d.matchEnded || d.matchEnd || d.status==='completed' || d.status==='ended');
+    var result = d.matchResult || d.resultText || d.result || '';
+    if (!ended && !result) {
+      el.classList.remove('show');
+      el.style.display = 'none';
+      return;
+    }
+    if (!result) result = 'Match completed';
+    var ta = d.teamA || d.teamAName || 'Team A';
+    var tb = d.teamB || d.teamBName || 'Team B';
+    var sa = d.teamARuns!=null ? (d.teamARuns+'/'+(d.teamAWickets!=null?d.teamAWickets:'')) : '';
+    var sb = d.teamBRuns!=null ? (d.teamBRuns+'/'+(d.teamBWickets!=null?d.teamBWickets:'')) : '';
+    var oa = d.teamAOvers || '';
+    var ob = d.teamBOvers || '';
+    var pom = d.playerOfMatch || d.pom || d.manOfMatch || '';
+    el.innerHTML =
+      '<div class="mec-label">Match result</div>'+
+      '<div class="mec-result">'+esc(result)+'</div>'+
+      '<div class="mec-scores">'+esc(ta)+(sa?': '+sa:'')+(oa?' ('+oa+')':'')+
+      ' · '+esc(tb)+(sb?': '+sb:'')+(ob?' ('+ob+')':'')+'</div>'+
+      (pom ? '<div class="mec-pom">★ Player of the match: '+esc(pom)+'</div>' : '');
+    el.classList.add('show');
+    el.style.display = 'block';
+  }
+
+  /* Scorecard: two team subtabs, default batting team */
+  function ensureScorecardTabs(d){
+    d = d || window.__lastLiveData || {};
+    var panel = $('panel-stats');
+    if (!panel) return;
+    var body = $('scorecard-body') || panel;
+    if (!$('sc-team-tabs')) {
+      var tabs = document.createElement('div');
+      tabs.id = 'sc-team-tabs';
+      tabs.className = 'sc-team-tabs';
+      tabs.innerHTML =
+        '<button type="button" class="subtab on" id="sc-tab-a">Team A</button>'+
+        '<button type="button" class="subtab" id="sc-tab-b">Team B</button>';
+      body.insertBefore(tabs, body.firstChild);
+    }
+    // Build panes if needed
+    if (!$('sc-pane-a') || !$('sc-pane-b')) {
+      // wrap existing content into panes
+      var existing = [];
+      Array.prototype.slice.call(body.children).forEach(function(ch){
+        if (ch.id === 'sc-team-tabs') return;
+        existing.push(ch);
+      });
+      var paneA = $('sc-pane-a');
+      var paneB = $('sc-pane-b');
+      if (!paneA) {
+        paneA = document.createElement('div');
+        paneA.id = 'sc-pane-a';
+        paneA.className = 'sc-pane';
+        body.appendChild(paneA);
+      }
+      if (!paneB) {
+        paneB = document.createElement('div');
+        paneB.id = 'sc-pane-b';
+        paneB.className = 'sc-pane hidden';
+        body.appendChild(paneB);
+      }
+      // move original blocks into pane A initially; paintScorecardTeams will refill
+      existing.forEach(function(ch){
+        if (ch.id === 'sc-pane-a' || ch.id === 'sc-pane-b' || ch.id === 'sc-team-tabs') return;
+        // leave for now
+      });
+    }
+    var ta = d.teamA || d.teamAName || 'Team A';
+    var tb = d.teamB || d.teamBName || 'Team B';
+    if ($('sc-tab-a')) $('sc-tab-a').textContent = ta;
+    if ($('sc-tab-b')) $('sc-tab-b').textContent = tb;
+
+    // Default batting team
+    var battingIsA = true;
+    try {
+      var roleA = ($('v-role-a') && $('v-role-a').textContent || '').toLowerCase();
+      var roleB = ($('v-role-b') && $('v-role-b').textContent || '').toLowerCase();
+      if (roleB.indexOf('batt') >= 0) battingIsA = false;
+      if (roleA.indexOf('batt') >= 0) battingIsA = true;
+      // also from data
+      if (d.battingTeam === 'B' || d.battingTeam === tb) battingIsA = false;
+      if (d.battingTeam === 'A' || d.battingTeam === ta) battingIsA = true;
+    } catch(e){}
+
+    if (!window.__scTabChosen) {
+      showScTab(battingIsA ? 'a' : 'b');
+    }
+
+    var ba = $('sc-tab-a'), bb = $('sc-tab-b');
+    if (ba && !ba._v172) {
+      ba._v172 = true;
+      ba.onclick = function(){ window.__scTabChosen = true; showScTab('a'); };
+    }
+    if (bb && !bb._v172) {
+      bb._v172 = true;
+      bb.onclick = function(){ window.__scTabChosen = true; showScTab('b'); };
+    }
+
+    paintScorecardTeams(d);
+  }
+
+  function showScTab(which){
+    var pa = $('sc-pane-a'), pb = $('sc-pane-b');
+    var ba = $('sc-tab-a'), bb = $('sc-tab-b');
+    if (which === 'b') {
+      if (pa) pa.classList.add('hidden');
+      if (pb) pb.classList.remove('hidden');
+      if (ba) ba.classList.remove('on');
+      if (bb) bb.classList.add('on');
+    } else {
+      if (pb) pb.classList.add('hidden');
+      if (pa) pa.classList.remove('hidden');
+      if (bb) bb.classList.remove('on');
+      if (ba) ba.classList.add('on');
+    }
+  }
+
+  function tableBat(list){
+    list = list || [];
+    if (!list.length) return '<div class="empty" style="padding:10px">Yet to bat</div>';
+    var h = '<table class="sc-table" style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="text-align:left">Batter</th><th>R</th><th>B</th><th>4s</th><th>6s</th><th>SR</th></tr></thead><tbody>';
+    list.forEach(function(p){
+      var r=p.runs|0,b=p.balls|0,f=p.fours|0,s=p.sixes|0;
+      var sr = b ? Math.round(r/b*1000)/10 : 0;
+      var name = (p.name||'—') + (p.isOut ? '' : (p.balls!=null?'':'') );
+      var out = p.isOut ? (' <span style="opacity:.7;font-size:11px">'+(p.howOut||p.dismissal||'out')+'</span>') : (p.balls!=null?'*':'');
+      h += '<tr><td style="text-align:left;padding:6px">'+esc(p.name||'—')+out+'</td><td style="text-align:center">'+r+'</td><td style="text-align:center">'+b+'</td><td style="text-align:center">'+f+'</td><td style="text-align:center">'+s+'</td><td style="text-align:center">'+sr+'</td></tr>';
+    });
+    return h + '</tbody></table>';
+  }
+  function tableBowl(list){
+    list = list || [];
+    if (!list.length) return '<div class="empty" style="padding:10px">Yet to bowl</div>';
+    var h = '<table class="sc-table" style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="text-align:left">Bowler</th><th>O</th><th>R</th><th>W</th><th>Econ</th></tr></thead><tbody>';
+    list.forEach(function(p){
+      var bb=p.bowlBalls!=null?(p.bowlBalls|0):(p.balls|0);
+      var rr=p.bowlRuns!=null?(p.bowlRuns|0):(p.runs|0);
+      var w=p.wickets|0;
+      var o = Math.floor(bb/6)+'.'+(bb%6);
+      var econ = bb ? (Math.round((rr/(bb/6))*100)/100).toFixed(2) : '0.00';
+      h += '<tr><td style="text-align:left;padding:6px">'+esc(p.name||'—')+'</td><td style="text-align:center">'+o+'</td><td style="text-align:center">'+rr+'</td><td style="text-align:center">'+w+'</td><td style="text-align:center">'+econ+'</td></tr>';
+    });
+    return h + '</tbody></table>';
+  }
+
+  function paintScorecardTeams(d){
+    d = d || window.__lastLiveData || {};
+    var ta = d.teamA || d.teamAName || 'Team A';
+    var tb = d.teamB || d.teamBName || 'Team B';
+    // Prefer innings arrays
+    var batA = d.innings1Batters || d.teamABatters || [];
+    var bowlA = d.innings1Bowlers || d.teamABowlers || [];
+    var batB = d.innings2Batters || d.teamBBatters || [];
+    var bowlB = d.innings2Bowlers || d.teamBBowlers || [];
+    // Fallback: split batters/bowlers by team field
+    if (!batA.length && Array.isArray(d.batters)) {
+      batA = d.batters.filter(function(p){ return p.team==='A' || p.teamName===ta; });
+      batB = d.batters.filter(function(p){ return p.team==='B' || p.teamName===tb; });
+    }
+    if (!bowlA.length && Array.isArray(d.bowlers)) {
+      bowlA = d.bowlers.filter(function(p){ return p.team==='A' || p.teamName===ta; });
+      bowlB = d.bowlers.filter(function(p){ return p.team==='B' || p.teamName===tb; });
+    }
+    var pa = $('sc-pane-a'), pb = $('sc-pane-b');
+    if (pa) {
+      pa.innerHTML = '<div style="padding:6px 8px;font-weight:900">'+esc(ta)+' — Batting</div>'+tableBat(batA)
+        + '<div style="padding:10px 8px 6px;font-weight:900">Bowling</div>'+tableBowl(bowlA);
+    }
+    if (pb) {
+      pb.innerHTML = '<div style="padding:6px 8px;font-weight:900">'+esc(tb)+' — Batting</div>'+tableBat(batB)
+        + '<div style="padding:10px 8px 6px;font-weight:900">Bowling</div>'+tableBowl(bowlB);
+    }
+  }
+
+  /* Viewers: open without hang — lightweight, no heavy loops */
+  var viewersOpen = false;
+  function openViewersLite(){
+    viewersOpen = true;
+    try { if (typeof setViewerTab === 'function') setViewerTab('sum'); } catch(e){}
+    var panel = $('panel-sum');
+    if (panel) {
+      panel.classList.remove('hidden');
+      panel.style.setProperty('display','block','important');
+    }
+    // hide other main panels
+    ['panel-live','panel-comm','panel-stats','panel-fow','panel-caps'].forEach(function(id){
+      var p=$(id); if(p){ p.classList.add('hidden'); p.style.display='none'; }
+    });
+    if (!$('sum-viewers')) {
+      if (panel) {
+        var div=document.createElement('div');
+        div.id='sum-viewers';
+        div.innerHTML='<div style="padding:8px;font-weight:900">👁 Viewers</div><div id="sum-viewers-table">Loading…</div>';
+        panel.appendChild(div);
+      }
+    }
+    var sum=$('sum-sum'), view=$('sum-viewers');
+    if(sum){ sum.style.display='none'; sum.classList.add('hidden'); }
+    if(view){ view.style.display='block'; view.classList.remove('hidden'); }
+    // paint async so UI doesn't freeze
+    setTimeout(function(){
+      try { if (typeof paintViewersStable === 'function') paintViewersStable();
+        else if (typeof paintViewers === 'function') paintViewers();
+        else {
+          var host=$('sum-viewers-table');
+          var list=window.__lastViewerList||[];
+          if(host){
+            if(!list.length) host.innerHTML='<div style="padding:12px">No viewers yet</div>';
+            else host.innerHTML='<ul style="padding:8px 16px">'+list.map(function(v){return '<li>'+esc(v.name||v.displayName||'Viewer')+' — '+(v.status||'online')+'</li>';}).join('')+'</ul>';
+          }
+        }
+      } catch(e){}
+    }, 30);
+  }
+
+  document.addEventListener('click', function(e){
+    var t=e.target;
+    if(!t||!t.closest) return;
+    var btn=t.closest('#st-viewers, #tab-sum, button');
+    if(!btn) return;
+    var label=(btn.textContent||'').trim().toLowerCase();
+    if(btn.id==='st-viewers' || label==='viewers'){
+      e.preventDefault();
+      e.stopPropagation();
+      openViewersLite();
+    }
+  }, true);
+
+  // When scorecard tab opens
+  var _st = window.setViewerTab;
+  window.setViewerTab = function(tab){
+    if (typeof _st === 'function') {
+      try { _st(tab); } catch(e){}
+    }
+    var t = String(tab||'').toLowerCase();
+    if (t==='stats' || t==='scorecard') {
+      setTimeout(function(){ ensureScorecardTabs(window.__lastLiveData); }, 20);
+    }
+    if (t==='sum' || t==='summary') {
+      // keep match results default unless viewers was requested
+    }
+  };
+
+  function onData(raw){
+    var d=unwrap(raw)||raw;
+    if(!d||typeof d!=='object') return;
+    window.__lastLiveData=d;
+    paintMatchEnd(d);
+    stripDuplicateResults();
+    // if scorecard visible, refresh panes
+    try {
+      var ps=$('panel-stats');
+      if(ps && !ps.classList.contains('hidden')) ensureScorecardTabs(d);
+    } catch(e){}
+  }
+
+  function hook(){
+    stripDuplicateResults();
+    ensureCover();
+    ['applyData','applyLiveData','onLiveUpdate'].forEach(function(n){
+      if(typeof window[n]!=='function'||window[n]._v172) return;
+      var o=window[n];
+      window[n]=function(data){
+        var r=o.apply(this,arguments);
+        try{ onData(data);}catch(e){}
+        return r;
+      };
+      window[n]._v172=true;
+    });
+  }
+
+  hook();
+  setInterval(function(){ try{ stripDuplicateResults(); }catch(e){} }, 2000);
+  setInterval(hook, 3000);
+})();
+</script>
+
+
+<script id="v173-vs-anim-js">
+(function(){
+  'use strict';
+  if (window.__v173) return;
+  window.__v173 = true;
+
+  function $(id){ return document.getElementById(id); }
+  function unwrap(d){
+    if (!d||typeof d!=='object') return null;
+    if (d.data && typeof d.data==='object' && (d.data.runs!=null||d.data.balls!=null||d.data.lastEvent)) return d.data;
+    return d;
+  }
+
+  function teamsHost(){
+    return $('score-teams') || document.querySelector('.score-card .teams') || document.querySelector('.teams');
+  }
+
+  function ensureBanner(){
+    var host = teamsHost();
+    var b = $('vs-event-banner');
+    if (!b) {
+      b = document.createElement('div');
+      b.id = 'vs-event-banner';
+      b.setAttribute('aria-live','polite');
+    }
+    // MUST be inside teams/VS container
+    if (host) {
+      if (b.parentNode !== host) host.appendChild(b);
+      try {
+        var st = window.getComputedStyle(host);
+        if (st.position === 'static') host.style.position = 'relative';
+      } catch(e){ host.style.position = 'relative'; }
+    }
+    return b;
+  }
+
+  function lastChip(d){
+    var arr=[];
+    if (d.thisOver && Array.isArray(d.thisOver.balls)) arr=d.thisOver.balls;
+    else if (Array.isArray(d.currentOverBalls))
+      arr=d.currentOverBalls.map(function(c){ return c&&typeof c==='object'?(c.label||''):c; });
+    return arr.length ? String(arr[arr.length-1]||'').trim() : '';
+  }
+
+  function detectEvent(d){
+    var chip = lastChip(d).toUpperCase();
+    if (chip) {
+      if (chip==='W' || chip==='WICKET' || (/^W/.test(chip) && chip.indexOf('WD')<0)) return 'wicket';
+      if (chip.indexOf('WD')>=0 || chip==='WIDE') return 'wide';
+      if (chip.indexOf('NB')>=0) return 'noball';
+      if (chip.indexOf('LB')>=0) return 'legbye';
+      if (chip==='6') return 'six';
+      if (chip==='5') return 'five';
+      if (chip==='4') return 'four';
+      if (chip==='3') return 'three';
+      if (chip==='2') return 'two';
+      if (chip==='1') return 'one';
+      if (chip==='0'||chip==='•'||chip==='.'||chip==='DOT') return 'dot';
+    }
+    var ev = String(d.lastEvent||'').toLowerCase();
+    if (ev==='w') return 'wicket';
+    return ev || '';
+  }
+
+  function dismissalText(d){
+    var how = d.lastDismissal || d.dismissal || d.howOut || '';
+    try {
+      var fow = d.fallOfWickets || [];
+      if (fow.length) {
+        var last = fow[fow.length-1];
+        if (!how || /^w/i.test(how) || /^out$/i.test(how))
+          how = last.dismissal || last.howOut || last.how || how;
+      }
+    } catch(e){}
+    return String(how||'OUT').replace(/[*＊]/g,' ').replace(/\s+/g,' ').trim();
+  }
+
+  var lastKey = '';
+  function show(text, cls){
+    var b = ensureBanner();
+    b.textContent = text;
+    b.className = 'show ' + (cls || 'ev-runs');
+    clearTimeout(b._t);
+    b._t = setTimeout(function(){ try{ b.classList.remove('show'); }catch(e){} }, 3000);
+  }
+
+  function handle(d){
+    var ev = detectEvent(d);
+    if (!ev) return;
+    var key = (d.balls|0)+':'+ev+':'+(d.runs|0)+':'+(d.wickets|0)+':'+lastChip(d);
+    if (key === lastKey) return;
+    lastKey = key;
+
+    // Hide any misplaced banners elsewhere
+    try {
+      document.querySelectorAll('#runs-banner, #anim-overlay, #event-anim-layer').forEach(function(n){
+        n.style.display='none'; n.innerHTML='';
+      });
+    } catch(e){}
+
+    if (ev==='wicket') show('WICKET · '+dismissalText(d), 'ev-wicket');
+    else if (ev==='six') show('6 RUNS', 'ev-six');
+    else if (ev==='four'||ev==='boundary') show('4 RUNS', 'ev-four');
+    else if (ev==='three') show('3 RUNS', 'ev-runs');
+    else if (ev==='two') show('2 RUNS', 'ev-runs');
+    else if (ev==='one') show('1 RUN', 'ev-runs');
+    else if (ev==='five') show('5 RUNS', 'ev-runs');
+    else if (ev==='dot') show('DOT BALL', 'ev-dot');
+    else if (ev==='wide') show('WIDE', 'ev-extra');
+    else if (ev==='noball') show('NO BALL', 'ev-extra');
+    else if (ev==='legbye') show('LEG BYE', 'ev-extra');
+    else if (ev==='bye') show('BYE', 'ev-extra');
+  }
+
+  // Override older showVsBanner / showBanner
+  window.showVsBanner = function(text, isWicket){
+    show(String(text||''), isWicket ? 'ev-wicket' : 'ev-runs');
+  };
+  window.showBanner = function(text, kind){
+    var map = {
+      wicket:'ev-wicket', runs:'ev-runs', extra:'ev-extra', dot:'ev-dot',
+      four:'ev-four', six:'ev-six'
+    };
+    var cls = map[kind] || (String(kind).indexOf('wicket')>=0 ? 'ev-wicket' : 'ev-runs');
+    if (/4 RUN/i.test(text)) cls = 'ev-four';
+    if (/6 RUN/i.test(text)) cls = 'ev-six';
+    if (/DOT/i.test(text)) cls = 'ev-dot';
+    if (/WIDE|NO BALL|LEG BYE|BYE/i.test(text)) cls = 'ev-extra';
+    if (/WICKET/i.test(text)) cls = 'ev-wicket';
+    show(String(text||''), cls);
+  };
+
+  function onData(raw){
+    var d = unwrap(raw)||raw;
+    if (!d||typeof d!=='object') return;
+    handle(d);
+  }
+
+  function hook(){
+    ensureBanner();
+    ['applyData','applyLiveData','onLiveUpdate'].forEach(function(n){
+      if (typeof window[n] !== 'function' || window[n]._v173) return;
+      var o = window[n];
+      window[n] = function(data){
+        var r = o.apply(this, arguments);
+        try { onData(data); } catch(e){}
+        return r;
+      };
+      window[n]._v173 = true;
+    });
+  }
+
+  // Continuously ensure banner stays parented under teams/VS
+  setInterval(function(){
+    try {
+      var host = teamsHost();
+      var b = $('vs-event-banner');
+      if (host && b && b.parentNode !== host) host.appendChild(b);
+    } catch(e){}
+  }, 1500);
+
+  hook();
+  setInterval(hook, 3000);
 })();
 </script>
 
