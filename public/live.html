@@ -4789,7 +4789,7 @@ body[data-theme="sports1"] #fow-body th {
           <button type="button" class="tab" id="tab-comm" onclick="setViewerTab('comm')">Commentary</button>
           <button type="button" class="tab" id="tab-fow" onclick="setViewerTab('fow')">Fall of wickets</button>
           <button type="button" class="tab" id="tab-caps" onclick="setViewerTab('caps')">Caps</button>
-          <button type="button" class="tab" id="tab-sum" onclick="setViewerTab('sum')">Summary</button>
+          <button type="button" class="tab" id="tab-sum" onclick="try{setViewerTab('sum')}catch(e){}">Summary</button>
         </div>
         <div id="panel-live" class="panel panel-live">
         <div class="inns-row action-row" style="display:flex;flex-wrap:nowrap;align-items:center;gap:8px;width:100%">
@@ -5434,8 +5434,8 @@ body[data-theme="sports1"] #fow-body th {
       if(t==='viewers') t='fan';
       window.__currentViewerTab = t;
       try{ postViewerActivity('tab', {tab:t, text:'Opened '+t}); }catch(eTab){}
-      if(t==='sum'){ try{setSumSub('teams')}catch(e){} try{ paintViewersSummary(); }catch(eV){} }
-      if(t==='fan'){ try{ loadFansRank(); paintViewersSummary(); }catch(eF){} }
+      if(t==='sum'){ try{ if(typeof setSumSub==='function') setSumSub('sum'); }catch(e){} /* no paintViewersSummary on open — was hanging */ }
+      if(t==='fan'){ try{ /* skip loadFansRank on open */ }catch(eF){} }
       var ids=['live','comm','stats','fow','caps','fan','sum'];
       ids.forEach(function(x){
         var tb=$('tab-'+x), pn=$('panel-'+x);
@@ -18580,6 +18580,117 @@ try{mountDashboards()}catch(e){}
   }
 
   setTimeout(function(){ try{ ensurePanel(); }catch(e){} }, 400);
+})();
+</script>
+
+
+<script id="v181-summary-nohang-js">
+(function(){
+  'use strict';
+  if (window.__v181sum) return;
+  window.__v181sum = true;
+
+  function $(id){ return document.getElementById(id); }
+
+  // Never block UI on presence/activity posts
+  try {
+    if (typeof window.postViewerActivity === 'function' && !window.postViewerActivity._v181) {
+      var _pva = window.postViewerActivity;
+      window.postViewerActivity = function(){
+        try {
+          var args = arguments;
+          setTimeout(function(){ try{ _pva.apply(null, args); }catch(e){} }, 0);
+        } catch(e){}
+      };
+      window.postViewerActivity._v181 = true;
+    }
+  } catch(e){}
+
+  // Lightweight Summary open — only panel switch, deferred content
+  function openSummaryLite(){
+    window.__currentViewerTab = 'sum';
+    var ids = ['live','comm','stats','fow','caps','fan','sum'];
+    for (var i = 0; i < ids.length; i++) {
+      var x = ids[i];
+      var tb = $('tab-'+x);
+      if (x === 'stats') tb = tb || $('tab-stats');
+      var pn = $('panel-'+x);
+      var on = (x === 'sum');
+      if (tb) tb.classList.toggle('on', on);
+      if (pn) {
+        if (on) {
+          pn.classList.remove('hidden');
+          pn.style.display = 'block';
+        } else {
+          pn.classList.add('hidden');
+          pn.style.display = 'none';
+        }
+      }
+    }
+    // Show Match results pane by default (not viewers)
+    try {
+      var sum = $('sum-sum');
+      var view = $('sum-viewers');
+      var lite = $('sum-viewers-lite');
+      if (view) { view.classList.add('hidden'); view.style.display = 'none'; }
+      if (lite) { lite.classList.remove('active'); lite.style.display = 'none'; }
+      if (sum) {
+        sum.classList.remove('hidden');
+        sum.style.display = 'block';
+      }
+      if ($('st-viewers')) $('st-viewers').classList.remove('on');
+      if ($('st-sum')) $('st-sum').classList.add('on');
+    } catch(e){}
+
+    // Defer any heavy summary paint to next tick
+    setTimeout(function(){
+      try {
+        if (typeof window.paintSummaryResults === 'function') window.paintSummaryResults();
+        else if (typeof window.paintMatchResults === 'function') window.paintMatchResults();
+      } catch(e){}
+    }, 0);
+  }
+
+  // Wrap setViewerTab so sum path is always light
+  var wraps = 0;
+  function install(){
+    if (typeof window.setViewerTab !== 'function') return;
+    if (window.setViewerTab._v181core) return;
+    var prev = window.setViewerTab;
+    window.setViewerTab = function(t){
+      t = String(t || 'live');
+      if (t === 'summary') t = 'sum';
+      if (t === 'sum') {
+        openSummaryLite();
+        return;
+      }
+      // other tabs: call previous without forcing viewers paint
+      try { return prev.apply(this, arguments); } catch(e){}
+    };
+    window.setViewerTab._v181core = true;
+    wraps++;
+  }
+
+  // Direct button binding (capture) — highest priority
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    if (!t || !t.closest) return;
+    var btn = t.closest('#tab-sum, button.tab');
+    if (!btn) return;
+    var id = btn.id || '';
+    var label = (btn.textContent || '').trim().toLowerCase();
+    if (id === 'tab-sum' || label === 'summary') {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+      openSummaryLite();
+      return false;
+    }
+  }, true);
+
+  install();
+  setTimeout(install, 200);
+  setTimeout(install, 1000);
 })();
 </script>
 
