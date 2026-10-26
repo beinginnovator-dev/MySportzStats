@@ -2324,6 +2324,51 @@ body[data-theme="bluewhite"] .theme-text { color: #0c4a6e !important; }
 body[data-theme="bluewhite"] .theme-muted { color: #0284c7 !important; }
 </style>
 
+
+<style id="v192-dark-text">
+body[data-theme="dark"] .theme-text,
+body[data-theme="dark"] .theme-muted,
+body[data-theme="dark"] label,
+body[data-theme="dark"] h1,
+body[data-theme="dark"] h2,
+body[data-theme="dark"] h3,
+body[data-theme="dark"] h4,
+body[data-theme="dark"] p,
+body[data-theme="dark"] span,
+body[data-theme="dark"] select,
+body[data-theme="dark"] option,
+body[data-theme="dark"] input,
+body[data-theme="dark"] button,
+body[data-theme="dark"] .text-xs,
+body[data-theme="dark"] .text-sm {
+  color: #f8fafc !important;
+}
+body[data-theme="dark"] .theme-muted,
+body[data-theme="dark"] .opacity-70,
+body[data-theme="dark"] .text-slate-400,
+body[data-theme="dark"] .text-slate-500,
+body[data-theme="dark"] .text-gray-400,
+body[data-theme="dark"] .text-gray-500 {
+  color: #e2e8f0 !important;
+}
+body[data-theme="dark"] input::placeholder,
+body[data-theme="dark"] textarea::placeholder {
+  color: #94a3b8 !important;
+}
+body[data-theme="dark"] input,
+body[data-theme="dark"] select,
+body[data-theme="dark"] textarea {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #475569 !important;
+}
+/* keep Create Match heading visible */
+body[data-theme="dark"] #cup-sub-create h3 {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+</style>
+
 </head>
 <body class="p-0 m-0" data-theme="light">
 <div id="boundary-toast-container" class="boundary-toast-container"></div>
@@ -2427,6 +2472,10 @@ body[data-theme="bluewhite"] .theme-muted { color: #0284c7 !important; }
                 </div>
                 <div id="cup-sub-create" class="space-y-3">
                 <h3 class="text-sm font-black theme-text uppercase tracking-wider">Create Match</h3>
+                <div>
+                    <label class="text-xs theme-muted font-semibold block mb-1">Match Name</label>
+                    <input type="text" id="cup-match-name" placeholder="e.g. IPL, FPL, Local Cup" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm font-bold" onchange="try{updateMatchDescHeader();}catch(e){}" />
+                </div>
                 <div>
                     <label class="text-xs theme-muted font-semibold block mb-1">Match Type</label>
                     <select id="cup-match-type" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm font-bold" onchange="try{updateMatchDescHeader();}catch(e){}">
@@ -7099,6 +7148,9 @@ function placeBoundaryAnimationOnStriker(toast){
             teamB: teamConfig.B.name,
             teamAName: teamConfig.A.name,
             teamBName: teamConfig.B.name,
+            matchName: (function(){ try{ var el=document.getElementById('cup-match-name'); return (el && el.value) ? el.value.trim() : (window.matchName||''); }catch(e){ return window.matchName||''; } })(),
+            matchType: (function(){ try{ var el=document.getElementById('cup-match-type'); if(!el) return ''; var t=el.options[el.selectedIndex]; return (t && t.text) ? t.text : el.value; }catch(e){ return ''; } })(),
+            venue: (function(){ try{ var el=document.getElementById('cup-venue')||document.getElementById('match-venue')||document.getElementById('venue'); return (el && el.value) ? el.value.trim() : (window.matchVenue||''); }catch(e){ return ''; } })(),
             teamAOvers: (function(){
                 try {
                     if (batT === 'A') return (typeof formatOvers === 'function' ? formatOvers(totalBalls) : (totalBalls/6).toFixed(1));

@@ -6,727 +6,940 @@
 <title>MySportz Live · International</title>
 <meta name="theme-color" content="#0b1220"/>
 <style>
-  :root{
-    --bg:#0b1220; --bg2:#111827; --card:#1a2336;
-    --line:rgba(255,255,255,.08); --text:#f8fafc; --muted:#94a3b8;
-    --red:#e11d48; --gold:#fbbf24; --blue:#38bdf8; --accent:#e11d48;
-  }
-  body.theme-light{
-    --bg:#ffffff; --bg2:#ffffff; --card:#ffffff;
-    --line:rgba(15,23,42,.1); --text:#0f172a; --muted:#64748b;
-    --accent:#0f766e; --blue:#0284c7;
-  }
-  body.theme-light .broadcast{
-    background:
-      linear-gradient(180deg, rgba(11,30,75,.90), rgba(10,36,99,.92)),
-      url('https://images.unsplash.com/photo-1531415076815-8dd6c0d1f2f2?auto=format&fit=crop&w=1200&q=60') center/cover no-repeat !important;
-    color:#f8fafc;
-  }
-  body.theme-light .broadcast .match-meta,
-  body.theme-light .broadcast .overs,
-  body.theme-light .broadcast .crr,
-  body.theme-light .broadcast .vs{ color:#cbd5e1 !important; }
-  body.theme-light .broadcast .score-num,
-  body.theme-light .broadcast .tname{ color:#ffffff !important; }
-  body.theme-light .broadcast .role{ color:#93c5fd !important; }
-  body.theme-light .broadcast .live-pill{ color:#fecdd3; }
-  body.theme-light .broadcast .gear{ color:#fff; border-color:rgba(255,255,255,.25); }
-  body.theme-light .panel, body.theme-light .tabs{ background:#ffffff !important; }
-  body.theme-light .tabs button{ color:#64748b; }
-  body.theme-light .tabs button.on{ color:#0f172a; }
-
-  body.theme-ipl{
-    --bg:#0c0a1a; --bg2:#16132a; --card:#221c40;
-    --line:rgba(255,255,255,.1); --text:#f8fafc; --muted:#a5b4fc;
-    --accent:#7c3aed; --blue:#a78bfa;
-  }
-  body.theme-icc{
-    --bg:#071a14; --bg2:#0c241c; --card:#134032;
-    --line:rgba(255,255,255,.1); --text:#ecfdf5; --muted:#6ee7b7;
-    --accent:#059669; --blue:#34d399;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-  a{color:var(--blue)}
-  .app{max-width:480px;margin:0 auto;padding-bottom:28px}
-  .broadcast{
-    background:
-      linear-gradient(180deg, rgba(11,18,32,.88), rgba(11,18,32,.92)),
-      url('https://images.unsplash.com/photo-1531415076815-8dd6c0d1f2f2?auto=format&fit=crop&w=1200&q=60') center/cover no-repeat;
-    border-bottom:1px solid var(--line);
-    padding:10px 12px 12px;
-    position:relative;
-    min-height:0;
-    overflow:hidden;
-  }
-  .broadcast:after{
-    content:"";
-    position:absolute; inset:0;
-    background:radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,.35) 100%);
-    pointer-events:none;
-  }
-  .broadcast > *{ position:relative; z-index:1; }
-  .bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
-  .live-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(225,29,72,.15);border:1px solid rgba(225,29,72,.45);color:#fecdd3;font-size:11px;font-weight:900;padding:4px 8px;border-radius:999px}
-  body.theme-light .live-pill{color:#9f1239}
-  .live-pill i{width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse 1.2s infinite}
-  @keyframes pulse{50%{box-shadow:0 0 0 6px rgba(225,29,72,0);opacity:.7}}
-  .match-meta{text-align:center;font-size:11px;color:var(--muted);font-weight:700}
-  .match-meta b{color:var(--gold);display:block;font-size:12px;letter-spacing:.12em}
-  .gear{border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--text);border-radius:999px;width:34px;height:34px;cursor:pointer;font-size:16px}
-  .settings-backdrop{position:fixed;inset:0;z-index:9998}
-  .settings-dd{position:fixed;right:12px;top:56px;z-index:9999;background:#0f172a;border:1px solid rgba(255,255,255,.2);border-radius:14px;min-width:240px;max-height:min(75vh,480px);overflow-y:auto;box-shadow:0 16px 40px rgba(0,0,0,.5);padding:8px}
-  body.theme-light .settings-dd{background:#fff;border-color:#cbd5e1}
-  .settings-dd .dd-title{font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;padding:6px 12px 4px}
-  .settings-dd button{display:block;width:100%;text-align:left;border:0;background:transparent;color:#f8fafc!important;font-weight:700;font-size:13px;padding:11px 12px;border-radius:10px;cursor:pointer}
-  body.theme-light .settings-dd button{color:#0f172a!important}
-  .settings-dd button.on,.settings-dd button:hover{background:rgba(56,189,248,.22)}
-  .settings-dd .sep{height:1px;background:rgba(255,255,255,.12);margin:6px 8px}
-
-  
-  .tname img.wave{
-    animation: flagWave 1.1s ease-in-out infinite;
-    transform-origin: left center;
-  }
-  @keyframes flagWave{
-    0%{transform:rotate(-6deg) translateY(0)}
-    50%{transform:rotate(7deg) translateY(-1px)}
-    100%{transform:rotate(-6deg) translateY(0)}
-  }
-  .match-center{
-    text-align:center; min-width:72px; position:relative; z-index:5;
-  }
-  .match-center .vs-label{
-    font-size:12px; font-weight:900; letter-spacing:.14em; color:var(--muted);
-  }
-  body.theme-light .broadcast .match-center .vs-label{ color:#cbd5e1 !important; }
-  .match-center .clock{
-    margin-top:3px; font-size:10px; font-weight:800; color:var(--gold);
-    line-height:1.25;
-  }
-  body.theme-light .broadcast .match-center .clock{ color:#fde68a !important; }
-  .match-center .clock span{display:block; color:var(--muted); font-weight:700; font-size:10px}
-  body.theme-light .broadcast .match-center .clock span{ color:#94a3b8 !important; }
-  .status-line{
-    text-align:center; font-size:11px; font-weight:700; color:var(--muted);
-    margin-top:4px; line-height:1.3; padding:0 8px;
-  }
-  body.theme-light .broadcast .status-line{ color:#cbd5e1 !important; }
-  .status-line b{ color:var(--text); }
-  body.theme-light .broadcast .status-line b{ color:#fff !important; }
-
-  .score-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;position:relative;padding:2px 0 0;min-height:0}
-  .side{text-align:center;min-width:0}
-  .tname{font-size:10px;font-weight:800;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:5px;margin-top:0}
-  .tname img{width:22px;height:16px;object-fit:cover;border-radius:3px}
-  .score-num{font-size:26px;font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums;margin:2px 0 0}
-  .score-sub{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.3}
-  .overs{font-size:12px;color:var(--muted);margin-top:1px;font-weight:700}
-  .role{font-size:9px;color:var(--blue);font-weight:800;margin-top:1px;text-transform:uppercase}
-  .vs{font-size:12px;font-weight:900;color:var(--muted);letter-spacing:.14em;position:relative;z-index:5}
-  .crr{display:flex;justify-content:center;gap:14px;margin-top:6px;font-size:11px;color:var(--muted)}
-  .crr b{color:var(--text)}
-  .anim-slot{
-    position:relative; min-height:36px; margin-top:4px;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .ev-banner{
-    position:relative; left:auto; top:auto; transform:none;
-    z-index:20; min-width:130px; padding:12px 18px; border-radius:14px;
-    font-weight:900; font-size:16px; text-align:center; color:#fff;
-    opacity:0; pointer-events:none;
-    box-shadow:0 10px 28px rgba(0,0,0,.35);
-  }
-  .ev-banner.show{animation:evpop 2.8s ease-out forwards}
-  .ev-banner.runs{background:linear-gradient(135deg,#2563eb,#3b82f6)}
-  .ev-banner.four{background:linear-gradient(135deg,#16a34a,#22c55e)}
-  .ev-banner.six{background:linear-gradient(135deg,#7c3aed,#a855f7)}
-  .ev-banner.dot{background:linear-gradient(135deg,#475569,#64748b)}
-  .ev-banner.extra{background:linear-gradient(135deg,#6d28d9,#a855f7)}
-  .ev-banner.wicket{background:linear-gradient(135deg,#b91c1c,#ef4444)}
-  @keyframes evpop{
-    0%{opacity:0;transform:scale(.85)}
-    12%{opacity:1;transform:scale(1.08)}
-    70%{opacity:1;transform:scale(1)}
-    100%{opacity:0;transform:scale(.98)}
-  }10%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}75%{opacity:1}100%{opacity:0}}
-  .result{margin-top:12px;border-radius:14px;padding:14px 12px;background:linear-gradient(135deg,#9a3412,#ea580c 60%,#f59e0b);text-align:center;color:#fff;position:relative;z-index:8;box-shadow:0 10px 28px rgba(234,88,12,.35)}
-  .result .lbl{font-size:10px;font-weight:900;letter-spacing:.14em}
-  .result .txt{font-size:16px;font-weight:900;margin:4px 0}
-  .result .sc{font-size:12px;line-height:1.45}
-  .result .pom{margin-top:6px;font-size:12px;font-weight:800;color:#fef3c7}
-
-  .tabs{display:flex;gap:0;overflow-x:auto;background:var(--bg2);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
-  .tabs button{flex:0 0 auto;border:0;background:transparent;color:var(--muted);font-weight:800;font-size:13px;padding:12px 12px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
-  .tabs button.on{color:var(--text);border-bottom-color:var(--accent)}
-  .panel{padding:12px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
-  .card h3{margin:0 0 10px;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:900}
-  .players{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .pbox{background:rgba(127,127,127,.06);border:1px solid var(--line);border-radius:12px;padding:10px}
-  .pbox .k{font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase}
-  .pbox .v{font-size:16px;font-weight:800;margin-top:2px}
-  .pbox .s{font-size:14px;color:var(--blue);margin-top:4px}
-  .chips{display:flex;flex-wrap:wrap;gap:6px}
-  .chip{min-width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;background:#475569}
-  .chip.c0{background:#64748b}.chip.c1{background:#2563eb}.chip.c4{background:#16a34a}.chip.c6{background:#7c3aed}.chip.cw{background:#e11d48}.chip.cx{background:#9333ea}
-  .comm-item{padding:10px 0;border-bottom:1px solid var(--line);font-size:15px;line-height:1.45}
-  table{width:100%;border-collapse:collapse;font-size:14px}
-  th{text-align:left;color:var(--muted);font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:8px 6px;border-bottom:1px solid var(--line)}
-  td{padding:8px 6px;border-bottom:1px solid var(--line)}
-  .subtabs{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-  .subtabs button{flex:1;min-width:40%;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;padding:9px;font-weight:800;font-size:12px;cursor:pointer}
-  .subtabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
-  .btn{border:1px solid var(--line);background:rgba(127,127,127,.06);color:var(--text);border-radius:999px;padding:8px 12px;font-weight:800;font-size:12px;cursor:pointer}
-  .btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
-  .row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-  .kv{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .kv .item{background:rgba(127,127,127,.06);border:1px solid var(--line);border-radius:12px;padding:10px}
-  .kv .item .k{font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase}
-  .kv .item .v{font-size:16px;font-weight:800;margin-top:4px}
-  .welcome{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,.72);padding:16px}
-  .welcome .box{width:min(400px,92vw);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;text-align:center}
-  .footer{text-align:center;padding:14px;font-size:11px;color:var(--muted)}
-  .muted{color:var(--muted)}
+:root{--bg:#0b1220;--bg2:#111827;--card:#1a2336;--line:rgba(255,255,255,.08);--text:#f8fafc;--muted:#94a3b8;--red:#e11d48;--gold:#fbbf24;--blue:#38bdf8;--accent:#e11d48}
+body.theme-light{--bg:#fff;--bg2:#fff;--card:#fff;--line:rgba(15,23,42,.1);--text:#0f172a;--muted:#64748b;--accent:#0f766e;--blue:#0284c7}
+body.theme-ipl{--bg:#0c0a1a;--bg2:#16132a;--card:#221c40;--line:rgba(255,255,255,.1);--text:#f8fafc;--muted:#a5b4fc;--accent:#7c3aed;--blue:#a78bfa}
+body.theme-icc{--bg:#071a14;--bg2:#0c241c;--card:#134032;--line:rgba(255,255,255,.1);--text:#ecfdf5;--muted:#6ee7b7;--accent:#059669;--blue:#34d399}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a{color:var(--blue)}
+.app{max-width:480px;margin:0 auto;padding-bottom:28px}
+.broadcast{
+  background:linear-gradient(180deg,rgba(11,18,32,.9),rgba(11,18,32,.94)),url('https://images.unsplash.com/photo-1531415076815-8dd6c0d1f2f2?auto=format&fit=crop&w=1200&q=60') center/cover no-repeat;
+  border-bottom:1px solid var(--line);padding:10px 12px 12px;position:relative;overflow:hidden
+}
+body.theme-light .broadcast{
+  background:linear-gradient(180deg,rgba(11,30,75,.92),rgba(10,36,99,.94)),url('https://images.unsplash.com/photo-1531415076815-8dd6c0d1f2f2?auto=format&fit=crop&w=1200&q=60') center/cover no-repeat;
+  color:#f8fafc
+}
+.bar{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;position:relative;z-index:2}
+.live-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(225,29,72,.15);border:1px solid rgba(225,29,72,.45);color:#fecdd3;font-size:11px;font-weight:900;padding:4px 8px;border-radius:999px}
+.live-pill i{width:7px;height:7px;border-radius:50%;background:var(--red)}
+.bar-mid{text-align:center;flex:1;min-width:0;padding:0 6px}
+.bar-mid .title{font-size:13px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);line-height:1.2}
+.bar-mid .sub{font-size:10px;font-weight:700;color:var(--muted);margin-top:2px;line-height:1.35}
+body.theme-light .broadcast .bar-mid .title{color:#fde68a}
+body.theme-light .broadcast .bar-mid .sub{color:#cbd5e1}
+.gear{border:1px solid var(--line);background:rgba(255,255,255,.06);color:inherit;border-radius:999px;width:34px;height:34px;cursor:pointer}
+.settings-backdrop{position:fixed;inset:0;z-index:9998}
+.settings-dd{position:fixed;right:12px;top:56px;z-index:9999;background:#0f172a;border:1px solid rgba(255,255,255,.2);border-radius:14px;min-width:240px;max-height:75vh;overflow:auto;padding:8px;box-shadow:0 16px 40px rgba(0,0,0,.5)}
+body.theme-light .settings-dd{background:#fff;border-color:#cbd5e1}
+.settings-dd .dd-title{font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;padding:6px 12px 4px}
+.settings-dd button{display:block;width:100%;text-align:left;border:0;background:transparent;color:#f8fafc;font-weight:700;font-size:13px;padding:11px 12px;border-radius:10px;cursor:pointer}
+body.theme-light .settings-dd button{color:#0f172a}
+.settings-dd button.on,.settings-dd button:hover{background:rgba(56,189,248,.22)}
+.settings-dd .sep{height:1px;background:rgba(255,255,255,.12);margin:6px 8px}
+/* Increased spacing between match header and score grid */
+.score-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;position:relative;z-index:1;margin-top:28px}
+.side{text-align:center;min-width:0}
+.tname{font-size:10px;font-weight:800;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:5px}
+.tname img{width:22px;height:16px;object-fit:cover;border-radius:3px}
+.tname img.wave{animation:flagWave 1.1s ease-in-out infinite;transform-origin:left center}
+@keyframes flagWave{0%{transform:rotate(-6deg)}50%{transform:rotate(7deg)}100%{transform:rotate(-6deg)}}
+.score-num{font-size:26px;font-weight:900;line-height:1.1;margin:2px 0 0}
+.overs{font-size:12px;color:var(--muted);margin-top:1px;font-weight:700}
+.role{font-size:9px;color:var(--blue);font-weight:800;margin-top:1px;text-transform:uppercase}
+.match-center{text-align:center;min-width:64px}
+.match-center .vs-label{font-size:13px;font-weight:900;letter-spacing:.16em;color:var(--muted)}
+body.theme-light .broadcast .match-center .vs-label,.body.theme-light .broadcast .overs{color:#cbd5e1}
+.crr{display:flex;justify-content:center;gap:14px;margin-top:6px;font-size:11px;color:var(--muted);position:relative;z-index:1}
+.crr b{color:inherit;opacity:.95}
+body.theme-light .broadcast .crr{color:#cbd5e1}
+.anim-slot{min-height:36px;margin-top:4px;display:flex;align-items:center;justify-content:center;position:relative;z-index:2}
+.ev-banner{min-width:120px;padding:10px 16px;border-radius:14px;font-weight:900;font-size:15px;text-align:center;color:#fff;opacity:0;box-shadow:0 10px 28px rgba(0,0,0,.35)}
+.ev-banner.show{animation:evpop 2.6s ease-out forwards}
+.ev-banner.runs{background:linear-gradient(135deg,#2563eb,#3b82f6)}
+.ev-banner.four{background:linear-gradient(135deg,#16a34a,#22c55e)}
+.ev-banner.six{background:linear-gradient(135deg,#7c3aed,#a855f7)}
+.ev-banner.dot{background:linear-gradient(135deg,#475569,#64748b)}
+.ev-banner.extra{background:linear-gradient(135deg,#6d28d9,#a855f7)}
+.ev-banner.wicket{background:linear-gradient(135deg,#b91c1c,#ef4444)}
+@keyframes evpop{0%{opacity:0;transform:scale(.85)}12%{opacity:1;transform:scale(1.06)}70%{opacity:1}100%{opacity:0}}
+.result-wrap{position:relative;overflow:hidden;border-radius:14px;margin-top:10px;z-index:2}
+.result{padding:14px 12px;background:linear-gradient(135deg,#9a3412,#ea580c 55%,#f59e0b);text-align:center;color:#fff;border-radius:14px;position:relative;z-index:2}
+.result .lbl{font-size:10px;font-weight:900;letter-spacing:.14em}
+.result .txt{font-size:16px;font-weight:900;margin:4px 0}
+.result .sc{font-size:12px;line-height:1.45}
+.result .pom{margin-top:6px;font-size:12px;font-weight:800;color:#fef3c7}
+.cracker{position:absolute;inset:0;z-index:1;pointer-events:none}
+.cracker i{position:absolute;width:8px;height:8px;border-radius:2px;animation:fall 2.2s linear infinite}
+@keyframes fall{0%{transform:translateY(-10px) rotate(0);opacity:1}100%{transform:translateY(130px) rotate(320deg);opacity:0}}
+.tabs{display:flex;gap:0;overflow-x:auto;background:var(--bg2);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.tabs button{flex:0 0 auto;border:0;background:transparent;color:var(--muted);font-weight:800;font-size:13px;padding:12px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button.on{color:var(--text);border-bottom-color:var(--accent)}
+.panel{padding:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.card h3{margin:0 0 10px;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:900}
+.bat-bowl{display:grid;grid-template-columns:1.25fr 1px 1fr;gap:0 10px}
+.bat-col{display:flex;flex-direction:column;gap:8px}
+.vdiv{background:var(--line);width:1px}
+.bowl-col{display:flex;flex-direction:column;justify-content:center}
+.pbox{background:rgba(127,127,127,.06);border:1px solid var(--line);border-radius:12px;padding:10px}
+.pbox .k{font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase}
+.pbox .v{font-size:15px;font-weight:800;margin-top:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{min-width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;background:#475569}
+.chip.c0{background:#64748b}.chip.c1{background:#2563eb}.chip.c4{background:#16a34a}.chip.c6{background:#7c3aed}.chip.cw{background:#e11d48}.chip.cx{background:#9333ea}
+.comm-item{padding:10px 0;border-bottom:1px solid var(--line);font-size:15px;line-height:1.45}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--muted);font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:6px 4px;border-bottom:1px solid var(--line)}
+td{padding:6px 4px;border-bottom:1px solid var(--line)}
+.subtabs{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.subtabs button{flex:1;min-width:40%;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;padding:9px;font-weight:800;font-size:12px;cursor:pointer}
+.subtabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn{border:1px solid var(--line);background:rgba(127,127,127,.06);color:var(--text);border-radius:999px;padding:8px 12px;font-weight:800;font-size:12px;cursor:pointer}
+.btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kv .item{background:rgba(127,127,127,.06);border:1px solid var(--line);border-radius:12px;padding:10px}
+.kv .item .k{font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase}
+.kv .item .v{font-size:14px;font-weight:800;margin-top:4px}
+.caps-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:360px){.caps-row{grid-template-columns:1fr}}
+.welcome{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,.72);padding:16px}
+.welcome .box{width:min(400px,92vw);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;text-align:center}
+.footer{text-align:center;padding:14px;font-size:11px;color:var(--muted)}
+.muted{color:var(--muted)}
+#error{display:none;padding:16px;color:#fecaca;background:#450a0a;font-size:13px}
 </style>
 </head>
 <body class="theme-dark">
+<div id="error"></div>
 <div id="root"></div>
-<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script type="text/babel">
-const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
-const FLAG_POOL=['in','au','eng','nz','za','pk','bd','sl','af','ie','wi','np','nl','zw','sc'];
-const FLAG_URL={
-  in:'https://flagcdn.com/w40/in.png',au:'https://flagcdn.com/w40/au.png',eng:'https://flagcdn.com/w40/gb-eng.png',
-  nz:'https://flagcdn.com/w40/nz.png',za:'https://flagcdn.com/w40/za.png',pk:'https://flagcdn.com/w40/pk.png',
-  bd:'https://flagcdn.com/w40/bd.png',sl:'https://flagcdn.com/w40/lk.png',af:'https://flagcdn.com/w40/af.png',
-  ie:'https://flagcdn.com/w40/ie.png',wi:'https://flagcdn.com/w40/jm.png',np:'https://flagcdn.com/w40/np.png',
-  nl:'https://flagcdn.com/w40/nl.png',zw:'https://flagcdn.com/w40/zw.png',sc:'https://flagcdn.com/w40/gb-sct.png'
+<script>
+window.onerror = function(msg, src, line) {
+  var e = document.getElementById('error');
+  if (e) { e.style.display = 'block'; e.textContent = 'Error: ' + msg + ' @ line ' + line; }
 };
-function hashStr(s){s=String(s||'');let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h)+s.charCodeAt(i)|0;return Math.abs(h)}
-function flagsForMatch(d){
-  const key=String((d&&d.matchId)||'')+'|'+(d?.teamA||d?.teamAName||'A')+'|'+(d?.teamB||d?.teamBName||'B');
-  try{
-    const k='react_flags_'+key; const c=localStorage.getItem(k); if(c){const p=JSON.parse(c);if(p?.a&&p?.b)return p}
-    let ia=hashStr(key)%FLAG_POOL.length, ib=(ia+3+hashStr(key+'b'))%FLAG_POOL.length;
-    if(ib===ia)ib=(ib+1)%FLAG_POOL.length;
-    const out={a:FLAG_POOL[ia],b:FLAG_POOL[ib]}; localStorage.setItem(k,JSON.stringify(out)); return out;
-  }catch(e){return {a:'in',b:'au'}}
+</script>
+
+<!-- Clean Standard UMD Dependencies without ES Modules -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.6/babel.min.js" crossorigin="anonymous"></script>
+
+<script type="text/babel" data-presets="react">
+// Use React window globals directly to avoid module resolution syntax errors
+const useState = React.useState;
+const useEffect = React.useEffect;
+const useRef = React.useRef;
+const useMemo = React.useMemo;
+const useCallback = React.useCallback;
+
+const FLAG_POOL = ['in','au','eng','nz','za','pk','bd','sl','af','ie','wi','np','nl','zw','sc'];
+const FLAG_URL = {
+  in:'https://flagcdn.com/w40/in.png', au:'https://flagcdn.com/w40/au.png', eng:'https://flagcdn.com/w40/gb-eng.png',
+  nz:'https://flagcdn.com/w40/nz.png', za:'https://flagcdn.com/w40/za.png', pk:'https://flagcdn.com/w40/pk.png',
+  bd:'https://flagcdn.com/w40/bd.png', sl:'https://flagcdn.com/w40/lk.png', af:'https://flagcdn.com/w40/af.png',
+  ie:'https://flagcdn.com/w40/ie.png', wi:'https://flagcdn.com/w40/jm.png', np:'https://flagcdn.com/w40/np.png',
+  nl:'https://flagcdn.com/w40/nl.png', zw:'https://flagcdn.com/w40/zw.png', sc:'https://flagcdn.com/w40/gb-sct.png'
+};
+
+function hashStr(s) {
+  s = String(s || '');
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i) | 0;
+  return Math.abs(h);
 }
-
-
-function matchStartTs(d){
-  if(!d) return null;
+function flagsForMatch(d) {
+  const key = String((d && d.matchId) || '') + '|' + ((d && (d.teamA || d.teamAName)) || 'A') + '|' + ((d && (d.teamB || d.teamBName)) || 'B');
+  try {
+    const k = 'react_flags_' + key;
+    const c = localStorage.getItem(k);
+    if (c) {
+      const p = JSON.parse(c);
+      if (p && p.a && p.b) return p;
+    }
+    let ia = hashStr(key) % FLAG_POOL.length;
+    let ib = (ia + 3 + hashStr(key + 'b')) % FLAG_POOL.length;
+    if (ib === ia) ib = (ib + 1) % FLAG_POOL.length;
+    const out = { a: FLAG_POOL[ia], b: FLAG_POOL[ib] };
+    localStorage.setItem(k, JSON.stringify(out));
+    return out;
+  } catch (e) {
+    return { a: 'in', b: 'au' };
+  }
+}
+function n(v) { return v == null ? 0 : (Number(v) || 0); }
+function sr(runs, balls) {
+  const b = n(balls);
+  if (!b) return 0;
+  return Math.round((n(runs) / b) * 1000) / 10;
+}
+function oversFromBalls(balls) {
+  const b = n(balls);
+  return Math.floor(b / 6) + '.' + (b % 6);
+}
+function econ(runs, balls) {
+  const b = n(balls);
+  if (!b) return '0.00';
+  return (n(runs) / (b / 6)).toFixed(2);
+}
+function formatScore(runs, wkts, overs, fmt) {
+  if (runs == null) return { main: 'Yet to bat', sub: '' };
+  const r = runs, w = wkts == null ? 0 : wkts, o = overs == null || overs === '' ? '-' : overs;
+  if (fmt === 'cricinfo') return { main: r + ' for ' + w, sub: 'in ' + o + ' overs' };
+  if (fmt === 'broadcast') return { main: r + '-' + w, sub: '(' + o + ')' };
+  if (fmt === 'compact') return { main: r + '/' + w, sub: 'Ov ' + o };
+  if (fmt === 'split') return { main: String(r), sub: w + ' wkts · ' + o + ' ov' };
+  return { main: r + '/' + w, sub: '(' + o + ')' };
+}
+function dualTeamScores(d) {
+  d = d || {};
+  const nameA = d.teamA || d.teamAName || 'Team A';
+  const nameB = d.teamB || d.teamBName || 'Team B';
+  const first = String(d.firstBattingTeam || d.battingFirst || 'A').toUpperCase() === 'B' ? 'B' : 'A';
+  const inns = n(d.innings || (d.score && d.score.innings) || 1) || 1;
+  const curRuns = d.runs != null ? d.runs : (d.score && d.score.runs);
+  const curWk = d.wickets != null ? d.wickets : (d.score && d.score.wickets);
+  const curOv = d.overs || (d.score && d.score.overs) || '0.0';
+  const fiR = d.firstInningsScore != null ? d.firstInningsScore : (d.innings1Score && d.innings1Score.runs);
+  const fiW = d.firstInningsWickets != null ? d.firstInningsWickets : (d.innings1Score && d.innings1Score.wickets);
+  const fiO = d.firstInningsOvers || (d.innings1Score && d.innings1Score.overs);
+  let aR = d.teamARuns, aW = d.teamAWickets, aO = d.teamAOvers;
+  let bR = d.teamBRuns, bW = d.teamBWickets, bO = d.teamBOvers;
+  if (aR == null || bR == null) {
+    if (first === 'A') {
+      if (aR == null && fiR != null) { aR = fiR; aW = fiW; aO = fiO; }
+      if (inns >= 2) {
+        if (bR == null && curRuns != null) { bR = curRuns; bW = curWk; bO = curOv; }
+      } else if (aR == null && curRuns != null) {
+        aR = curRuns; aW = curWk; aO = curOv;
+      }
+    } else {
+      if (bR == null && fiR != null) { bR = fiR; bW = fiW; bO = fiO; }
+      if (inns >= 2) {
+        if (aR == null && curRuns != null) { aR = curRuns; aW = curWk; aO = curOv; }
+      } else if (bR == null && curRuns != null) {
+        bR = curRuns; bW = curWk; bO = curOv;
+      }
+    }
+  }
+  return {
+    nameA: nameA, nameB: nameB, first: first, inns: inns,
+    aR: aR, aW: aW, aO: aO, bR: bR, bW: bW, bO: bO,
+    aBat: (inns === 1 && first === 'A') || (inns >= 2 && first === 'B'),
+    bBat: (inns === 1 && first === 'B') || (inns >= 2 && first === 'A')
+  };
+}
+function matchMeta(d) {
+  d = d || {};
+  const name = d.matchName || d.matchTitle || d.leagueName || d.tournamentName || d.matchDesc || d.title || '';
+  const type = d.matchType || d.tournamentType || d.format || '';
+  return { name: name, type: type };
+}
+function matchStartTs(d) {
+  if (!d) return null;
   const t = d.matchStartTime || d.startTime || d.startedAt || d.matchStartedAt || d.startTs;
-  if(t == null) return null;
-  if(typeof t === 'number') return t;
-  const n = Date.parse(t);
-  return isNaN(n) ? null : n;
+  if (t == null) return null;
+  if (typeof t === 'number') return t;
+  const nms = Date.parse(t);
+  return isNaN(nms) ? null : nms;
 }
-function fmtClock(ts){
-  if(!ts) return '—';
-  try{
-    return new Date(ts).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
-  }catch(e){ return '—'; }
+function fmtClock(ts) {
+  if (!ts) return '-';
+  try { return new Date(ts).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }); }
+  catch (e) { return '-'; }
 }
-function fmtElapsed(ms){
-  if(ms == null || ms < 0) return '00:00:00';
-  const s = Math.floor(ms/1000);
-  const h = Math.floor(s/3600);
-  const m = Math.floor((s%3600)/60);
-  const sec = s%60;
-  const p = n => String(n).padStart(2,'0');
-  return p(h)+':'+p(m)+':'+p(sec);
+function fmtElapsed(ms) {
+  if (ms == null || ms < 0) return '00:00';
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const p = function(x) { return String(x).padStart(2, '0'); };
+  return p(h) + ':' + p(m);
 }
-function matchStatusLine(d){
-  if(!d) return 'Waiting for live scoring';
-  if(d.matchEnded || d.matchResult) return d.matchResult || 'Match completed';
-  const inns = d.innings || 1;
-  const crr = d.crr != null ? Number(d.crr).toFixed(2) : null;
-  const rrr = d.rrr != null ? Number(d.rrr).toFixed(2) : (d.nrr != null ? Number(d.nrr).toFixed(2) : null);
-  const target = d.target || d.targetScore;
-  const runs = d.runs|0, wk = d.wickets|0, ov = d.overs || '0.0';
-  const striker = d.strikerName || '—';
-  const bowler = d.bowlerName || '—';
-  if(inns >= 2 && target){
-    const need = Math.max(0, (target|0) - runs);
-    return `Chasing ${target} · Need ${need} · CRR ${crr||'—'} · RRR ${rrr||'—'} · ${striker} vs ${bowler}`;
-  }
-  return `Batting · ${runs}/${wk} (${ov}) · CRR ${crr||'—'} · ${striker} on strike · ${bowler} bowling`;
+function fmtTime(ts) {
+  if (!ts) return '-';
+  try { return new Date(ts).toLocaleString(); } catch (e) { return '-'; }
 }
-
-/** International score formats */
-function formatScore(runs, wkts, overs, fmt){
-  const r = runs==null ? '—' : runs;
-  const w = wkts==null ? '—' : wkts;
-  const o = (overs==null||overs==='') ? '—' : overs;
-  if (r==='—' && String(runs).toLowerCase().includes('yet')) return {main:'Yet to bat', sub:''};
-  switch(fmt){
-    case 'cricinfo': // 115 for 5 in 8.0 overs
-      return {main: `${r} for ${w}`, sub: `in ${o} overs`};
-    case 'broadcast': // 115-5  (8.0)
-      return {main: `${r}-${w}`, sub: `(${o})`};
-    case 'compact': // 115/5
-      return {main: `${r}/${w}`, sub: o!=='—' ? `Ov ${o}` : ''};
-    case 'split': // runs big, wkts small feel via sub
-      return {main: String(r), sub: `${w} wkts · ${o} ov`};
-    default: // classic 115/5 (8.0)
-      return {main: `${r}/${w}`, sub: `(${o})`};
-  }
-}
-
-function unwrap(msg){
-  if(!msg||typeof msg!=='object')return null;
-  if(msg.data&&typeof msg.data==='object'&&(msg.data.runs!=null||msg.data.teamA||msg.data.balls!=null))return msg.data;
+function unwrap(msg) {
+  if (!msg || typeof msg !== 'object') return null;
+  if (msg.data && typeof msg.data === 'object' && (msg.data.runs != null || msg.data.teamA || msg.data.balls != null)) return msg.data;
   return msg;
 }
-function useLiveMatch(){
-  const [data,setData]=useState(null);
-  const [viewers,setViewers]=useState([]);
-  const [connected,setConnected]=useState(false);
-  const lastSig=useRef(''); const wsRef=useRef(null);
-  const apply=useCallback((raw)=>{
-    const d=unwrap(raw); if(!d)return;
-    const chip=(d.thisOver&&d.thisOver.balls)?d.thisOver.balls.join(','):(Array.isArray(d.currentOverBalls)?d.currentOverBalls.map(c=>c&&c.label!=null?c.label:c).join(','):'');
-    const sig=[d.balls,d.runs,d.wickets,d.ts,chip,(d.commentary||[]).slice(-1)[0], (d.matchHistory||[]).length].join('|');
-    if(sig===lastSig.current)return; lastSig.current=sig; setData(d);
-    if(Array.isArray(d.viewers)) setViewers(d.viewers);
-  },[]);
-  useEffect(()=>{
-    const match=new URLSearchParams(location.search).get('match')||'current';
-    let dead=false,retry=0,pollTimer;
-    function connect(){
-      if(dead)return;
-      try{
-        const proto=location.protocol==='https:'?'wss:':'ws:';
-        const ws=new WebSocket(proto+'//'+location.host+'/ws?match='+encodeURIComponent(match)+'&name=ReactFan');
-        wsRef.current=ws;
-        ws.onopen=()=>{setConnected(true);retry=0};
-        ws.onmessage=(ev)=>{try{const msg=JSON.parse(ev.data);if(!msg||msg.type==='pong')return;
-          if(msg.type==='presence'){setViewers(Array.isArray(msg.data)?msg.data:[]);return}
-          if(msg.type==='full'||msg.type==='update'||msg.type==='score'||msg.runs!=null)apply(msg.data||msg);
-        }catch(e){}};
-        ws.onclose=()=>{setConnected(false);setTimeout(connect,Math.min(15000,800+retry++*700))};
-      }catch(e){}
-    }
-    connect();
-    async function poll(){
-      if(wsRef.current&&wsRef.current.readyState===1)return;
-      try{const r=await fetch('/api/live-public?match='+encodeURIComponent(match)+'&_='+Date.now(),{cache:'no-store'}); if(r.ok)apply(await r.json())}catch(e){}
-    }
-    pollTimer=setInterval(poll,5000);poll();
-    return ()=>{dead=true;clearInterval(pollTimer);try{wsRef.current&&wsRef.current.close()}catch(e){}};
-  },[apply]);
-  return {data,viewers,connected};
+function chipClass(lab) {
+  lab = String(lab || '').toUpperCase();
+  if (lab === '4') return 'chip c4';
+  if (lab === '6') return 'chip c6';
+  if (lab === 'W' || (lab.charAt(0) === 'W' && lab.indexOf('WD') < 0)) return 'chip cw';
+  if (/WD|NB|LB/.test(lab)) return 'chip cx';
+  if (lab === '0' || lab === '.' || lab === '•') return 'chip c0';
+  return 'chip c1';
 }
-
-function getMaleVoice(){
-  const voices=speechSynthesis.getVoices()||[];
-  const male=/male|man|david|daniel|mark|james|george|thomas|fred|alex|ravi|microsoft (david|mark|guy|ryan)/i;
-  const female=/female|woman|zira|susan|linda|karen|moira|samantha|victoria|fiona/i;
-  return voices.find(x=>male.test(x.name)&&!female.test(x.name)&&/en/i.test(x.lang||''))
-    || voices.find(x=>/en/i.test(x.lang||'')&&!female.test(x.name)) || null;
-}
-function speakMale(text){
-  if(!window.speechSynthesis)return;
-  text=String(text||'').replace(/[*＊]/g,' ').trim(); if(!text)return;
-  try{speechSynthesis.cancel()}catch(e){}
-  const u=new SpeechSynthesisUtterance(text); const v=getMaleVoice(); if(v)u.voice=v;
-  u.pitch=0.85;u.rate=1.1; speechSynthesis.speak(u);
-}
-function detectEvent(d,prev){
-  if(!d)return null;
-  const chipArr=(d.thisOver&&d.thisOver.balls)||d.currentOverBalls||[];
-  let chip='';
-  if(chipArr.length){
-    const last=chipArr[chipArr.length-1];
-    chip=String(typeof last==='object'?(last.label||last.chip||last.runs||''):last).toUpperCase().trim();
+function detectEvent(d, prev) {
+  if (!d) return null;
+  const chipArr = (d.thisOver && d.thisOver.balls) || d.currentOverBalls || [];
+  let chip = '';
+  if (chipArr.length) {
+    const last = chipArr[chipArr.length - 1];
+    chip = String(typeof last === 'object' ? (last.label || last.chip || '') : last).toUpperCase().trim();
   }
-  const ev=String(d.lastEvent||d.event||d.lastBall||'').toLowerCase();
-  const le = d.lastEventDetail || d.lastDismissal || '';
-  // wicket first
-  if(chip==='W'||(chip.startsWith('W')&&!chip.includes('WD'))||ev.includes('wicket')||ev==='w')
-    return {kind:'wicket',text: le ? ('WICKET · '+le) : 'WICKET'};
-  if(chip==='6'||ev==='six'||ev.includes('six')) return {kind:'six',text:'SIX'};
-  if(chip==='4'||ev==='four'||ev.includes('four')||ev.includes('boundary')) return {kind:'four',text:'FOUR'};
-  if(chip.includes('WD')||ev==='wide'||ev.includes('wide')) return {kind:'extra',text:'WIDE'};
-  if(chip.includes('NB')||ev.includes('no-ball')||ev.includes('noball')) return {kind:'extra',text:'NO BALL'};
-  if(chip.includes('LB')||ev.includes('legbye')||ev.includes('leg-bye')) return {kind:'extra',text:'LEG BYE'};
-  if(chip.includes('BYE')||ev.includes('bye')) return {kind:'extra',text:'BYE'};
-  if(chip==='0'||chip==='•'||chip==='.'||ev==='dot') return {kind:'dot',text:'DOT'};
-  if(chip==='3'||ev==='three') return {kind:'runs',text:'3 RUNS'};
-  if(chip==='2'||ev==='two') return {kind:'runs',text:'2 RUNS'};
-  if(chip==='1'||ev==='one'||ev==='single') return {kind:'runs',text:'1 RUN'};
-  if(prev){
-    const dw=(d.wickets|0)-(prev.wickets|0);
-    const dr=(d.runs|0)-(prev.runs|0);
-    if(dw>0) return {kind:'wicket',text:'WICKET'};
-    if(dr===6) return {kind:'six',text:'SIX'};
-    if(dr===4) return {kind:'four',text:'FOUR'};
-    if(dr===0 && (d.balls|0)>(prev.balls|0)) return {kind:'dot',text:'DOT'};
-    if(dr===3) return {kind:'runs',text:'3 RUNS'};
-    if(dr===2) return {kind:'runs',text:'2 RUNS'};
-    if(dr===1) return {kind:'runs',text:'1 RUN'};
+  const ev = String(d.lastEvent || d.event || '').toLowerCase();
+  if (chip === 'W' || (chip.charAt(0) === 'W' && chip.indexOf('WD') < 0) || ev.indexOf('wicket') >= 0) return { kind: 'wicket', text: 'WICKET' };
+  if (chip === '6' || ev === 'six') return { kind: 'six', text: 'SIX' };
+  if (chip === '4' || ev === 'four') return { kind: 'four', text: 'FOUR' };
+  if (chip.indexOf('WD') >= 0 || ev === 'wide') return { kind: 'extra', text: 'WIDE' };
+  if (chip.indexOf('NB') >= 0) return { kind: 'extra', text: 'NO BALL' };
+  if (chip.indexOf('LB') >= 0) return { kind: 'extra', text: 'LEG BYE' };
+  if (chip === '0' || chip === '.' || chip === '•' || ev === 'dot') return { kind: 'dot', text: 'DOT' };
+  if (chip === '3') return { kind: 'runs', text: '3 RUNS' };
+  if (chip === '2') return { kind: 'runs', text: '2 RUNS' };
+  if (chip === '1') return { kind: 'runs', text: '1 RUN' };
+  if (prev) {
+    if (n(d.wickets) > n(prev.wickets)) return { kind: 'wicket', text: 'WICKET' };
+    const dr = n(d.runs) - n(prev.runs);
+    if (dr === 6) return { kind: 'six', text: 'SIX' };
+    if (dr === 4) return { kind: 'four', text: 'FOUR' };
+    if (dr === 0 && n(d.balls) > n(prev.balls)) return { kind: 'dot', text: 'DOT' };
+    if (dr === 3) return { kind: 'runs', text: '3 RUNS' };
+    if (dr === 2) return { kind: 'runs', text: '2 RUNS' };
+    if (dr === 1) return { kind: 'runs', text: '1 RUN' };
   }
   return null;
 }
-function chipClass(lab){lab=String(lab||'').toUpperCase();
-  if(lab==='4')return 'chip c4'; if(lab==='6')return 'chip c6';
-  if(lab==='W'||(lab[0]==='W'&&!lab.includes('WD')))return 'chip cw';
-  if(/WD|NB|LB/.test(lab))return 'chip cx'; if(lab==='0'||lab==='•')return 'chip c0'; return 'chip c1'}
-function fmtTime(ts){if(!ts)return '—';try{return new Date(ts).toLocaleString()}catch(e){return '—'}}
-function teamLines(d){
-  if(!d) return {batA:[],bowlA:[],batB:[],bowlB:[],nameA:'Team A',nameB:'Team B',batting:'A'};
-  const first=String(d.firstBattingTeam||'A').toUpperCase()==='B'?'B':'A';
-  const i1b=d.innings1Batters||[],i1o=d.innings1Bowlers||[],i2b=d.innings2Batters||[],i2o=d.innings2Bowlers||[];
-  const nameA=d.teamA||d.teamAName||'Team A', nameB=d.teamB||d.teamBName||'Team B';
-  const batA=first==='A'?i1b:i2b, batB=first==='B'?i1b:i2b;
-  const bowlA=first==='A'?i2o:i1o, bowlB=first==='B'?i2o:i1o;
-  let batting='A';
-  if(d.battingTeam==='B'||d.battingTeam===nameB) batting='B';
-  else if((d.currentInnings|0)>=2) batting=first==='A'?'B':'A';
-  else batting=first;
-  return {batA,bowlA,batB,bowlB,nameA,nameB,batting};
+
+function getMaleVoice() {
+  if (!window.speechSynthesis) return null;
+  const voices = speechSynthesis.getVoices() || [];
+  const male = /male|david|daniel|mark|james|george|thomas|alex|ravi|guy|ryan/i;
+  const female = /female|zira|susan|linda|karen|moira|samantha|victoria|fiona/i;
+  return voices.find(function(x) { return male.test(x.name) && !female.test(x.name) && /en/i.test(x.lang || ''); })
+    || voices.find(function(x) { return /en/i.test(x.lang || '') && !female.test(x.name); })
+    || null;
 }
-function playersList(d){
-  // squad / players from scorer payload
-  const a=d?.teamASquad||d?.squadA||d?.playersA||[];
-  const b=d?.teamBSquad||d?.squadB||d?.playersB||[];
-  const fromBat=()=>{
-    const L=teamLines(d);
-    const names=new Set();
-    [...(L.batA||[]),...(L.batB||[]),...(L.bowlA||[]),...(L.bowlB||[])].forEach(p=>{if(p&&p.name)names.add(p.name)});
-    return [...names];
-  };
-  return {a:Array.isArray(a)&&a.length?a:fromBat().slice(0,11), b:Array.isArray(b)&&b.length?b:[] , flat: fromBat()};
+function speakMale(text) {
+  if (!window.speechSynthesis) return;
+  text = String(text || '').replace(/[*＊]/g, ' ').trim();
+  if (!text) return;
+  try { speechSynthesis.cancel(); } catch (e) {}
+  const u = new SpeechSynthesisUtterance(text);
+  const v = getMaleVoice();
+  if (v) u.voice = v;
+  u.pitch = 0.85;
+  u.rate = 1.1;
+  speechSynthesis.speak(u);
+}
+function playSfx(vol) {
+  try {
+    if (localStorage.getItem('cricket_sound_master') === '0') return;
+    if (localStorage.getItem('cricket_stadium_on') === '0') return;
+    const a = new Audio('https://cdn.freesound.org/previews/342/342749_5121236-lq.mp3');
+    a.volume = vol == null ? 0.12 : vol;
+    a.play().catch(function() {});
+  } catch (e) {}
+}
+function stadiumForEvent(ev) {
+  if (!ev) return;
+  if (ev.kind === 'wicket' || ev.kind === 'four' || ev.kind === 'six') playSfx(ev.kind === 'six' ? 0.18 : 0.12);
 }
 
-function Welcome({data,onDone}){
-  useEffect(()=>{const t=setTimeout(onDone,10000);return ()=>clearTimeout(t)},[onDone]);
-  const ta=data?.teamA||data?.teamAName||'Team A', tb=data?.teamB||data?.teamBName||'Team B';
-  const runs=data?.runs??'—',wk=data?.wickets??'—',ov=data?.overs||'—';
-  const startTs = matchStartTs(data);
-  const startLabel = startTs ? fmtClock(startTs) : '—';
-  const elapsed = startTs ? fmtElapsed(Date.now() - startTs) : '00:00:00';
-  const status = matchStatusLine(data);
-  const striker = data?.strikerName || '—';
-  const bowler = data?.bowlerName || '—';
+function teamLines(d) {
+  if (!d) return { batA: [], bowlA: [], batB: [], bowlB: [], nameA: 'Team A', nameB: 'Team B', batting: 'A' };
+  const first = String(d.firstBattingTeam || 'A').toUpperCase() === 'B' ? 'B' : 'A';
+  const i1b = d.innings1Batters || [];
+  const i1o = d.innings1Bowlers || [];
+  const i2b = d.innings2Batters || [];
+  const i2o = d.innings2Bowlers || [];
+  const nameA = d.teamA || d.teamAName || 'Team A';
+  const nameB = d.teamB || d.teamBName || 'Team B';
+  const batA = first === 'A' ? i1b : i2b;
+  const batB = first === 'B' ? i1b : i2b;
+  const bowlA = first === 'A' ? i2o : i1o;
+  const bowlB = first === 'B' ? i2o : i1o;
+  let batting = 'A';
+  if (d.battingTeam === 'B' || d.battingTeam === nameB) batting = 'B';
+  else if (n(d.currentInnings) >= 2) batting = first === 'A' ? 'B' : 'A';
+  else batting = first;
+  return { batA: batA, bowlA: bowlA, batB: batB, bowlB: bowlB, nameA: nameA, nameB: nameB, batting: batting };
+}
+
+function useLiveMatch() {
+  const [data, setData] = useState(null);
+  const [viewers, setViewers] = useState([]);
+  const [connected, setConnected] = useState(false);
+  const lastSig = useRef('');
+  const wsRef = useRef(null);
+  const apply = useCallback(function(raw) {
+    const d = unwrap(raw);
+    if (!d) return;
+    const chip = (d.thisOver && d.thisOver.balls) ? d.thisOver.balls.join(',') : '';
+    const sig = [d.balls, d.runs, d.wickets, d.ts, chip].join('|');
+    if (sig === lastSig.current) return;
+    lastSig.current = sig;
+    setData(d);
+    if (Array.isArray(d.viewers)) setViewers(d.viewers);
+  }, []);
+
+  useEffect(function() {
+    const match = new URLSearchParams(window.location.search).get('match') || 'current';
+    let dead = false, retry = 0, pollTimer;
+    function connect() {
+      if (dead) return;
+      try {
+        const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(proto + '//' + window.location.host + '/ws?match=' + encodeURIComponent(match) + '&name=ReactFan');
+        wsRef.current = ws;
+        ws.onopen = function() { setConnected(true); retry = 0; };
+        ws.onmessage = function(ev) {
+          try {
+            const msg = JSON.parse(ev.data);
+            if (!msg || msg.type === 'pong') return;
+            if (msg.type === 'presence') {
+              setViewers(Array.isArray(msg.data) ? msg.data : []);
+              return;
+            }
+            if (msg.type === 'full' || msg.type === 'update' || msg.type === 'score' || msg.runs != null) apply(msg.data || msg);
+          } catch (e) {}
+        };
+        ws.onclose = function() {
+          setConnected(false);
+          setTimeout(connect, Math.min(15000, 800 + retry++ * 700));
+        };
+      } catch (e) {}
+    }
+    connect();
+    function poll() {
+      if (wsRef.current && wsRef.current.readyState === 1) return;
+      fetch('/api/live-public?match=' + encodeURIComponent(match) + '&_=' + Date.now(), { cache: 'no-store' })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(j) { if (j) apply(j); })
+        .catch(function() {});
+    }
+    pollTimer = setInterval(poll, 5000);
+    poll();
+    return function() {
+      dead = true;
+      clearInterval(pollTimer);
+      try { if (wsRef.current) wsRef.current.close(); } catch (e) {}
+    };
+  }, [apply]);
+  return { data: data, viewers: viewers, connected: connected };
+}
+
+function BatTable(props) {
+  const list = props.list || [];
+  if (!list.length) return <div className="muted">Yet to bat</div>;
   return (
-    <div className="welcome" onClick={onDone}>
+    <table>
+      <thead><tr><th>Batter</th><th>R</th><th>B</th><th>4s</th><th>6s</th><th>SR</th></tr></thead>
+      <tbody>
+        {list.map(function(p, i) {
+          return (
+            <tr key={i}>
+              <td>{p.name || '-'}{p.isOut ? '' : ' *'}</td>
+              <td>{n(p.runs)}</td><td>{n(p.balls)}</td><td>{n(p.fours)}</td><td>{n(p.sixes)}</td>
+              <td>{sr(p.runs, p.balls)}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
+function BowlTable(props) {
+  const list = props.list || [];
+  if (!list.length) return <div className="muted">Yet to bowl</div>;
+  return (
+    <table>
+      <thead><tr><th>Bowler</th><th>O</th><th>R</th><th>W</th><th>Econ</th></tr></thead>
+      <tbody>
+        {list.map(function(p, i) {
+          const bb = p.bowlBalls != null ? n(p.bowlBalls) : n(p.balls);
+          const rr = p.bowlRuns != null ? n(p.bowlRuns) : n(p.runs);
+          return (
+            <tr key={i}>
+              <td>{p.name || '-'}</td>
+              <td>{oversFromBalls(bb)}</td><td>{rr}</td><td>{n(p.wickets)}</td><td>{econ(rr, bb)}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
+function Welcome(props) {
+  const data = props.data;
+  useEffect(function() {
+    const t = setTimeout(props.onDone, 10000);
+    return function() { clearTimeout(t); };
+  }, [props.onDone]);
+  const ta = (data && (data.teamA || data.teamAName)) || 'Team A';
+  const tb = (data && (data.teamB || data.teamBName)) || 'Team B';
+  const runs = data && data.runs != null ? data.runs : '-';
+  const wk = data && data.wickets != null ? data.wickets : '-';
+  const ov = (data && data.overs) || '-';
+  const startTs = matchStartTs(data);
+  return (
+    <div className="welcome" onClick={props.onDone}>
       <div className="box">
-        <div style={{fontSize:11,fontWeight:900,letterSpacing:'.14em',color:'var(--red)'}}>LIVE CRICKET</div>
-        <div style={{fontSize:18,fontWeight:900,margin:'8px 0'}}>{ta} vs {tb}</div>
-        <div className="muted" style={{lineHeight:1.45}}>{status}</div>
-        <div style={{fontSize:26,fontWeight:900,margin:'10px 0'}}>{runs}/{wk} <span style={{fontSize:14}}>({ov})</span></div>
-        <div className="muted" style={{fontSize:12,lineHeight:1.5}}>
-          Start {startLabel} · Elapsed {elapsed}<br/>
-          Striker {striker} · Bowler {bowler}
+        <div style={{ fontSize: 11, fontWeight: 900, letterSpacing: '.14em', color: 'var(--red)' }}>LIVE CRICKET</div>
+        <div style={{ fontSize: 18, fontWeight: 900, margin: '8px 0' }}>{ta} vs {tb}</div>
+        <div className="muted">{data && data.matchEnded ? (data.matchResult || 'Match completed') : (data && data.runs != null ? ('Live · ' + runs + '/' + wk + ' (' + ov + ')') : 'Waiting for scoring')}</div>
+        <div style={{ fontSize: 26, fontWeight: 900, margin: '10px 0' }}>{runs}/{wk} <span style={{ fontSize: 14 }}>({ov})</span></div>
+        <div className="muted" style={{ fontSize: 12 }}>
+          Start {startTs ? fmtClock(startTs) : '-'} · Elapsed {startTs ? fmtElapsed(Date.now() - startTs) : '00:00'}
         </div>
       </div>
     </div>
   );
 }
 
-function Scoreboard({data,viewers,connected,event,scoreFmt,settingsOpen,setSettingsOpen,theme,setTheme,ttsOn,setTtsOn,scoreFmtSet}){
-  const ta=data?.teamA||data?.teamAName||'Team A';
-  const tb=data?.teamB||data?.teamBName||'Team B';
-  const flags=flagsForMatch(data||{});
-  const inns=data?.innings||1;
-  const aRuns=data?.teamARuns!=null?data.teamARuns:(inns===1?data?.runs:null);
-  const aWk=data?.teamAWickets!=null?data.teamAWickets:(inns===1?data?.wickets:null);
-  const aOv=data?.teamAOvers||(inns===1?(data?.overs||'0.0'):null);
-  const bRuns=data?.teamBRuns!=null?data.teamBRuns:(inns===2?data?.runs:null);
-  const bWk=data?.teamBWickets!=null?data.teamBWickets:(inns===2?data?.wickets:null);
-  const bOv=data?.teamBOvers||(inns===2?(data?.overs||'0.0'):null);
-  const fa=aRuns==null?{main:'Yet to bat',sub:''}:formatScore(aRuns,aWk,aOv,scoreFmt);
-  const fb=bRuns==null?{main:'Yet to bat',sub:''}:formatScore(bRuns,bWk,bOv,scoreFmt);
-  const aBat=inns===1||data?.battingTeam==='A'||data?.battingTeam===ta;
-  const bBat=inns===2||data?.battingTeam==='B'||data?.battingTeam===tb;
-  const ended=!!(data?.matchEnded||data?.matchEnd||data?.status==='completed'||data?.status==='ended'||data?.matchResult);
-  const pom=data?.playerOfMatch||data?.pom||data?.manOfMatch;
+function App() {
+  const live = useLiveMatch();
+  const data = live.data;
+  const viewers = live.viewers;
+  const connected = live.connected;
+  const [tab, setTab] = useState('live');
+  const [welcome, setWelcome] = useState(true);
+  const [ttsOn, setTtsOn] = useState(function() { return localStorage.getItem('cricket_tts_on') !== '0'; });
+  const [theme, setTheme] = useState(function() { return localStorage.getItem('react_live_theme') || 'dark'; });
+  const [scoreFmt, setScoreFmt] = useState(function() { return localStorage.getItem('react_score_fmt') || 'classic'; });
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [stadiumOn, setStadiumOn] = useState(function() { return localStorage.getItem('cricket_stadium_on') !== '0'; });
+  const [scTeam, setScTeam] = useState('A');
+  const [event, setEvent] = useState(null);
+  const [nowTick, setNowTick] = useState(Date.now());
+  const prevRef = useRef(null);
+  const lastEvKey = useRef('');
+  const lastComm = useRef('');
+  const lines = useMemo(function() { return teamLines(data); }, [data]);
+  const dual = useMemo(function() { return dualTeamScores(data); }, [data]);
+  const meta = useMemo(function() { return matchMeta(data); }, [data]);
+  const flags = useMemo(function() { return flagsForMatch(data); }, [data]);
+  const history = Array.isArray(data && data.matchHistory) ? data.matchHistory : (Array.isArray(data && data.todayMatches) ? data.todayMatches : []);
+
+  useEffect(function() {
+    document.body.classList.remove('theme-dark', 'theme-light', 'theme-ipl', 'theme-icc');
+    document.body.classList.add('theme-' + theme);
+  }, [theme]);
+
+  useEffect(function() {
+    const id = setInterval(function() { setNowTick(Date.now()); }, 1000);
+    return function() { clearInterval(id); };
+  }, []);
+
+  useEffect(function() {
+    if (!data) return;
+    const ev = detectEvent(data, prevRef.current);
+    const key = ev ? (String(data.balls) + '|' + String(data.runs) + '|' + String(data.wickets) + '|' + ev.kind) : '';
+    if (ev && key !== lastEvKey.current) {
+      lastEvKey.current = key;
+      setEvent(ev);
+      try { stadiumForEvent(ev); } catch (e) {}
+      const t = setTimeout(function() { setEvent(null); }, 2600);
+      prevRef.current = { runs: data.runs, wickets: data.wickets, balls: data.balls };
+      return function() { clearTimeout(t); };
+    }
+    prevRef.current = { runs: data.runs, wickets: data.wickets, balls: data.balls };
+  }, [data]);
+
+  useEffect(function() {
+    if (!data || !ttsOn) return;
+    const arr = data.commentary || [];
+    const line = arr.length ? String(arr[arr.length - 1]) : '';
+    if (line && line !== lastComm.current) {
+      lastComm.current = line;
+      speakMale(line);
+    }
+  }, [data, ttsOn]);
+
+  const ended = !!(data && (data.matchEnded || data.matchEnd || data.status === 'completed' || data.status === 'ended' || data.matchResult));
   const startTs = matchStartTs(data);
-  const startLabel = startTs ? fmtClock(startTs) : '—';
-  const [nowTick, setNowTick] = React.useState(Date.now());
-  React.useEffect(()=>{
-    const id = setInterval(()=>setNowTick(Date.now()), 1000);
-    return ()=>clearInterval(id);
-  },[]);
-  // reset elapsed baseline when match id / start changes
-  const matchKey = String((data&& (data.matchId||data.matchNo||''))||'') + '|' + String(startTs||'');
-  const elapsed = (startTs && !ended) ? fmtElapsed(nowTick - startTs) : (ended ? 'Final' : '00:00:00');
-  const evCls=event?(event.kind==='wicket'?'wicket':event.kind==='six'?'six':event.kind==='four'?'four':event.kind==='dot'?'dot':event.kind==='extra'?'extra':'runs'):'';
+  const startLabel = startTs ? fmtClock(startTs) : '-';
+  const elapsed = (startTs && !ended) ? fmtElapsed(nowTick - startTs) : (ended ? 'Final' : '00:00');
+  const fa = dual.aR == null ? { main: 'Yet to bat', sub: '' } : formatScore(dual.aR, dual.aW, dual.aO, scoreFmt);
+  const fb = dual.bR == null ? { main: 'Yet to bat', sub: '' } : formatScore(dual.bR, dual.bW, dual.bO, scoreFmt);
+  const pom = data && (data.playerOfMatch || data.pom || data.manOfMatch || data.mom);
+  const balls = (data && data.thisOver && data.thisOver.balls) || (data && data.currentOverBalls) || [];
+  const title = meta.name || meta.type || 'LIVE MATCH';
+  const subBits = [];
+  if (data && data.venue) subBits.push(data.venue);
+  if (startLabel !== '-') subBits.push('Start ' + startLabel);
+  if (elapsed && elapsed !== 'Final') subBits.push(elapsed);
+  else if (ended) subBits.push('Final');
+  if (meta.type && meta.name) subBits.push(meta.type);
+  const headerSub = subBits.join(' · ');
+  const evCls = event ? (event.kind === 'wicket' ? 'wicket' : event.kind === 'six' ? 'six' : event.kind === 'four' ? 'four' : event.kind === 'dot' ? 'dot' : event.kind === 'extra' ? 'extra' : 'runs') : '';
 
-  return (
-    <div className="broadcast">
-      <div className="bar">
-        <span className="live-pill"><i></i>LIVE · {viewers?.length||0}</span>
-        <div className="match-meta"><b>MATCH</b><span>{connected?'Connected':'Reconnecting…'}</span></div>
-        <button className="gear" type="button" onClick={()=>setSettingsOpen(v=>!v)}>⚙</button>
-      </div>
-      {settingsOpen && (
-        <>
-          <div className="settings-backdrop" onClick={()=>setSettingsOpen(false)}></div>
-          <div className="settings-dd" onClick={e=>e.stopPropagation()}>
-            <div className="dd-title">Sound</div>
-            <button type="button" className={ttsOn?'on':''} onClick={()=>{const n=!ttsOn;setTtsOn(n);localStorage.setItem('cricket_tts_on',n?'1':'0');if(n)speakMale('Male commentary on')}}>{ttsOn?'🔊 Sound ON (Male)':'🔇 Sound OFF'}</button>
-            <div className="sep"></div>
-            <div className="dd-title">Themes</div>
-            {[['dark','Broadcast Dark'],['light','Light Pro'],['ipl','IPL Night'],['icc','ICC Green']].map(([id,label])=>(
-              <button key={id} type="button" className={theme===id?'on':''} onClick={()=>{setTheme(id);localStorage.setItem('react_live_theme',id)}}>{label}</button>
-            ))}
-            <div className="sep"></div>
-            <div className="dd-title">Score format</div>
-            {[['classic','Classic 115/5 (8.0)'],['cricinfo','Cricinfo 115 for 5'],['broadcast','Broadcast 115-5'],['compact','Compact 115/5'],['split','Split runs / wkts']].map(([id,label])=>(
-              <button key={id} type="button" className={scoreFmt===id?'on':''} onClick={()=>{scoreFmtSet(id);localStorage.setItem('react_score_fmt',id)}}>{label}</button>
-            ))}
-            
-          </div>
-        </>
-      )}
-      <div className="score-grid">
-        <div className="side">
-          <div className="tname">
-            <img className={aBat&&!ended?'wave':''} src={FLAG_URL[flags.a]||FLAG_URL.in} alt=""/>
-            <span>{ta}</span>
-          </div>
-          <div className="score-num">{fa.main}</div>
-          {fa.sub ? <div className="overs">{fa.sub}</div> : null}
-          <div className="role">{aBat&&!ended?'Batting':'Bowling'}</div>
-        </div>
-        <div className="match-center">
-          <div className="vs-label">VS</div>
-          <div className="clock">
-            <span>Start {startLabel}</span>
-            {elapsed}
-          </div>
-        </div>
-        <div className="side">
-          <div className="tname">
-            <span>{tb}</span>
-            <img className={bBat&&!ended?'wave':''} src={FLAG_URL[flags.b]||FLAG_URL.au} alt=""/>
-          </div>
-          <div className="score-num">{fb.main}</div>
-          {fb.sub ? <div className="overs">{fb.sub}</div> : null}
-          <div className="role">{bBat&&!ended?'Batting':'Bowling'}</div>
-        </div>
-      </div>
-      <div className="status-line">{matchStatusLine(data)}</div>
-      <div className="crr">
-        <span>CRR <b>{data?.crr!=null?Number(data.crr).toFixed(2):'—'}</b></span>
-        <span>RRR <b>{data?.rrr!=null?Number(data.rrr).toFixed(2):(data?.nrr!=null?Number(data.nrr).toFixed(2):'—')}</b></span>
-      </div>
-      <div className="anim-slot">
-        {event ? <div className={'ev-banner show '+evCls}>{event.text}</div> : null}
-      </div>
-      {ended && (
-        <div className="result">
-          <div className="lbl">MATCH RESULT</div>
-          <div className="txt">{data.matchResult||'Match completed'}</div>
-          <div className="sc">{ta}: {fa.main} {fa.sub} · {tb}: {fb.main} {fb.sub}</div>
-          {pom?<div className="pom">★ Man of the match: {pom}</div>:null}
-        </div>
-      )}
-    </div>
-  );
-}
+  const viewerRows = useMemo(function() {
+    const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
+    const src = (viewers && viewers.length) ? viewers : ((data && (data.viewerHistory || data.viewersLog)) || []);
+    let list = (src || []).filter(function(v) {
+      const t = v.lastSeen || v.joinedAt || v.firstSeen || v.leftAt || 0;
+      const num = typeof t === 'number' ? t : Date.parse(t);
+      return !num || num >= cutoff;
+    });
+    if (!list.length) list = [{ name: 'You', status: 'online', joinedAt: Date.now(), activity: 'watching' }];
+    return list;
+  }, [viewers, data]);
 
-function BatTable({list}){
-  if(!list?.length) return <div className="muted">Yet to bat</div>;
-  return <table><thead><tr><th>Batter</th><th>R</th><th>B</th><th>4s</th><th>6s</th><th>SR</th></tr></thead>
-    <tbody>{list.map((p,i)=>{const r=p.runs|0,b=p.balls|0,sr=b?Math.round(r/b*1000)/10:0;
-      return <tr key={i}><td>{p.name||'—'}{p.isOut?'':' *'}</td><td>{r}</td><td>{b}</td><td>{p.fours|0}</td><td>{p.sixes|0}</td><td>{sr}</td></tr>})}</tbody></table>;
-}
-function BowlTable({list}){
-  if(!list?.length) return <div className="muted">Yet to bowl</div>;
-  return <table><thead><tr><th>Bowler</th><th>O</th><th>R</th><th>W</th><th>Econ</th></tr></thead>
-    <tbody>{list.map((p,i)=>{const bb=p.bowlBalls!=null?p.bowlBalls|0:p.balls|0;const rr=p.bowlRuns!=null?p.bowlRuns|0:p.runs|0;
-      const o=Math.floor(bb/6)+'.'+(bb%6);const econ=bb?(rr/(bb/6)).toFixed(2):'0.00';
-      return <tr key={i}><td>{p.name||'—'}</td><td>{o}</td><td>{rr}</td><td>{p.wickets|0}</td><td>{econ}</td></tr>})}</tbody></table>;
-}
-
-function App(){
-  const {data,viewers,connected}=useLiveMatch();
-  const [tab,setTab]=useState('live');
-  const [welcome,setWelcome]=useState(true);
-  const [ttsOn,setTtsOn]=useState(()=>localStorage.getItem('cricket_tts_on')!=='0');
-  const [theme,setTheme]=useState(()=>localStorage.getItem('react_live_theme')||'dark');
-  const [scoreFmt,setScoreFmt]=useState(()=>localStorage.getItem('react_score_fmt')||'classic');
-  const [settingsOpen,setSettingsOpen]=useState(false);
-  const [scTeam,setScTeam]=useState(null);
-  const [event,setEvent]=useState(null);
-  const prevRef=useRef(null); const lastEvKey=useRef(''); const lastComm=useRef('');
-  const lines=useMemo(()=>teamLines(data),[data]);
-  const players=useMemo(()=>playersList(data),[data]);
-  const history=Array.isArray(data?.matchHistory)?data.matchHistory:(Array.isArray(data?.todayMatches)?data.todayMatches:[]);
-
-  useEffect(()=>{
-    document.body.classList.remove('theme-dark','theme-light','theme-ipl','theme-icc');
-    document.body.classList.add('theme-'+theme);
-  },[theme]);
-  useEffect(()=>{if(scTeam==null&&lines)setScTeam(lines.batting==='B'?'B':'A')},[lines,scTeam]);
-  useEffect(()=>{
-    if(!data)return;
-    const ev=detectEvent(data,prevRef.current);
-    const key=ev?(String(data.balls)+'|'+String(data.runs)+'|'+String(data.wickets)+'|'+ev.kind+'|'+ev.text):'';
-    if(ev&&key!==lastEvKey.current){lastEvKey.current=key;setEvent(ev);const t=setTimeout(()=>setEvent(null),2800);prevRef.current={runs:data.runs,wickets:data.wickets};return ()=>clearTimeout(t)}
-    prevRef.current={runs:data.runs,wickets:data.wickets};
-  },[data]);
-  useEffect(()=>{
-    if(!data||!ttsOn)return;
-    const arr=data.commentary||[]; const line=arr.length?String(arr[arr.length-1]):'';
-    if(line&&line!==lastComm.current){lastComm.current=line;speakMale(line)}
-  },[data,ttsOn]);
-
-  const balls=(data?.thisOver?.balls)||data?.currentOverBalls||[];
-  const TABS=[
-    ['live','LIVE'],['scorecard','SCORECARD'],['commentary','COMMENTARY'],
-    ['fow','FOW'],['caps','CAPS'],['info','INFO'],['players','PLAYERS'],
-    ['history','HISTORY'],['viewers','VIEWERS']
+  const tabs = [
+    ['live', 'LIVE'], ['scorecard', 'SCORECARD'], ['commentary', 'COMMENTARY'],
+    ['fow', 'FOW'], ['caps', 'CAPS'], ['info', 'INFO'], ['players', 'PLAYERS'],
+    ['history', 'HISTORY'], ['viewers', 'VIEWERS']
   ];
 
   return (
     <div className="app">
-      {welcome&&<Welcome data={data} onDone={()=>setWelcome(false)}/>}
-      <div onClick={e=>e.stopPropagation()}>
-        <Scoreboard data={data} viewers={viewers} connected={connected} event={event}
-          scoreFmt={scoreFmt} scoreFmtSet={setScoreFmt}
-          settingsOpen={settingsOpen} setSettingsOpen={setSettingsOpen}
-          theme={theme} setTheme={setTheme} ttsOn={ttsOn} setTtsOn={setTtsOn}/>
+      {welcome ? <Welcome data={data} onDone={function() { setWelcome(false); }} /> : null}
+
+      <div className="broadcast">
+        <div className="bar">
+          <span className="live-pill"><i></i>LIVE · {(viewers && viewers.length) || 0}</span>
+          <div className="bar-mid">
+            <div className="title">{title}</div>
+            <div className="sub">{headerSub || (connected ? 'Connected' : 'Reconnecting...')}</div>
+          </div>
+          <button className="gear" type="button" onClick={function() { setSettingsOpen(function(v) { return !v; }); }}>⚙</button>
+        </div>
+
+        {settingsOpen ? (
+          <React.Fragment>
+            <div className="settings-backdrop" onClick={function() { setSettingsOpen(false); }}></div>
+            <div className="settings-dd" onClick={function(e) { e.stopPropagation(); }}>
+              <div className="dd-title">Sound</div>
+              <button type="button" className={ttsOn ? 'on' : ''} onClick={function() {
+                const next = !ttsOn; setTtsOn(next);
+                localStorage.setItem('cricket_tts_on', next ? '1' : '0');
+                if (next) speakMale('Male commentary on');
+              }}>{ttsOn ? 'Commentary ON (Male)' : 'Commentary OFF'}</button>
+              <button type="button" className={stadiumOn ? 'on' : ''} onClick={function() {
+                const next = !stadiumOn; setStadiumOn(next);
+                localStorage.setItem('cricket_stadium_on', next ? '1' : '0');
+                if (next) playSfx(0.12);
+              }}>{stadiumOn ? 'Stadium ON' : 'Stadium OFF'}</button>
+              <div className="sep"></div>
+              <div className="dd-title">Themes</div>
+              {[['dark', 'Broadcast Dark'], ['light', 'Light Pro'], ['ipl', 'IPL Night'], ['icc', 'ICC Green']].map(function(pair) {
+                return (
+                  <button key={pair[0]} type="button" className={theme === pair[0] ? 'on' : ''} onClick={function() {
+                    setTheme(pair[0]); localStorage.setItem('react_live_theme', pair[0]);
+                  }}>{pair[1]}</button>
+                );
+              })}
+              <div className="sep"></div>
+              <div className="dd-title">Score format</div>
+              {[['classic', 'Classic 115/5 (8.0)'], ['cricinfo', 'Cricinfo 115 for 5'], ['broadcast', 'Broadcast 115-5'], ['compact', 'Compact 115/5'], ['split', 'Split runs / wkts']].map(function(pair) {
+                return (
+                  <button key={pair[0]} type="button" className={scoreFmt === pair[0] ? 'on' : ''} onClick={function() {
+                    setScoreFmt(pair[0]); localStorage.setItem('react_score_fmt', pair[0]);
+                  }}>{pair[1]}</button>
+                );
+              })}
+            </div>
+          </React.Fragment>
+        ) : null}
+
+        <div className="score-grid">
+          <div className="side">
+            <div className="tname">
+              <img className={dual.aBat && !ended ? 'wave' : ''} src={FLAG_URL[flags.a] || FLAG_URL.in} alt="" />
+              <span>{dual.nameA}</span>
+            </div>
+            <div className="score-num">{fa.main}</div>
+            {fa.sub ? <div className="overs">{fa.sub}</div> : null}
+            <div className="role">{dual.aBat && !ended ? 'Batting' : 'Bowling'}</div>
+          </div>
+          <div className="match-center"><div className="vs-label">VS</div></div>
+          <div className="side">
+            <div className="tname">
+              <span>{dual.nameB}</span>
+              <img className={dual.bBat && !ended ? 'wave' : ''} src={FLAG_URL[flags.b] || FLAG_URL.au} alt="" />
+            </div>
+            <div className="score-num">{fb.main}</div>
+            {fb.sub ? <div className="overs">{fb.sub}</div> : null}
+            <div className="role">{dual.bBat && !ended ? 'Batting' : 'Bowling'}</div>
+          </div>
+        </div>
+
+        <div className="crr">
+          <span>CRR <b>{data && data.crr != null ? Number(data.crr).toFixed(2) : '-'}</b></span>
+          <span>RRR <b>{data && data.rrr != null ? Number(data.rrr).toFixed(2) : (data && data.nrr != null ? Number(data.nrr).toFixed(2) : '-')}</b></span>
+        </div>
+        <div className="anim-slot">
+          {event ? <div className={'ev-banner show ' + evCls}>{event.text}</div> : null}
+        </div>
+
+        {ended ? (
+          <div className="result-wrap">
+            <div className="cracker" aria-hidden="true">
+              {[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17].map(function(i) {
+                const colors = ['#fde68a', '#f97316', '#fb7185', '#a3e635', '#38bdf8', '#c084fc'];
+                return <i key={i} style={{ left: (5 + i * 5.2) + '%', background: colors[i % 6], animationDelay: (i * 0.08) + 's', width: (6 + (i % 3) * 2) + 'px', height: (6 + (i % 2) * 3) + 'px' }} />;
+              })}
+            </div>
+            <div className="result">
+              <div className="lbl">MATCH RESULT</div>
+              <div className="txt">{(data && (data.matchResult || data.resultText)) || 'Match completed'}</div>
+              <div className="sc">{dual.nameA}: {fa.main} {fa.sub}<br/>{dual.nameB}: {fb.main} {fb.sub}</div>
+              {pom ? <div className="pom">Man of the match: {pom}</div> : null}
+            </div>
+          </div>
+        ) : null}
       </div>
+
       <div className="tabs">
-        {TABS.map(([id,label])=>(
-          <button key={id} className={tab===id?'on':''} onClick={()=>setTab(id)}>{label}</button>
-        ))}
+        {tabs.map(function(pair) {
+          return (
+            <button key={pair[0]} className={tab === pair[0] ? 'on' : ''} onClick={function() { setTab(pair[0]); }}>{pair[1]}</button>
+          );
+        })}
       </div>
+
       <div className="panel">
-        {tab==='live'&&(
-          <>
-            <div className="card"><h3>On strike</h3>
-              <div className="players">
-                <div className="pbox"><div className="k">Striker</div><div className="v">{data?.strikerName||'—'}</div><div className="s">{data?.strikerRuns??0} ({data?.strikerBalls??0})</div></div>
-                <div className="pbox"><div className="k">Bowler</div><div className="v">{data?.bowlerName||'—'}</div><div className="s">{data?.bowlerRuns??0}/{data?.bowlerWickets??0}</div></div>
+        {tab === 'live' ? (
+          <React.Fragment>
+            <div className="card">
+              <h3>Batsmen &amp; bowler</h3>
+              <div className="bat-bowl">
+                <div className="bat-col">
+                  <div className="pbox">
+                    <div className="k">Striker</div>
+                    <div className="v">{(data && data.strikerName) || '-'}</div>
+                    <table>
+                      <thead><tr><th>R</th><th>B</th><th>4s</th><th>6s</th><th>SR</th></tr></thead>
+                      <tbody><tr>
+                        <td>{n(data && data.strikerRuns)}</td>
+                        <td>{n(data && data.strikerBalls)}</td>
+                        <td>{n(data && (data.strikerFours != null ? data.strikerFours : data.striker4s))}</td>
+                        <td>{n(data && (data.strikerSixes != null ? data.strikerSixes : data.striker6s))}</td>
+                        <td>{sr(data && data.strikerRuns, data && data.strikerBalls)}</td>
+                      </tr></tbody>
+                    </table>
+                  </div>
+                  <div className="pbox">
+                    <div className="k">Non-striker</div>
+                    <div className="v">{(data && (data.nonStrikerName || data.nonStriker)) || '-'}</div>
+                    <table>
+                      <thead><tr><th>R</th><th>B</th><th>4s</th><th>6s</th><th>SR</th></tr></thead>
+                      <tbody><tr>
+                        <td>{n(data && data.nonStrikerRuns)}</td>
+                        <td>{n(data && data.nonStrikerBalls)}</td>
+                        <td>{n(data && (data.nonStrikerFours != null ? data.nonStrikerFours : data.nonStriker4s))}</td>
+                        <td>{n(data && (data.nonStrikerSixes != null ? data.nonStrikerSixes : data.nonStriker6s))}</td>
+                        <td>{sr(data && data.nonStrikerRuns, data && data.nonStrikerBalls)}</td>
+                      </tr></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className="vdiv"></div>
+                <div className="bowl-col">
+                  <div className="pbox">
+                    <div className="k">Bowler</div>
+                    <div className="v">{(data && data.bowlerName) || '-'}</div>
+                    <table>
+                      <thead><tr><th>O</th><th>R</th><th>W</th><th>Econ</th></tr></thead>
+                      <tbody><tr>
+                        <td>{oversFromBalls(data && data.bowlerBalls)}</td>
+                        <td>{n(data && data.bowlerRuns)}</td>
+                        <td>{n(data && data.bowlerWickets)}</td>
+                        <td>{econ(data && data.bowlerRuns, data && data.bowlerBalls)}</td>
+                      </tr></tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="card"><h3>This over</h3>
-              <div className="chips">{(balls||[]).map((b,i)=>{const lab=typeof b==='object'?(b.label||''):String(b??'');return <span key={i} className={chipClass(lab)}>{lab||'•'}</span>})}
-                {!balls?.length&&<span className="muted">No balls yet</span>}</div>
+            <div className="card">
+              <h3>This over</h3>
+              <div className="chips">
+                {(balls || []).map(function(b, i) {
+                  const lab = typeof b === 'object' ? (b.label || '') : String(b == null ? '' : b);
+                  return <span key={i} className={chipClass(lab)}>{lab || '•'}</span>;
+                })}
+                {!(balls && balls.length) ? <span className="muted">No balls yet</span> : null}
+              </div>
             </div>
-          </>
-        )}
-        {tab==='scorecard'&&(
+          </React.Fragment>
+        ) : null}
+
+        {tab === 'scorecard' ? (
           <div className="card">
             <div className="subtabs">
-              <button className={scTeam==='A'?'on':''} onClick={()=>setScTeam('A')}>{lines.nameA}</button>
-              <button className={scTeam==='B'?'on':''} onClick={()=>setScTeam('B')}>{lines.nameB}</button>
+              <button className={scTeam === 'A' ? 'on' : ''} onClick={function() { setScTeam('A'); }}>{lines.nameA}</button>
+              <button className={scTeam === 'B' ? 'on' : ''} onClick={function() { setScTeam('B'); }}>{lines.nameB}</button>
             </div>
-            <h3>Batting</h3><BatTable list={scTeam==='B'?lines.batB:lines.batA}/>
-            <h3 style={{marginTop:14}}>Bowling</h3><BowlTable list={scTeam==='B'?lines.bowlB:lines.bowlA}/>
+            <h3>Batting</h3>
+            <BatTable list={scTeam === 'B' ? lines.batB : lines.batA} />
+            <h3 style={{ marginTop: 14 }}>Bowling</h3>
+            <BowlTable list={scTeam === 'B' ? lines.bowlB : lines.bowlA} />
           </div>
-        )}
-        {tab==='commentary'&&(
+        ) : null}
+
+        {tab === 'commentary' ? (
           <div className="card">
             <div className="row">
-              <button className={'btn'+(ttsOn?' on':'')} onClick={()=>{const n=!ttsOn;setTtsOn(n);localStorage.setItem('cricket_tts_on',n?'1':'0');if(n)speakMale('Male commentary on')}}>Voice {ttsOn?'ON · Male':'OFF'}</button>
-              <button className="btn" onClick={()=>speakMale('Four runs! Brilliant timing!')}>Test male voice</button>
+              <button className={'btn' + (ttsOn ? ' on' : '')} onClick={function() {
+                const next = !ttsOn; setTtsOn(next);
+                localStorage.setItem('cricket_tts_on', next ? '1' : '0');
+                if (next) speakMale('Male commentary on');
+              }}>Voice {ttsOn ? 'ON · Male' : 'OFF'}</button>
+              <button className="btn" onClick={function() { speakMale('Four runs! Brilliant timing!'); }}>Test male voice</button>
             </div>
-            {(data?.commentary||[]).slice().reverse().slice(0,40).map((line,i)=><div className="comm-item" key={i}>{String(line)}</div>)}
-            {!(data?.commentary||[]).length&&<div className="muted">No commentary yet</div>}
+            {(data && data.commentary ? data.commentary.slice().reverse().slice(0, 40) : []).map(function(line, i) {
+              return <div className="comm-item" key={i}>{String(line)}</div>;
+            })}
+            {!(data && data.commentary && data.commentary.length) ? <div className="muted">No commentary yet</div> : null}
           </div>
-        )}
-        {tab==='fow'&&(
-          <div className="card"><h3>Fall of wickets</h3>
-            <table><thead><tr><th>#</th><th>Score</th><th>Batter</th><th>Dismissal</th></tr></thead>
-              <tbody>{(data?.fallOfWickets||[]).map((w,i)=><tr key={i}><td>{i+1}</td><td>{w.score??w.runs??'—'}</td><td>{w.batsman||w.player||w.name||'—'}</td><td>{w.dismissal||w.howOut||'—'}</td></tr>)}
-                {!(data?.fallOfWickets||[]).length&&<tr><td colSpan="4" className="muted">No wickets yet</td></tr>}</tbody></table>
-          </div>
-        )}
-        {tab==='caps'&&(
+        ) : null}
+
+        {tab === 'fow' ? (
           <div className="card">
-            <h3>Orange cap</h3>
-            <table><thead><tr><th>#</th><th>Player</th><th>Runs</th><th>Avg</th></tr></thead>
-              <tbody>{(data?.orangeCap||[]).slice(0,15).map((p,i)=><tr key={i}><td>{i+1}</td><td>{p.name}</td><td>{p.runs||0}</td><td>{p.avg!=null?p.avg:(p.average!=null?p.average:'—')}</td></tr>)}
-                {!(data?.orangeCap||[]).length&&<tr><td colSpan="4" className="muted">No data from scorer</td></tr>}</tbody></table>
-            <h3 style={{marginTop:14}}>Purple cap</h3>
-            <table><thead><tr><th>#</th><th>Player</th><th>Wkts</th><th>Runs</th></tr></thead>
-              <tbody>{(data?.purpleCap||[]).slice(0,15).map((p,i)=><tr key={i}><td>{i+1}</td><td>{p.name}</td><td>{p.wickets||0}</td><td>{p.runs||p.bowlRuns||0}</td></tr>)}
-                {!(data?.purpleCap||[]).length&&<tr><td colSpan="4" className="muted">No data from scorer</td></tr>}</tbody></table>
-          </div>
-        )}
-        {tab==='info'&&(
-          <div className="card">
-            <h3>Match info · Dashboard</h3>
-            <div className="kv">
-              <div className="item"><div className="k">Teams</div><div className="v">{(data?.teamA||'Team A')+' vs '+(data?.teamB||'Team B')}</div></div>
-              <div className="item"><div className="k">Status</div><div className="v">{data?.matchEnded?(data.matchResult||'Completed'):(data?.statusText||'Live')}</div></div>
-              <div className="item"><div className="k">Toss</div><div className="v">{data?.tossText||data?.toss||'—'}</div></div>
-              <div className="item"><div className="k">Overs</div><div className="v">{data?.maxOvers||data?.totalOvers||'—'}</div></div>
-              <div className="item"><div className="k">Venue</div><div className="v">{data?.venue||data?.location||'—'}</div></div>
-              <div className="item"><div className="k">Started</div><div className="v">{data?.matchStartTime?fmtTime(data.matchStartTime):(data?.startTime?fmtTime(data.startTime):'—')}</div></div>
-              <div className="item"><div className="k">Target</div><div className="v">{data?.target||data?.targetScore||'—'}</div></div>
-              <div className="item"><div className="k">Innings</div><div className="v">{data?.innings||1}</div></div>
-            </div>
-          </div>
-        )}
-        {tab==='players'&&(
-          <div className="card">
-            <h3>Players · Squad</h3>
-            <div className="subtabs">
-              <button className={scTeam!=='B'?'on':''} onClick={()=>setScTeam('A')}>{lines.nameA}</button>
-              <button className={scTeam==='B'?'on':''} onClick={()=>setScTeam('B')}>{lines.nameB}</button>
-            </div>
-            <table><thead><tr><th>#</th><th>Player</th></tr></thead>
-              <tbody>{(scTeam==='B'?(players.b.length?players.b:lines.batB):(players.a.length?players.a:lines.batA)).map((p,i)=>(
-                <tr key={i}><td>{i+1}</td><td>{typeof p==='string'?p:(p.name||'—')}</td></tr>
-              ))}
-              {!(scTeam==='B'?players.b:players.a).length&&!(scTeam==='B'?lines.batB:lines.batA).length&&(
-                <tr><td colSpan="2" className="muted">No squad data in live payload yet</td></tr>
-              )}
-            </tbody></table>
-          </div>
-        )}
-        {tab==='history'&&(
-          <div className="card">
-            <h3>Match history · Dashboard</h3>
-            <table><thead><tr><th>Match</th><th>Result</th><th>When</th></tr></thead>
+            <h3>Fall of wickets</h3>
+            <table>
+              <thead><tr><th>#</th><th>Score</th><th>Batter</th><th>Dismissal</th></tr></thead>
               <tbody>
-                {history.slice(0,20).map((h,i)=>(
-                  <tr key={i}>
-                    <td>{h.teamA||h.teams||h.name||('Match '+(i+1))}</td>
-                    <td>{h.result||h.matchResult||h.summary||'—'}</td>
-                    <td>{fmtTime(h.ts||h.endedAt||h.date)}</td>
-                  </tr>
-                ))}
-                {!history.length&&<tr><td colSpan="3" className="muted">No finished matches in payload (mirrors scorer dashboard when published)</td></tr>}
+                {(data && data.fallOfWickets ? data.fallOfWickets : []).map(function(w, i) {
+                  return (
+                    <tr key={i}>
+                      <td>{i + 1}</td>
+                      <td>{w.score != null ? w.score : (w.runs != null ? w.runs : '-')}</td>
+                      <td>{w.batsman || w.player || w.name || '-'}</td>
+                      <td>{w.dismissal || w.howOut || '-'}</td>
+                    </tr>
+                  );
+                })}
+                {!(data && data.fallOfWickets && data.fallOfWickets.length) ? <tr><td colSpan="4" className="muted">No wickets yet</td></tr> : null}
               </tbody>
             </table>
           </div>
-        )}
-        {tab==='viewers'&&(
+        ) : null}
+
+        {tab === 'caps' ? (
+          <div className="caps-row">
+            <div className="card">
+              <h3>Orange cap</h3>
+              <table>
+                <thead><tr><th>#</th><th>Player</th><th>Runs</th><th>Avg</th></tr></thead>
+                <tbody>
+                  {(data && data.orangeCap ? data.orangeCap.slice(0, 12) : []).map(function(p, i) {
+                    return <tr key={i}><td>{i + 1}</td><td>{p.name}</td><td>{p.runs || 0}</td><td>{p.avg != null ? p.avg : (p.average != null ? p.average : '-')}</td></tr>;
+                  })}
+                  {!(data && data.orangeCap && data.orangeCap.length) ? <tr><td colSpan="4" className="muted">No data</td></tr> : null}
+                </tbody>
+              </table>
+            </div>
+            <div className="card">
+              <h3>Purple cap</h3>
+              <table>
+                <thead><tr><th>#</th><th>Player</th><th>W</th><th>Runs</th></tr></thead>
+                <tbody>
+                  {(data && data.purpleCap ? data.purpleCap.slice(0, 12) : []).map(function(p, i) {
+                    return <tr key={i}><td>{i + 1}</td><td>{p.name}</td><td>{p.wickets || 0}</td><td>{p.runs || p.bowlRuns || 0}</td></tr>;
+                  })}
+                  {!(data && data.purpleCap && data.purpleCap.length) ? <tr><td colSpan="4" className="muted">No data</td></tr> : null}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
+
+        {tab === 'info' ? (
           <div className="card">
-            <h3>Viewers</h3>
-            <table><thead><tr><th>Name</th><th>Status</th><th>Log in</th><th>Out</th><th>Activity</th></tr></thead>
+            <h3>Match info</h3>
+            <div className="kv">
+              <div className="item"><div className="k">Teams</div><div className="v">{dual.nameA + ' vs ' + dual.nameB}</div></div>
+              <div className="item"><div className="k">Status</div><div className="v">{ended ? ((data && data.matchResult) || 'Completed') : ((data && data.statusText) || 'Live')}</div></div>
+              <div className="item"><div className="k">Match</div><div className="v">{meta.name || '-'}</div></div>
+              <div className="item"><div className="k">Type</div><div className="v">{meta.type || '-'}</div></div>
+              <div className="item"><div className="k">Venue</div><div className="v">{(data && data.venue) || '-'}</div></div>
+              <div className="item"><div className="k">Toss</div><div className="v">{(data && (data.tossText || data.toss)) || '-'}</div></div>
+              <div className="item"><div className="k">Overs</div><div className="v">{(data && (data.maxOvers || data.totalOvers)) || '-'}</div></div>
+              <div className="item"><div className="k">Target</div><div className="v">{(data && (data.target || data.targetScore)) || '-'}</div></div>
+            </div>
+          </div>
+        ) : null}
+
+        {tab === 'players' ? (
+          <div className="card">
+            <h3>Players</h3>
+            <div className="subtabs">
+              <button className={scTeam !== 'B' ? 'on' : ''} onClick={function() { setScTeam('A'); }}>{lines.nameA}</button>
+              <button className={scTeam === 'B' ? 'on' : ''} onClick={function() { setScTeam('B'); }}>{lines.nameB}</button>
+            </div>
+            <table>
+              <thead><tr><th>#</th><th>Player</th></tr></thead>
               <tbody>
-                {(viewers.length?viewers:[{name:'You',status:'online',joinedAt:Date.now(),activity:'watching'}]).map((v,i)=>{
-                  const online=!(v.status==='offline'||v.online===false);
-                  return <tr key={i}><td>{v.name||v.displayName||'Viewer'}</td>
-                    <td style={{color:online?'#22c55e':'#94a3b8',fontWeight:800}}>{online?'Online':'Offline'}</td>
-                    <td>{fmtTime(v.joinedAt||v.firstSeen)}</td>
-                    <td>{online?'—':fmtTime(v.leftAt||v.lastSeen)}</td>
-                    <td>{v.activity||v.tab||'watching'}</td></tr>
+                {(scTeam === 'B' ? lines.batB : lines.batA).map(function(p, i) {
+                  return <tr key={i}><td>{i + 1}</td><td>{typeof p === 'string' ? p : (p.name || '-')}</td></tr>;
+                })}
+                {!(scTeam === 'B' ? lines.batB : lines.batA).length ? <tr><td colSpan="2" className="muted">No squad data yet</td></tr> : null}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+
+        {tab === 'history' ? (
+          <div className="card">
+            <h3>Match history</h3>
+            <table>
+              <thead><tr><th>Match</th><th>Result</th><th>When</th></tr></thead>
+              <tbody>
+                {history.slice(0, 20).map(function(h, i) {
+                  return (
+                    <tr key={i}>
+                      <td>{h.teamA || h.teams || h.name || ('Match ' + (i + 1))}</td>
+                      <td>{h.result || h.matchResult || h.summary || '-'}</td>
+                      <td>{fmtTime(h.ts || h.endedAt || h.date)}</td>
+                    </tr>
+                  );
+                })}
+                {!history.length ? <tr><td colSpan="3" className="muted">No finished matches in payload</td></tr> : null}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+
+        {tab === 'viewers' ? (
+          <div className="card">
+            <h3>Viewers · last 2 weeks</h3>
+            <table>
+              <thead><tr><th>Name</th><th>Status</th><th>Log in</th><th>Out</th><th>Activity</th></tr></thead>
+              <tbody>
+                {viewerRows.map(function(v, i) {
+                  const online = !(v.status === 'offline' || v.online === false);
+                  return (
+                    <tr key={i}>
+                      <td>{v.name || v.displayName || 'Viewer'}</td>
+                      <td style={{ color: online ? '#22c55e' : '#94a3b8', fontWeight: 800 }}>{online ? 'Online' : 'Offline'}</td>
+                      <td>{fmtTime(v.joinedAt || v.firstSeen)}</td>
+                      <td>{online ? '-' : fmtTime(v.leftAt || v.lastSeen)}</td>
+                      <td>{v.activity || v.tab || 'watching'}</td>
+                    </tr>
+                  );
                 })}
               </tbody>
             </table>
           </div>
-        )}
+        ) : null}
       </div>
+
       <div className="footer">MySportz React Live</div>
     </div>
   );
 }
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+
+const rootEl = document.getElementById('root');
+if (rootEl && window.ReactDOM && window.React) {
+  ReactDOM.createRoot(rootEl).render(<App />);
+} else {
+  const e = document.getElementById('error');
+  if (e) { e.style.display = 'block'; e.textContent = 'Failed to load React libraries.'; }
+}
 </script>
 </body>
 </html>
