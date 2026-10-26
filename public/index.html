@@ -7462,6 +7462,8 @@ function placeBoundaryAnimationOnStriker(toast){
                     return String(d.dismissal || d.howOut || d.wicketType || 'Out');
                 } catch(e){ return ''; }
             })(),
+            firstBattingTeam: (typeof firstBattingTeam !== 'undefined' ? firstBattingTeam : 'A'),
+            currentInnings: (typeof currentInnings !== 'undefined' ? currentInnings : 1),
             lastEvent: (function(){
                 try {
                     var hist = deliveryHistory || [];
