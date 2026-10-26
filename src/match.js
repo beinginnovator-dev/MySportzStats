@@ -646,8 +646,8 @@ export class MatchDO {
     }
 
     const payload = this.publicPayload();
-    this.broadcast({ type: "update", data: payload });
-    this.broadcast({ type: "score", data: payload });
+    // Single push message for all WS viewers (push-only fanout)
+    this.broadcast({ type: "full", data: payload, ts: payload.ts || this.live.ts });
   }
 
   oversLeft() {
