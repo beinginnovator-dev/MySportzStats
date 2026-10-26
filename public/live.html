@@ -4480,6 +4480,43 @@ body[data-theme="sports1"] .sb-table .dual-sub {
 }
 </style>
 
+
+<style id="v175-fow-viewers">
+/* FOW table white like other tables */
+#panel-fow,
+#panel-fow .panel-hdr,
+#fow-body,
+#fow-body table,
+#fow-body .fow-table,
+#panel-fow table {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+#fow-body table th {
+  background: #0d9488 !important;
+  color: #ffffff !important;
+}
+#fow-body table td {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+body[data-theme="dark"] #panel-fow,
+body[data-theme="dark"] #fow-body,
+body[data-theme="dark"] #fow-body table td {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+/* Scorecard team tabs must not look like main tabs */
+#sc-team-tabs .subtab {
+  pointer-events: auto !important;
+}
+#scorecard-body, #panel-stats {
+  min-height: 120px;
+}
+</style>
+
 </head>
 <body>
 
@@ -5236,9 +5273,11 @@ body[data-theme="sports1"] .sb-table .dual-sub {
       try{ postViewerActivity('tab', {tab:t, text:'Opened '+t}); }catch(eTab){}
       if(t==='sum'){ try{setSumSub('teams')}catch(e){} try{ paintViewersSummary(); }catch(eV){} }
       if(t==='fan'){ try{ loadFansRank(); paintViewersSummary(); }catch(eF){} }
-      var ids=['live','comm','stats','fan','sum'];
+      var ids=['live','comm','stats','fow','caps','fan','sum'];
       ids.forEach(function(x){
         var tb=$('tab-'+x), pn=$('panel-'+x);
+        // scorecard tab id is tab-stats
+        if(x==='stats'){ tb = tb || $('tab-stats'); }
         var on = (t===x);
         if(tb) tb.classList.toggle('on', on);
         if(pn){
@@ -5246,6 +5285,11 @@ body[data-theme="sports1"] .sb-table .dual-sub {
           pn.style.display = on ? 'block' : 'none';
         }
       });
+      // also toggle panel-stats when t===stats
+      try{
+        var ps=$('panel-stats');
+        if(ps){ var onS=(t==='stats'); ps.classList.toggle('hidden', !onS); ps.style.display=onS?'block':'none'; }
+      }catch(e){}
       try{
         if(t==='fan') loadFansRank();
       }catch(e){}
@@ -14524,7 +14568,7 @@ try{mountDashboards()}catch(e){}
   window.__v166Whistle = true;
 
   var lastOverKey = '';
-  var whistleUrl = '/sounds/crowd_whistle.mp3?v14';
+  var whistleUrl = '/sounds/crowd_whistle.mp3?v16';
   var audio = null;
 
   function stadiumEnabled(){
@@ -14552,7 +14596,7 @@ try{mountDashboards()}catch(e){}
         audio.preload = 'auto';
         try { audio.setAttribute('playsinline',''); } catch(e){}
       }
-      audio.volume = 0.08;
+      audio.volume = 0.10;
       audio.currentTime = 0;
       var p = audio.play();
       if (p && p.catch) p.catch(function(){});
@@ -15082,7 +15126,7 @@ try{mountDashboards()}catch(e){}
       if (typeof window.stadiumOn !== 'undefined' && window.stadiumOn === false) return;
 
       if (!whistleAudio) {
-        whistleAudio = new Audio('/sounds/crowd_whistle.mp3?v14');
+        whistleAudio = new Audio('/sounds/crowd_whistle.mp3?v16');
         whistleAudio.preload = 'auto';
         try { whistleAudio.setAttribute('playsinline',''); } catch(e){}
       }
@@ -15230,12 +15274,12 @@ try{mountDashboards()}catch(e){}
       if (master === '0' || stad === '0') return;
       if (typeof window.stadiumOn !== 'undefined' && window.stadiumOn === false) return;
       if (!whistle) {
-        whistle = new Audio('/sounds/crowd_whistle.mp3?v14');
+        whistle = new Audio('/sounds/crowd_whistle.mp3?v16');
         whistle.preload = 'auto';
         try { whistle.setAttribute('playsinline',''); } catch(e){}
       }
       try { whistle.pause(); whistle.currentTime = 0; } catch(e){}
-      whistle.volume = 0.03;
+      whistle.volume = 0.05;
       var p = whistle.play();
       if (p && p.catch) p.catch(function(){});
       // gentle rise to soft distant level
@@ -15692,7 +15736,7 @@ try{mountDashboards()}catch(e){}
       if(typeof window.stadiumOn!=='undefined'&&window.stadiumOn===false) return;
       // Block other loud whistle players for this moment
       if(!whistle){
-        whistle=new Audio('/sounds/crowd_whistle.mp3?v14');
+        whistle=new Audio('/sounds/crowd_whistle.mp3?v16');
         whistle.preload='auto';
         try{ whistle.setAttribute('playsinline',''); }catch(e){}
       }
@@ -15703,7 +15747,7 @@ try{mountDashboards()}catch(e){}
       var step=0;
       var iv=setInterval(function(){
         step++;
-        try{ whistle.volume=Math.min(0.08, 0.03+step*0.008); }catch(e){}
+        try{ whistle.volume=Math.min(0.10, 0.05+step*0.01); }catch(e){}
         if(step>=6) clearInterval(iv);
       }, 60);
     }catch(e){}
@@ -15969,14 +16013,14 @@ try{mountDashboards()}catch(e){}
       if (whistlePlaying) return;
 
       if (!whistleAudio) {
-        whistleAudio = new Audio('/sounds/crowd_whistle.mp3?v15');
+        whistleAudio = new Audio('/sounds/crowd_whistle.mp3?v16');
         whistleAudio.preload = 'auto';
         try { whistleAudio.setAttribute('playsinline',''); } catch(e){}
         whistleAudio.addEventListener('ended', function(){ whistlePlaying = false; });
         whistleAudio.addEventListener('error', function(){ whistlePlaying = false; });
       }
       try { whistleAudio.pause(); whistleAudio.currentTime = 0; } catch(e){}
-      whistleAudio.volume = 0.04; // soft / distant
+      whistleAudio.volume = 0.06; // soft / distant
       whistlePlaying = true;
       var p = whistleAudio.play();
       if (p && p.catch) p.catch(function(){ whistlePlaying = false; });
@@ -16835,6 +16879,627 @@ try{mountDashboards()}catch(e){}
     } catch(e){}
   }, 1500);
 
+  hook();
+  setInterval(hook, 3000);
+})();
+</script>
+
+
+<script id="v174-scorecard-viewers-js">
+(function(){
+  'use strict';
+  if (window.__v174) return;
+  window.__v174 = true;
+
+  function $(id){ return document.getElementById(id); }
+  function unwrap(d){
+    if (!d||typeof d!=='object') return null;
+    if (d.data && typeof d.data==='object' && (d.data.runs!=null||d.data.balls!=null||d.data.innings1Batters||d.data.teamA)) return d.data;
+    return d;
+  }
+  function esc(s){ return String(s==null?'':s).replace(/</g,''); }
+
+  /* ===== Correct team scorecard mapping =====
+     innings1Batters = first batting team's batters
+     innings1Bowlers = first bowling team's bowlers (the side that bowled in innings 1)
+     innings2* similarly for second innings
+  */
+  function teamLines(d){
+    d = d || {};
+    var first = String(d.firstBattingTeam || d.firstBat || 'A').toUpperCase();
+    if (first !== 'A' && first !== 'B') {
+      // try name match
+      var ta = d.teamA || d.teamAName || '';
+      if (first === String(ta).toUpperCase()) first = 'A';
+      else first = 'A';
+    }
+    var second = first === 'A' ? 'B' : 'A';
+
+    var i1bat = d.innings1Batters || [];
+    var i1bowl = d.innings1Bowlers || [];
+    var i2bat = d.innings2Batters || [];
+    var i2bowl = d.innings2Bowlers || [];
+
+    // Team X batting = when X was batting
+    // Team X bowling = when X was bowling
+    var batA = first === 'A' ? i1bat : i2bat;
+    var bowlA = first === 'A' ? i2bowl : i1bowl; // A bowls in the innings when B bats
+    // Wait: innings1Bowlers = bowlers during innings1 = the bowling team = second team
+    // So if first=A, innings1Bowlers = team B's bowlers
+    // Team A bowling figures = when A bowls = innings2Bowlers if first=A (B bats innings2), else innings1Bowlers
+    bowlA = first === 'A' ? i2bowl : i1bowl;
+    var batB = first === 'B' ? i1bat : i2bat;
+    var bowlB = first === 'B' ? i2bowl : i1bowl;
+
+    // If still empty, try filter by team field on combined lists
+    function byTeam(list, teamKey, teamName){
+      list = list || [];
+      return list.filter(function(p){
+        var t = String(p.team||p.teamId||'').toUpperCase();
+        var n = String(p.teamName||'');
+        return t === teamKey || n === teamName || t === teamName;
+      });
+    }
+    var nameA = d.teamA || d.teamAName || 'Team A';
+    var nameB = d.teamB || d.teamBName || 'Team B';
+    if (!batA.length && Array.isArray(d.batters)) batA = byTeam(d.batters, 'A', nameA);
+    if (!batB.length && Array.isArray(d.batters)) batB = byTeam(d.batters, 'B', nameB);
+    if (!bowlA.length && Array.isArray(d.bowlers)) bowlA = byTeam(d.bowlers, 'A', nameA);
+    if (!bowlB.length && Array.isArray(d.bowlers)) bowlB = byTeam(d.bowlers, 'B', nameB);
+
+    return {
+      first: first,
+      nameA: nameA,
+      nameB: nameB,
+      batA: batA||[], bowlA: bowlA||[],
+      batB: batB||[], bowlB: bowlB||[],
+      battingNow: (function(){
+        // current batting team
+        var bt = d.battingTeam || d.currentBattingTeam || '';
+        if (bt === 'B' || bt === nameB) return 'B';
+        if (bt === 'A' || bt === nameA) return 'A';
+        // from roles
+        try {
+          var rA = ($('v-role-a')&&$('v-role-a').textContent||'').toLowerCase();
+          var rB = ($('v-role-b')&&$('v-role-b').textContent||'').toLowerCase();
+          if (rB.indexOf('batt')>=0) return 'B';
+          if (rA.indexOf('batt')>=0) return 'A';
+        } catch(e){}
+        // innings
+        var inns = d.currentInnings|0;
+        if (inns >= 2) return second;
+        return first;
+      })()
+    };
+  }
+
+  function tableBat(list){
+    list = list || [];
+    if (!list.length) return '<div class="empty" style="padding:10px">Yet to bat / no data</div>';
+    var h = '<table class="sc-table" style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+      + '<th style="text-align:left;padding:6px">Batter</th><th>R</th><th>B</th><th>4s</th><th>6s</th><th>SR</th></tr></thead><tbody>';
+    list.forEach(function(p){
+      var r=p.runs|0,b=p.balls|0,f=p.fours|0,s=p.sixes|0;
+      var sr=b?Math.round(r/b*1000)/10:0;
+      var mark = p.isOut ? '' : '*';
+      h += '<tr><td style="text-align:left;padding:6px">'+esc(p.name||'—')+mark
+        +(p.isOut?' <span style="opacity:.7;font-size:11px">'+esc(p.howOut||p.dismissal||'')+'</span>':'')
+        +'</td><td style="text-align:center">'+r+'</td><td style="text-align:center">'+b
+        +'</td><td style="text-align:center">'+f+'</td><td style="text-align:center">'+s
+        +'</td><td style="text-align:center">'+sr+'</td></tr>';
+    });
+    return h+'</tbody></table>';
+  }
+  function tableBowl(list){
+    list = list || [];
+    if (!list.length) return '<div class="empty" style="padding:10px">Yet to bowl / no data</div>';
+    var h = '<table class="sc-table" style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+      + '<th style="text-align:left;padding:6px">Bowler</th><th>O</th><th>R</th><th>W</th><th>Econ</th></tr></thead><tbody>';
+    list.forEach(function(p){
+      var bb=p.bowlBalls!=null?(p.bowlBalls|0):(p.balls|0);
+      var rr=p.bowlRuns!=null?(p.bowlRuns|0):(p.runs|0);
+      var w=p.wickets|0;
+      var o=Math.floor(bb/6)+'.'+(bb%6);
+      var econ=bb?(Math.round((rr/(bb/6))*100)/100).toFixed(2):'0.00';
+      h += '<tr><td style="text-align:left;padding:6px">'+esc(p.name||'—')+'</td><td style="text-align:center">'+o
+        +'</td><td style="text-align:center">'+rr+'</td><td style="text-align:center">'+w
+        +'</td><td style="text-align:center">'+econ+'</td></tr>';
+    });
+    return h+'</tbody></table>';
+  }
+
+  function ensureScorecardUI(d){
+    var panel = $('panel-stats');
+    if (!panel) return;
+    var body = $('scorecard-body') || panel;
+    if (!$('sc-team-tabs')) {
+      var tabs = document.createElement('div');
+      tabs.id = 'sc-team-tabs';
+      tabs.className = 'sc-team-tabs';
+      tabs.style.cssText = 'display:flex;gap:8px;margin:8px';
+      tabs.innerHTML =
+        '<button type="button" class="subtab on" id="sc-tab-a" style="flex:1;border-radius:999px;padding:10px;font-weight:800;cursor:pointer">Team A</button>'+
+        '<button type="button" class="subtab" id="sc-tab-b" style="flex:1;border-radius:999px;padding:10px;font-weight:800;cursor:pointer">Team B</button>';
+      body.insertBefore(tabs, body.firstChild);
+    }
+    if (!$('sc-pane-a')) {
+      var pa = document.createElement('div'); pa.id='sc-pane-a'; pa.className='sc-pane';
+      var pb = document.createElement('div'); pb.id='sc-pane-b'; pb.className='sc-pane hidden';
+      body.appendChild(pa); body.appendChild(pb);
+    }
+    // hide legacy dual blocks to avoid mixed data
+    body.querySelectorAll('.sc-team-block').forEach(function(n){ n.style.display='none'; });
+
+    var lines = teamLines(d);
+    if ($('sc-tab-a')) $('sc-tab-a').textContent = lines.nameA;
+    if ($('sc-tab-b')) $('sc-tab-b').textContent = lines.nameB;
+
+    var pa=$('sc-pane-a'), pb=$('sc-pane-b');
+    if (pa) {
+      pa.innerHTML = '<div style="padding:6px 8px;font-weight:900">'+esc(lines.nameA)+' — Batting</div>'+tableBat(lines.batA)
+        + '<div style="padding:10px 8px 6px;font-weight:900">Bowling</div>'+tableBowl(lines.bowlA);
+    }
+    if (pb) {
+      pb.innerHTML = '<div style="padding:6px 8px;font-weight:900">'+esc(lines.nameB)+' — Batting</div>'+tableBat(lines.batB)
+        + '<div style="padding:10px 8px 6px;font-weight:900">Bowling</div>'+tableBowl(lines.bowlB);
+    }
+
+    // Default to batting team unless user chose
+    if (!window.__scTabChosen) {
+      showSc(lines.battingNow === 'B' ? 'b' : 'a');
+    }
+
+    var ba=$('sc-tab-a'), bb=$('sc-tab-b');
+    if (ba && !ba._v174) {
+      ba._v174 = true;
+      ba.onclick = function(){ window.__scTabChosen = true; showSc('a'); };
+    }
+    if (bb && !bb._v174) {
+      bb._v174 = true;
+      bb.onclick = function(){ window.__scTabChosen = true; showSc('b'); };
+    }
+  }
+
+  function showSc(which){
+    var pa=$('sc-pane-a'), pb=$('sc-pane-b');
+    var ba=$('sc-tab-a'), bb=$('sc-tab-b');
+    if (which==='b') {
+      if(pa) pa.classList.add('hidden');
+      if(pb){ pb.classList.remove('hidden'); pb.style.display='block'; }
+      if(ba) ba.classList.remove('on');
+      if(bb) bb.classList.add('on');
+    } else {
+      if(pb) pb.classList.add('hidden');
+      if(pa){ pa.classList.remove('hidden'); pa.style.display='block'; }
+      if(bb) bb.classList.remove('on');
+      if(ba) ba.classList.add('on');
+    }
+  }
+
+  /* ===== Viewers as reliable Summary subtab + optional main entry ===== */
+  function ensureViewersUI(){
+    var panel = $('panel-sum');
+    if (!panel) return;
+    var sub = panel.querySelector('.subtabs');
+    if (!sub) {
+      sub = document.createElement('div');
+      sub.className = 'subtabs';
+      sub.style.cssText = 'display:flex;gap:8px;margin:8px';
+      panel.insertBefore(sub, panel.firstChild);
+    }
+    if (!$('st-sum')) {
+      var b1=document.createElement('button');
+      b1.type='button'; b1.className='subtab on'; b1.id='st-sum'; b1.textContent='Match results';
+      sub.appendChild(b1);
+    }
+    if (!$('st-viewers')) {
+      var b2=document.createElement('button');
+      b2.type='button'; b2.className='subtab'; b2.id='st-viewers'; b2.textContent='Viewers';
+      sub.appendChild(b2);
+    }
+    if (!$('sum-viewers')) {
+      var div=document.createElement('div');
+      div.id='sum-viewers';
+      div.className='hidden';
+      div.innerHTML='<div style="padding:8px 10px;font-weight:900">👁 Viewers log</div><div id="sum-viewers-table">No data yet</div>';
+      panel.appendChild(div);
+    } else if (!$('sum-viewers-table')) {
+      $('sum-viewers').innerHTML='<div style="padding:8px 10px;font-weight:900">👁 Viewers log</div><div id="sum-viewers-table">No data yet</div>';
+    }
+  }
+
+  function paintViewersNow(){
+    ensureViewersUI();
+    var host = $('sum-viewers-table');
+    if (!host) return;
+    var list = window.__lastViewerList || [];
+    // merge local visits
+    try {
+      var store = JSON.parse(localStorage.getItem('cricket_match_visitors_v1')||'{}')||{};
+      var d = window.__lastLiveData || {};
+      var mid = String(d.matchId || 'live');
+      (store[mid]||[]).forEach(function(v){
+        if (!list.some(function(x){ return (x.name||x.displayName)===v.name; })) list.push(v);
+      });
+    } catch(e){}
+    // at least current user
+    try {
+      var me = localStorage.getItem('cricket_viewer_name') || 'You';
+      if (!list.length) list = [{name:me,status:'online',joinedAt:Date.now(),lastSeen:Date.now(),activity:'watching'}];
+    } catch(e){}
+
+    function ft(ts){
+      if(!ts) return '—';
+      try{ var d=new Date(ts); return isNaN(d.getTime())?'—':d.toLocaleString(); }catch(e){return '—';}
+    }
+    var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+      +'<th style="text-align:left;padding:8px">Viewer</th><th style="text-align:left;padding:8px">Status</th>'
+      +'<th style="text-align:left;padding:8px">In</th><th style="text-align:left;padding:8px">Out</th>'
+      +'<th style="text-align:left;padding:8px">Last seen</th><th style="text-align:left;padding:8px">Activity</th></tr></thead><tbody>';
+    if(!list.length) h+='<tr><td colspan="6" style="padding:12px">No viewers yet</td></tr>';
+    list.forEach(function(v){
+      var online=!(v.status==='offline'||v.online===false);
+      h+='<tr><td style="padding:8px">'+esc(v.name||v.displayName||'Viewer')+'</td>'
+        +'<td style="padding:8px;font-weight:800;color:'+(online?'#16a34a':'#64748b')+'">'+(online?'Online':'Offline')+'</td>'
+        +'<td style="padding:8px">'+esc(ft(v.joinedAt||v.firstSeen))+'</td>'
+        +'<td style="padding:8px">'+esc(v.leftAt?ft(v.leftAt):'—')+'</td>'
+        +'<td style="padding:8px">'+esc(ft(v.lastSeen||Date.now()))+'</td>'
+        +'<td style="padding:8px">'+esc(v.activity||v.tab||'watching')+'</td></tr>';
+    });
+    h+='</tbody></table>';
+    host.innerHTML=h;
+  }
+
+  function openViewers(){
+    ensureViewersUI();
+    // open summary panel
+    try { if (typeof setViewerTab==='function') setViewerTab('sum'); } catch(e){}
+    ['panel-live','panel-comm','panel-stats','panel-fow','panel-caps'].forEach(function(id){
+      var p=$(id); if(p){ p.classList.add('hidden'); p.style.display='none'; }
+    });
+    var panel=$('panel-sum');
+    if(panel){ panel.classList.remove('hidden'); panel.style.setProperty('display','block','important'); }
+    var sum=$('sum-sum'), view=$('sum-viewers');
+    if(sum){ sum.classList.add('hidden'); sum.style.display='none'; }
+    if(view){ view.classList.remove('hidden'); view.style.setProperty('display','block','important'); }
+    if($('st-sum')) $('st-sum').classList.remove('on');
+    if($('st-viewers')) $('st-viewers').classList.add('on');
+    setTimeout(paintViewersNow, 20);
+  }
+
+  document.addEventListener('click', function(e){
+    var btn = e.target && e.target.closest && e.target.closest('button, .tab, .subtab');
+    if (!btn) return;
+    var label = (btn.textContent||'').trim().toLowerCase();
+    if (btn.id==='st-viewers' || label==='viewers') {
+      e.preventDefault(); e.stopPropagation();
+      openViewers();
+      return;
+    }
+    if (btn.id==='tab-stats' || label==='scorecard') {
+      setTimeout(function(){ ensureScorecardUI(window.__lastLiveData||{}); }, 30);
+    }
+  }, true);
+
+  if (typeof window.renderViewers==='function' && !window.renderViewers._v174) {
+    var _rv=window.renderViewers;
+    window.renderViewers=function(list,count){
+      window.__lastViewerList = list||[];
+      window.__lastViewerCount = count|0;
+      try{ var t=$('sc-live-txt'); if(t) t.textContent='LIVE · '+(count|0);}catch(e){}
+      try{ _rv.apply(this,arguments);}catch(e){}
+      try{ if($('st-viewers')&&$('st-viewers').classList.contains('on')) paintViewersNow(); }catch(e){}
+    };
+    window.renderViewers._v174=true;
+  }
+
+  function onData(raw){
+    var d=unwrap(raw)||raw;
+    if(!d||typeof d!=='object') return;
+    window.__lastLiveData=d;
+    try {
+      var ps=$('panel-stats');
+      if(ps && !ps.classList.contains('hidden')) ensureScorecardUI(d);
+    } catch(e){}
+  }
+
+  function hook(){
+    ensureViewersUI();
+    ['applyData','applyLiveData','onLiveUpdate'].forEach(function(n){
+      if(typeof window[n]!=='function'||window[n]._v174) return;
+      var o=window[n];
+      window[n]=function(data){
+        var r=o.apply(this,arguments);
+        try{ onData(data);}catch(e){}
+        return r;
+      };
+      window[n]._v174=true;
+    });
+  }
+
+  // Soft whistle volume bump in v171 player if present
+  try {
+    if (window.playSoftWhistle) {
+      /* patched via volume constants above */
+    }
+  } catch(e){}
+
+  hook();
+  setInterval(hook, 3000);
+})();
+</script>
+
+
+<script id="v175-fow-viewers-js">
+(function(){
+  'use strict';
+  if (window.__v175) return;
+  window.__v175 = true;
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/</g,''); }
+  function unwrap(d){
+    if(!d||typeof d!=='object') return null;
+    if(d.data && typeof d.data==='object' && (d.data.runs!=null||d.data.viewers!=null||d.data.balls!=null)) return d.data;
+    return d;
+  }
+
+  /* Prevent scorecard team subtabs from triggering main tab switches */
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    if (!t || !t.closest) return;
+    var teamBtn = t.closest('#sc-tab-a, #sc-tab-b, #sc-team-tabs button, #sc-team-tabs .subtab');
+    if (teamBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+      window.__scTabChosen = true;
+      var which = (teamBtn.id === 'sc-tab-b' || /team b/i.test(teamBtn.textContent||'')) ? 'b' : 'a';
+      // Prefer explicit id
+      if (teamBtn.id === 'sc-tab-a') which = 'a';
+      if (teamBtn.id === 'sc-tab-b') which = 'b';
+      showScOnly(which);
+      return;
+    }
+  }, true);
+
+  function showScOnly(which){
+    var pa=$('sc-pane-a'), pb=$('sc-pane-b');
+    var ba=$('sc-tab-a'), bb=$('sc-tab-b');
+    // Stay on scorecard panel
+    try {
+      if (typeof setViewerTab === 'function') {
+        // only switch if not already on stats
+        if (window.__currentViewerTab !== 'stats') setViewerTab('stats');
+      }
+      var ps=$('panel-stats');
+      if (ps){ ps.classList.remove('hidden'); ps.style.display='block'; }
+      ['panel-live','panel-comm','panel-fow','panel-caps','panel-fan','panel-sum'].forEach(function(id){
+        var p=$(id); if(p){ p.classList.add('hidden'); p.style.display='none'; }
+      });
+      document.querySelectorAll('.score-tabs .tab, .tabs .tab').forEach(function(tb){
+        tb.classList.toggle('on', tb.id==='tab-stats');
+      });
+    } catch(e){}
+    if (which==='b') {
+      if(pa){ pa.classList.add('hidden'); pa.style.display='none'; }
+      if(pb){ pb.classList.remove('hidden'); pb.style.display='block'; }
+      if(ba) ba.classList.remove('on');
+      if(bb) bb.classList.add('on');
+    } else {
+      if(pb){ pb.classList.add('hidden'); pb.style.display='none'; }
+      if(pa){ pa.classList.remove('hidden'); pa.style.display='block'; }
+      if(bb) bb.classList.remove('on');
+      if(ba) ba.classList.add('on');
+    }
+  }
+
+  /* Viewers: dedicated paint into Summary > Viewers, and also panel-fan if present */
+  function collectViewers(){
+    var list = [];
+    var seen = {};
+    function add(v){
+      if (!v) return;
+      var name = v.name || v.displayName || v.user || 'Viewer';
+      var id = String(v.id || v.sessionId || name);
+      if (seen[id]) {
+        // update
+        var prev = seen[id];
+        prev.lastSeen = v.lastSeen || prev.lastSeen;
+        prev.status = (v.online===false||v.status==='offline') ? 'offline' : (prev.status||'online');
+        return;
+      }
+      var row = {
+        id: id,
+        name: name,
+        status: (v.online===false||v.status==='offline') ? 'offline' : 'online',
+        joinedAt: v.joinedAt || v.firstSeen || Date.now(),
+        leftAt: v.leftAt || null,
+        lastSeen: v.lastSeen || Date.now(),
+        activity: v.activity || v.tab || 'watching'
+      };
+      seen[id] = row;
+      list.push(row);
+    }
+    (window.__lastViewerList || []).forEach(add);
+    // local store
+    try {
+      var store = JSON.parse(localStorage.getItem('cricket_match_visitors_v1')||'{}')||{};
+      var d = window.__lastLiveData || {};
+      var mid = String(d.matchId || d.matchNo || 'live');
+      (store[mid]||[]).forEach(add);
+      // all keys fallback
+      Object.keys(store).forEach(function(k){ (store[k]||[]).forEach(add); });
+    } catch(e){}
+    // presence from live payload
+    try {
+      var d = window.__lastLiveData || {};
+      if (Array.isArray(d.viewersList)) d.viewersList.forEach(add);
+      if (Array.isArray(d.presence)) d.presence.forEach(add);
+    } catch(e){}
+    // self
+    try {
+      var me = localStorage.getItem('cricket_viewer_name') || 'You';
+      add({ name: me, status: 'online', joinedAt: Date.now(), lastSeen: Date.now(), activity: 'watching' });
+    } catch(e){}
+    list.sort(function(a,b){
+      if (a.status!==b.status) return a.status==='online'?-1:1;
+      return (b.lastSeen||0)-(a.lastSeen||0);
+    });
+    return list;
+  }
+
+  function ft(ts){
+    if (!ts) return '—';
+    try { var d=new Date(ts); return isNaN(d.getTime())?'—':d.toLocaleString(); } catch(e){ return '—'; }
+  }
+
+  function renderViewersHTML(list){
+    var h = '<table style="width:100%;border-collapse:collapse;font-size:12px;background:#fff;color:#0f172a"><thead><tr style="background:#0d9488;color:#fff">'
+      + '<th style="text-align:left;padding:8px">Viewer</th>'
+      + '<th style="text-align:left;padding:8px">Status</th>'
+      + '<th style="text-align:left;padding:8px">In</th>'
+      + '<th style="text-align:left;padding:8px">Out</th>'
+      + '<th style="text-align:left;padding:8px">Last seen</th>'
+      + '<th style="text-align:left;padding:8px">Activity</th></tr></thead><tbody>';
+    if (!list.length) {
+      h += '<tr><td colspan="6" style="padding:14px">No viewers yet. Open this live link on another device to record visits.</td></tr>';
+    } else {
+      list.forEach(function(v){
+        var online = v.status === 'online';
+        h += '<tr style="border-bottom:1px solid #e2e8f0">'
+          + '<td style="padding:8px">'+esc(v.name)+'</td>'
+          + '<td style="padding:8px;font-weight:800;color:'+(online?'#16a34a':'#64748b')+'">'+(online?'Online':'Offline')+'</td>'
+          + '<td style="padding:8px">'+esc(ft(v.joinedAt))+'</td>'
+          + '<td style="padding:8px">'+esc(v.leftAt?ft(v.leftAt):'—')+'</td>'
+          + '<td style="padding:8px">'+esc(ft(v.lastSeen))+'</td>'
+          + '<td style="padding:8px">'+esc(v.activity||'—')+'</td></tr>';
+      });
+    }
+    return h + '</tbody></table>';
+  }
+
+  function ensureViewersHosts(){
+    var panel = $('panel-sum');
+    if (panel) {
+      var sub = panel.querySelector('.subtabs');
+      if (!sub) {
+        sub = document.createElement('div');
+        sub.className = 'subtabs';
+        sub.style.cssText = 'display:flex;gap:8px;margin:8px;flex-wrap:wrap';
+        panel.insertBefore(sub, panel.firstChild);
+      }
+      if (!$('st-sum')) {
+        var b1=document.createElement('button');
+        b1.type='button'; b1.className='subtab on'; b1.id='st-sum'; b1.textContent='Match results';
+        b1.style.cssText='flex:1;padding:10px;border-radius:999px;font-weight:800;cursor:pointer';
+        sub.appendChild(b1);
+      }
+      if (!$('st-viewers')) {
+        var b2=document.createElement('button');
+        b2.type='button'; b2.className='subtab'; b2.id='st-viewers'; b2.textContent='Viewers';
+        b2.style.cssText='flex:1;padding:10px;border-radius:999px;font-weight:800;cursor:pointer';
+        sub.appendChild(b2);
+      }
+      if (!$('sum-viewers')) {
+        var div=document.createElement('div');
+        div.id='sum-viewers';
+        div.className='hidden';
+        div.innerHTML='<div style="padding:8px 10px;font-weight:900">👁 Viewers log</div><div id="sum-viewers-table"></div>';
+        panel.appendChild(div);
+      } else if (!$('sum-viewers-table')) {
+        $('sum-viewers').innerHTML='<div style="padding:8px 10px;font-weight:900">👁 Viewers log</div><div id="sum-viewers-table"></div>';
+      }
+    }
+  }
+
+  function openViewers(){
+    ensureViewersHosts();
+    // Show summary panel
+    try {
+      var ids=['live','comm','stats','fow','caps','fan','sum'];
+      ids.forEach(function(x){
+        var tb=$('tab-'+x), pn=$('panel-'+x);
+        if (x==='stats') tb = tb || $('tab-stats');
+        if (tb) tb.classList.toggle('on', x==='sum');
+        if (pn){ pn.classList.toggle('hidden', x!=='sum'); pn.style.display = x==='sum'?'block':'none'; }
+      });
+      window.__currentViewerTab = 'sum';
+    } catch(e){}
+    var sum=$('sum-sum'), view=$('sum-viewers');
+    if (sum){ sum.classList.add('hidden'); sum.style.display='none'; }
+    if (view){ view.classList.remove('hidden'); view.style.setProperty('display','block','important'); }
+    if ($('st-sum')) $('st-sum').classList.remove('on');
+    if ($('st-viewers')) $('st-viewers').classList.add('on');
+    var host = $('sum-viewers-table');
+    if (host) host.innerHTML = renderViewersHTML(collectViewers());
+  }
+
+  document.addEventListener('click', function(e){
+    var btn = e.target && e.target.closest && e.target.closest('#st-viewers, button');
+    if (!btn) return;
+    var label = (btn.textContent||'').trim().toLowerCase();
+    if (btn.id==='st-viewers' || label==='viewers') {
+      e.preventDefault();
+      e.stopPropagation();
+      openViewers();
+    }
+  }, true);
+
+  // Hook renderViewers
+  if (typeof window.renderViewers === 'function' && !window.renderViewers._v175) {
+    var _rv = window.renderViewers;
+    window.renderViewers = function(list, count){
+      window.__lastViewerList = Array.isArray(list) ? list.slice() : [];
+      window.__lastViewerCount = count|0;
+      try { var t=$('sc-live-txt'); if(t) t.textContent='LIVE · '+(count|0); } catch(e){}
+      try { _rv.apply(this, arguments); } catch(e){}
+      try {
+        if ($('st-viewers') && $('st-viewers').classList.contains('on')) {
+          var host=$('sum-viewers-table');
+          if (host) host.innerHTML = renderViewersHTML(collectViewers());
+        }
+      } catch(e){}
+    };
+    window.renderViewers._v175 = true;
+  }
+
+  // FOW white paint when opened
+  var _st = window.setViewerTab;
+  window.setViewerTab = function(t){
+    if (typeof _st === 'function') {
+      try { _st(t); } catch(e){}
+    }
+    // ensure fow/caps panels toggle even if base missed them
+    try {
+      var tab = String(t||'live');
+      ['fow','caps'].forEach(function(x){
+        var tb=$('tab-'+x), pn=$('panel-'+x);
+        var on = tab===x;
+        if (tb) tb.classList.toggle('on', on);
+        if (pn){ pn.classList.toggle('hidden', !on); pn.style.display = on?'block':'none'; }
+      });
+    } catch(e){}
+  };
+
+  function onData(raw){
+    var d=unwrap(raw)||raw;
+    if(!d||typeof d!=='object') return;
+    window.__lastLiveData=d;
+  }
+  function hook(){
+    ensureViewersHosts();
+    ['applyData','applyLiveData','onLiveUpdate'].forEach(function(n){
+      if(typeof window[n]!=='function'||window[n]._v175) return;
+      var o=window[n];
+      window[n]=function(data){
+        var r=o.apply(this,arguments);
+        try{ onData(data);}catch(e){}
+        return r;
+      };
+      window[n]._v175=true;
+    });
+  }
   hook();
   setInterval(hook, 3000);
 })();
