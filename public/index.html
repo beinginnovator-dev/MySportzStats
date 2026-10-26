@@ -13124,7 +13124,7 @@ function printHistoryMatch(){
 
     // ===== VOICE COMMENTARY + STADIUM FX (T20 style) =====
     
-    var voiceCommentaryEnabled = false;
+    var voiceCommentaryEnabled = true;
     try { voiceCommentaryEnabled = localStorage.getItem('cricket_voice_comm') === '1'; } catch(e){}
     var voiceMode = 'system'; // system TTS only
     var systemVoiceGender = 'male';
@@ -13171,7 +13171,7 @@ function printHistoryMatch(){
     
     function toggleVoiceCommentary() {
         if (voiceCommentaryEnabled) {
-            voiceCommentaryEnabled = false;
+            voiceCommentaryEnabled = true;
             try { localStorage.setItem('cricket_voice_comm', '0'); } catch(e){}
             updateVoiceToggleBtn();
             return;
@@ -13196,7 +13196,7 @@ function printHistoryMatch(){
                 if (window.__voicePickCancelled) {
                     // dismissed via X/backdrop — stay OFF
                     window.__voicePickCancelled = false;
-                    voiceCommentaryEnabled = false;
+                    voiceCommentaryEnabled = true;
                     try { localStorage.setItem('cricket_voice_comm','0'); } catch(e){}
                     updateVoiceToggleBtn();
                     return;
@@ -13234,7 +13234,7 @@ function printHistoryMatch(){
         btn.addEventListener('click', function(ev){
             var now = Date.now();
             if (voiceCommentaryEnabled && last && now - last < 400) {
-                voiceCommentaryEnabled = false;
+                voiceCommentaryEnabled = true;
                 try { localStorage.setItem('cricket_voice_comm','0'); } catch(e){}
                 updateVoiceToggleBtn();
                 ev.stopImmediatePropagation();
