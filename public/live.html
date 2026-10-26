@@ -4517,6 +4517,169 @@ body[data-theme="dark"] #fow-body table td {
 }
 </style>
 
+
+<style id="v176-fow-viewers">
+/* FOW white like Caps tables */
+#panel-fow,
+#panel-fow .panel-hdr,
+#fow-body {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+#fow-body table,
+#fow-body .fow-table,
+#panel-fow table {
+  width: 100% !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-collapse: collapse !important;
+}
+#fow-body th,
+#panel-fow th {
+  background: #0f766e !important;
+  color: #ffffff !important;
+  padding: 8px 6px !important;
+}
+#fow-body td,
+#panel-fow td {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  padding: 8px 6px !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+/* Caps-like card */
+#panel-fow .panel-hdr {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+/* Lightweight viewers panel */
+#sum-viewers-lite {
+  display: none;
+  padding: 8px;
+  background: #fff;
+  color: #0f172a;
+}
+#sum-viewers-lite.active { display: block !important; }
+#sum-viewers-lite table { width: 100%; border-collapse: collapse; font-size: 12px; }
+#sum-viewers-lite th { background: #0f766e; color: #fff; text-align: left; padding: 8px; }
+#sum-viewers-lite td { padding: 8px; border-bottom: 1px solid #e2e8f0; background: #fff; color: #0f172a; }
+#sum-viewers-lite .on { color: #16a34a; font-weight: 800; }
+#sum-viewers-lite .off { color: #64748b; font-weight: 700; }
+</style>
+
+
+<style id="v177-hard-fow-viewers">
+/* FOW panel — force white like Caps */
+#panel-fow,
+#panel-fow.panel,
+#panel-fow .panel-hdr,
+#fow-body,
+#fow-body .empty {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+#fow-body table {
+  width: 100% !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-collapse: collapse !important;
+}
+#fow-body thead th,
+#fow-body th {
+  background: #0f766e !important;
+  color: #ffffff !important;
+  padding: 8px 6px !important;
+}
+#fow-body td {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  padding: 8px 6px !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+#panel-caps,
+#panel-caps .cap-table,
+#panel-caps table {
+  background: #ffffff !important;
+}
+/* Viewers table readable */
+#sum-viewers,
+#sum-viewers-table,
+#sum-viewers-table table.stats {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+#sum-viewers-table th {
+  background: #0f766e !important;
+  color: #fff !important;
+}
+#sum-viewers-table td {
+  background: #fff !important;
+  color: #0f172a !important;
+}
+</style>
+
+
+<style id="v178-final-fow-viewers">
+/* Hide DUPLICATE summary tab rows */
+#sum-lite-tabs { display: none !important; height: 0 !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
+
+/* Only one subtab row */
+#panel-sum > .subtabs {
+  display: flex !important;
+  gap: 8px !important;
+  margin: 8px !important;
+}
+
+/* FOW — nuclear white (beats theme dark rows) */
+#panel-fow,
+#panel-fow.panel,
+#panel-fow .panel-hdr,
+#fow-body {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+#fow-body table,
+#fow-body table.stats,
+#panel-fow table {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-collapse: collapse !important;
+  width: 100% !important;
+}
+#fow-body thead,
+#fow-body thead tr,
+#fow-body th {
+  background: #0f766e !important;
+  color: #ffffff !important;
+}
+#fow-body tbody,
+#fow-body tbody tr,
+#fow-body tbody tr:nth-child(odd),
+#fow-body tbody tr:nth-child(even),
+#fow-body td {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+/* kill dark theme override on FOW only */
+body[data-theme="dark"] #fow-body,
+body[data-theme="dark"] #fow-body table,
+body[data-theme="dark"] #fow-body td,
+body[data-theme="dark"] #fow-body tbody tr,
+body[data-theme="sports1"] #fow-body td,
+body[data-theme="sports1"] #fow-body tbody tr {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+body[data-theme="dark"] #fow-body th,
+body[data-theme="sports1"] #fow-body th {
+  background: #0f766e !important;
+  color: #ffffff !important;
+}
+</style>
+
 </head>
 <body>
 
@@ -5529,9 +5692,19 @@ body[data-theme="dark"] #fow-body table td {
       ['teams','sum','viewers','orange','purple','fow'].forEach(function(x){
         var b=$('st-'+x),p=$('sum-'+x);
         if(b)b.classList.toggle('on',s===x);
-        if(p)p.classList.toggle('hidden',s!==x);
+        if(p){
+          if(s===x){ p.classList.remove('hidden'); p.style.display='block'; }
+          else { p.classList.add('hidden'); p.style.display='none'; }
+        }
       });
-      if(s==='viewers'){ try{ var sv=$('sum-viewers'); if(sv) sv.classList.remove('hidden'); paintViewersSummary(); heartbeat(); }catch(e){} }
+      // v177: no heartbeat() — was hanging on slow network
+      if(s==='viewers'){
+        try{
+          var sv=$('sum-viewers');
+          if(sv){ sv.classList.remove('hidden'); sv.style.display='block'; }
+          if(typeof paintViewersSummary==='function') paintViewersSummary();
+        }catch(e){}
+      }
       if(s==='fow'){ try{ paintFallOfWickets(); }catch(e){} }
     }
     
@@ -5659,42 +5832,55 @@ body[data-theme="dark"] #fow-body table td {
       }catch(e){ return '—'; }
     }
     function paintViewersSummary(){
-      var el=$('sum-viewers-table')||$('sum-viewers'); if(!el) return;
-      try{ $('sum-viewers') && $('sum-viewers').classList.remove('hidden'); }catch(e0){}
-      var rows=[];
-      if(window.__viewerHistoryList && window.__viewerHistoryList.length){
-        rows = window.__viewerHistoryList.slice();
-      } else {
-        rows=Object.keys(__viewerMap||{}).map(function(k){return __viewerMap[k]});
+      var el = $('sum-viewers-table');
+      if (!el) {
+        var wrap = $('sum-viewers');
+        if (wrap && !$('sum-viewers-table')) {
+          wrap.innerHTML = '<div class="sec-title">Viewers log</div><div id="sum-viewers-table"></div>';
+          el = $('sum-viewers-table');
+        }
       }
-      rows.sort(function(a,b){ return (b.online?1:0)-(a.online?1:0) || (b.lastSeen|0)-(a.lastSeen|0); });
-      try{
-        var tt=$('sum-today-total');
-        if(tt) tt.textContent=String(window.__viewerTodayTotal!=null?window.__viewerTodayTotal:rows.length);
-      }catch(eT){}
-      if(!rows.length){ el.innerHTML='<div class="empty">No viewers yet</div>'; return; }
-      var html='<table class="stats" style="font-size:11px;width:100%"><thead><tr>'
-        +'<th>Viewer</th><th>Status</th><th>In</th><th>Out</th><th>Match</th><th></th></tr></thead><tbody>';
-      rows.forEach(function(v){
-        var id=esc(String(v.id||v.name||'')).replace(/'/g,"\\'");
-        var status=v.online?'<span style="color:#34d399;font-weight:800">Online</span>':'<span style="color:#94a3b8">Offline</span>';
-        var left = v.online ? '—' : fmtViewerTime(v.leftAt||v.lastSeen);
-        html+='<tr>'
-          +'<td style="font-weight:800">'+esc(v.name||'Fan')+'</td>'
-          +'<td>'+status+'</td>'
-          +'<td style="white-space:nowrap">'+fmtViewerTime(v.joinedAt||v.firstSeen)+'</td>'
-          +'<td style="white-space:nowrap">'+left+'</td>'
-          +'<td>'+esc(matchLabelList(v.matches))+'</td>'
-          +'<td><button type="button" class="icon-btn" style="font-size:10px;padding:2px 6px" onclick="showViewerActivity(\''+id+'\')">Activity</button></td>'
-          +'</tr>';
-      });
-      html+='</tbody></table>';
-      el.innerHTML=html;
-      try{
-        var ar=$('admin-viewers-reset');
-        if(ar) ar.style.display = window.__adminKey ? 'block' : 'none';
-      }catch(eA){}
+      if (!el) return;
+      var rows = [];
+      try {
+        if (window.__viewerHistoryList && window.__viewerHistoryList.length) {
+          rows = window.__viewerHistoryList.slice(0, 80);
+        } else if (typeof __viewerMap === 'object' && __viewerMap) {
+          rows = Object.keys(__viewerMap).map(function(k){ return __viewerMap[k]; }).slice(0, 80);
+        } else if (Array.isArray(window.__lastViewerList)) {
+          rows = window.__lastViewerList.slice(0, 80);
+        }
+      } catch(e){ rows = []; }
+      if (!rows.length) {
+        el.innerHTML = '<div class="empty" style="padding:12px">No viewers yet</div>';
+        return;
+      }
+      function ft(ts){
+        if (!ts) return '—';
+        try {
+          var d = new Date(typeof ts === 'number' ? ts : Date.parse(ts));
+          return isNaN(d.getTime()) ? '—' : d.toLocaleString();
+        } catch(e){ return '—'; }
+      }
+      var html = '<table class="stats" style="font-size:12px;width:100%;background:#fff;color:#0f172a"><thead><tr>'
+        + '<th>Viewer</th><th>Status</th><th>In</th><th>Out</th><th>Last seen</th><th>Activity</th></tr></thead><tbody>';
+      for (var i = 0; i < rows.length; i++) {
+        var v = rows[i] || {};
+        var online = !!(v.online || v.status === 'online');
+        if (v.online === false || v.status === 'offline') online = false;
+        html += '<tr>'
+          + '<td style="font-weight:800">' + esc(v.name || v.displayName || 'Viewer') + '</td>'
+          + '<td style="font-weight:800;color:' + (online ? '#16a34a' : '#94a3b8') + '">' + (online ? 'Online' : 'Offline') + '</td>'
+          + '<td>' + ft(v.joinedAt || v.firstSeen) + '</td>'
+          + '<td>' + (online ? '—' : ft(v.leftAt || v.lastSeen)) + '</td>'
+          + '<td>' + ft(v.lastSeen) + '</td>'
+          + '<td>' + esc(v.activity || v.tab || 'watching') + '</td>'
+          + '</tr>';
+      }
+      html += '</tbody></table>';
+      el.innerHTML = html;
     }
+
     function showViewerActivity(id){
       var v=null;
       if(window.__viewerHistoryList){
@@ -11403,7 +11589,7 @@ try{mountDashboards()}catch(e){}
       host.innerHTML = '<div class="empty" style="padding:12px;color:inherit;opacity:.8">No wickets yet</div>';
       return;
     }
-    var h = '<table><thead><tr><th>#</th><th>Score</th><th>Batter</th><th>Over</th><th>Dismissal</th></tr></thead><tbody>';
+    var h = '<table class="fow-white-table" style="width:100%!important;background:#fff!important;color:#0f172a!important;border-collapse:collapse"><thead><tr style="background:#0f766e!important;color:#fff!important"><th style="padding:8px;background:#0f766e!important;color:#fff!important">#</th><th style="padding:8px;background:#0f766e!important;color:#fff!important">Score</th><th style="padding:8px;background:#0f766e!important;color:#fff!important">Batter</th><th style="padding:8px;background:#0f766e!important;color:#fff!important">Over</th><th style="padding:8px;background:#0f766e!important;color:#fff!important">Dismissal</th></tr></thead><tbody style="background:#fff!important">';
     list.forEach(function(w,i){
       var score = (w.score != null ? w.score : ((w.runs!=null?w.runs:'') + (w.wickets!=null?('/'+w.wickets):'')));
       if (w.runs != null && w.wkts != null) score = w.runs + '/' + w.wkts;
@@ -11558,7 +11744,7 @@ try{mountDashboards()}catch(e){}
       host.innerHTML = '<div class="empty" style="padding:12px">No wickets yet</div>';
       return;
     }
-    var h = '<table><thead><tr><th>#</th><th>Score</th><th>Batter</th><th>Over</th><th>Dismissal</th></tr></thead><tbody>';
+    var h = '<table class="fow-white-table" style="width:100%!important;background:#fff!important;color:#0f172a!important;border-collapse:collapse"><thead><tr style="background:#0f766e!important;color:#fff!important"><th style="padding:8px;background:#0f766e!important;color:#fff!important">#</th><th style="padding:8px;background:#0f766e!important;color:#fff!important">Score</th><th style="padding:8px;background:#0f766e!important;color:#fff!important">Batter</th><th style="padding:8px;background:#0f766e!important;color:#fff!important">Over</th><th style="padding:8px;background:#0f766e!important;color:#fff!important">Dismissal</th></tr></thead><tbody style="background:#fff!important">';
     list.forEach(function(w,i){
       var score = w.score != null ? w.score : (w.runs!=null && (w.wkts!=null||w.wickets!=null) ? (w.runs+'/'+(w.wkts!=null?w.wkts:w.wickets)) : (w.total!=null?w.total:'—'));
       var batter = w.batsman || w.name || w.player || '—';
@@ -17502,6 +17688,553 @@ try{mountDashboards()}catch(e){}
   }
   hook();
   setInterval(hook, 3000);
+})();
+</script>
+
+
+<script id="v176-viewers-scratch-js">
+(function(){
+  'use strict';
+  // Completely isolated viewers module — no loops, no heavy hooks
+  if (window.__v176Viewers) return;
+  window.__v176Viewers = true;
+
+  function $(id){ return document.getElementById(id); }
+
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function fmt(ts){
+    if (!ts) return '—';
+    var n = typeof ts === 'number' ? ts : Date.parse(ts);
+    if (!n || isNaN(n)) return '—';
+    try { return new Date(n).toLocaleString(); } catch(e){ return '—'; }
+  }
+
+  function ensureUI(){
+    var panel = $('panel-sum');
+    if (!panel) return null;
+
+    // Subtabs row
+    var bar = $('sum-lite-tabs');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'sum-lite-tabs';
+      bar.style.cssText = 'display:flex;gap:8px;margin:8px;flex-wrap:wrap';
+      bar.innerHTML =
+        '<button type="button" id="btn-sum-results" style="flex:1;padding:10px;border-radius:999px;border:1px solid #cbd5e1;background:#fff;font-weight:800;cursor:pointer">Match results</button>'+
+        '<button type="button" id="btn-sum-viewers" style="flex:1;padding:10px;border-radius:999px;border:1px solid #cbd5e1;background:#fff;font-weight:800;cursor:pointer">Viewers</button>';
+      panel.insertBefore(bar, panel.firstChild);
+    }
+
+    var box = $('sum-viewers-lite');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'sum-viewers-lite';
+      box.innerHTML = '<div style="font-weight:900;padding:4px 4px 8px">Viewers log</div><div id="sum-viewers-lite-body">No viewers yet</div>';
+      panel.appendChild(box);
+    }
+    return box;
+  }
+
+  function snapshotList(){
+    // Build once from in-memory snapshot — no localStorage thrash
+    var out = [];
+    var seen = Object.create(null);
+    function push(v){
+      if (!v) return;
+      var name = v.name || v.displayName || v.user || 'Viewer';
+      var id = String(v.id || v.sessionId || name);
+      if (seen[id]) return;
+      seen[id] = 1;
+      out.push({
+        name: name,
+        status: (v.status === 'offline' || v.online === false) ? 'offline' : 'online',
+        in: v.joinedAt || v.firstSeen || null,
+        out: v.leftAt || null,
+        last: v.lastSeen || null,
+        act: v.activity || v.tab || 'watching'
+      });
+    }
+    try {
+      var arr = window.__lastViewerList;
+      if (Array.isArray(arr)) {
+        for (var i = 0; i < arr.length && i < 100; i++) push(arr[i]);
+      }
+    } catch(e){}
+    // count-only fallback
+    try {
+      if (!out.length && (window.__lastViewerCount|0) > 0) {
+        out.push({ name: 'Live viewers', status: 'online', in: null, out: null, last: Date.now(), act: 'count ' + (window.__lastViewerCount|0) });
+      }
+    } catch(e){}
+    if (!out.length) {
+      out.push({ name: 'You', status: 'online', in: Date.now(), out: null, last: Date.now(), act: 'watching' });
+    }
+    return out;
+  }
+
+  function paint(){
+    var body = $('sum-viewers-lite-body');
+    if (!body) return;
+    var list = snapshotList();
+    var html = '<table><thead><tr><th>Viewer</th><th>Status</th><th>In</th><th>Out</th><th>Last seen</th><th>Activity</th></tr></thead><tbody>';
+    for (var i = 0; i < list.length; i++) {
+      var v = list[i];
+      var on = v.status === 'online';
+      html += '<tr><td>'+esc(v.name)+'</td><td class="'+(on?'on':'off')+'">'+(on?'Online':'Offline')+'</td><td>'
+        +esc(fmt(v.in))+'</td><td>'+esc(v.out?fmt(v.out):'—')+'</td><td>'
+        +esc(fmt(v.last))+'</td><td>'+esc(v.act)+'</td></tr>';
+    }
+    html += '</tbody></table>';
+    body.innerHTML = html;
+  }
+
+  function showViewers(){
+    ensureUI();
+    // Show summary main panel only
+    try {
+      var panels = ['panel-live','panel-comm','panel-stats','panel-fow','panel-caps','panel-fan','panel-sum'];
+      for (var i=0;i<panels.length;i++){
+        var p = $(panels[i]);
+        if (!p) continue;
+        var on = panels[i] === 'panel-sum';
+        p.classList.toggle('hidden', !on);
+        p.style.display = on ? 'block' : 'none';
+      }
+      var tabs = document.querySelectorAll('.score-tabs .tab, .tabs .tab');
+      for (var j=0;j<tabs.length;j++){
+        tabs[j].classList.toggle('on', tabs[j].id === 'tab-sum');
+      }
+    } catch(e){}
+
+    // Hide other summary content, show viewers lite only
+    try {
+      var sum = $('sum-sum'); if (sum) { sum.style.display = 'none'; }
+      var old = $('sum-viewers'); if (old) { old.style.display = 'none'; }
+      // hide other sum-* blocks
+      var panel = $('panel-sum');
+      if (panel) {
+        var kids = panel.children;
+        for (var k=0;k<kids.length;k++){
+          var el = kids[k];
+          if (el.id === 'sum-lite-tabs' || el.id === 'sum-viewers-lite') continue;
+          if (el.classList && el.classList.contains('subtabs')) {
+            el.style.display = 'none';
+            continue;
+          }
+          // leave lite tabs visible
+        }
+      }
+    } catch(e){}
+
+    var box = $('sum-viewers-lite');
+    if (box) {
+      box.classList.add('active');
+      box.style.display = 'block';
+    }
+    var b1 = $('btn-sum-results'), b2 = $('btn-sum-viewers');
+    if (b1) b1.style.background = '#fff';
+    if (b2) b2.style.background = '#ccfbf1';
+
+    // Paint once — no interval
+    paint();
+  }
+
+  function showResults(){
+    ensureUI();
+    var box = $('sum-viewers-lite');
+    if (box) {
+      box.classList.remove('active');
+      box.style.display = 'none';
+    }
+    var sum = $('sum-sum');
+    if (sum) { sum.style.display = 'block'; sum.classList.remove('hidden'); }
+    var b1 = $('btn-sum-results'), b2 = $('btn-sum-viewers');
+    if (b1) b1.style.background = '#ccfbf1';
+    if (b2) b2.style.background = '#fff';
+  }
+
+  // Single delegated click handler
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    if (!t) return;
+    var id = t.id || (t.closest && t.closest('button') && t.closest('button').id) || '';
+    var text = (t.textContent || '').trim().toLowerCase();
+    if (id === 'btn-sum-viewers' || id === 'st-viewers' || text === 'viewers') {
+      e.preventDefault();
+      e.stopPropagation();
+      showViewers();
+      return;
+    }
+    if (id === 'btn-sum-results' || id === 'st-sum') {
+      // only if inside summary
+      if (id === 'btn-sum-results' || text === 'match results') {
+        e.preventDefault();
+        e.stopPropagation();
+        showResults();
+      }
+    }
+  }, true);
+
+  // Capture viewer list updates without re-entrancy
+  if (typeof window.renderViewers === 'function' && !window.renderViewers._v176) {
+    var prev = window.renderViewers;
+    window.renderViewers = function(list, count){
+      try {
+        if (Array.isArray(list)) window.__lastViewerList = list;
+        window.__lastViewerCount = count|0;
+      } catch(e){}
+      try { prev.apply(this, arguments); } catch(e){}
+      // If viewers visible, refresh once
+      try {
+        var box = $('sum-viewers-lite');
+        if (box && box.classList.contains('active')) paint();
+      } catch(e){}
+    };
+    window.renderViewers._v176 = true;
+  }
+
+  // FOW white force when panel shown
+  function whiteFow(){
+    try {
+      var body = $('fow-body');
+      if (!body) return;
+      body.style.background = '#fff';
+      var tables = body.querySelectorAll('table');
+      for (var i=0;i<tables.length;i++){
+        tables[i].style.background = '#fff';
+        var cells = tables[i].querySelectorAll('td');
+        for (var j=0;j<cells.length;j++){
+          cells[j].style.background = '#fff';
+          cells[j].style.color = '#0f172a';
+        }
+      }
+    } catch(e){}
+  }
+  var _st = window.setViewerTab;
+  if (typeof _st === 'function' && !_st._v176) {
+    window.setViewerTab = function(t){
+      try { _st.apply(this, arguments); } catch(e){}
+      if (String(t) === 'fow') setTimeout(whiteFow, 0);
+    };
+    window.setViewerTab._v176 = true;
+  }
+
+  // Boot UI shell only (no paint loops)
+  setTimeout(function(){ try{ ensureUI(); }catch(e){} }, 500);
+})();
+</script>
+
+
+<script id="v177-safe-viewers-js">
+(function(){
+  'use strict';
+  if (window.__v177safe) return;
+  window.__v177safe = true;
+
+  // Disable hanging presence heartbeat (or make it non-blocking with short timeout once)
+  try {
+    if (typeof window.heartbeat === 'function' && !window.heartbeat._v177) {
+      var _hb = window.heartbeat;
+      window.heartbeat = function(){
+        try {
+          if (!navigator.onLine) return;
+          // fire and forget — never await in UI path
+          Promise.resolve(_hb.apply(this, arguments)).catch(function(){});
+        } catch(e){}
+      };
+      window.heartbeat._v177 = true;
+    }
+  } catch(e){}
+
+  // Ensure sum-viewers-table exists
+  function ensure(){
+    var wrap = document.getElementById('sum-viewers');
+    if (!wrap) return;
+    if (!document.getElementById('sum-viewers-table')) {
+      if (!wrap.querySelector('#sum-viewers-table')) {
+        var d = document.createElement('div');
+        d.id = 'sum-viewers-table';
+        wrap.appendChild(d);
+      }
+    }
+  }
+
+  // Override onclick path
+  var btn = document.getElementById('st-viewers');
+  if (btn) {
+    btn.setAttribute('onclick', '');
+    btn.onclick = function(e){
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      try {
+        if (typeof setViewerTab === 'function') setViewerTab('sum');
+      } catch(err){}
+      try {
+        if (typeof setSumSub === 'function') setSumSub('viewers');
+        else if (typeof paintViewersSummary === 'function') {
+          ensure();
+          var sv = document.getElementById('sum-viewers');
+          if (sv) { sv.classList.remove('hidden'); sv.style.display='block'; }
+          paintViewersSummary();
+        }
+      } catch(err){}
+      return false;
+    };
+  }
+
+  // FOW: after any paint, force white cells
+  function forceFowWhite(){
+    var body = document.getElementById('fow-body');
+    if (!body) return;
+    body.style.background = '#fff';
+    body.style.color = '#0f172a';
+    var tds = body.querySelectorAll('td, table, th');
+    for (var i = 0; i < tds.length; i++) {
+      var el = tds[i];
+      if (el.tagName === 'TH') {
+        el.style.background = '#0f766e';
+        el.style.color = '#fff';
+      } else {
+        el.style.background = '#fff';
+        if (el.tagName === 'TD') el.style.color = '#0f172a';
+      }
+    }
+  }
+
+  var _st = window.setViewerTab;
+  if (typeof _st === 'function' && !_st._v177b) {
+    window.setViewerTab = function(t){
+      try { _st.apply(this, arguments); } catch(e){}
+      if (String(t) === 'fow') setTimeout(forceFowWhite, 0);
+    };
+    window.setViewerTab._v177b = true;
+  }
+
+  // Observe fow-body child changes once
+  try {
+    var fb = document.getElementById('fow-body');
+    if (fb && !fb._v177obs) {
+      fb._v177obs = true;
+      var mo = new MutationObserver(function(){ forceFowWhite(); });
+      mo.observe(fb, { childList: true, subtree: true });
+    }
+  } catch(e){}
+
+  setTimeout(ensure, 300);
+})();
+</script>
+
+
+<script id="v178-final-js">
+(function(){
+  'use strict';
+  if (window.__v178) return;
+  window.__v178 = true;
+
+  function $(id){ return document.getElementById(id); }
+
+  /* Remove duplicate summary tab UIs */
+  function dedupeSummaryTabs(){
+    try {
+      var lite = $('sum-lite-tabs');
+      if (lite) lite.remove();
+      // if multiple .subtabs inside panel-sum, keep first only
+      var panel = $('panel-sum');
+      if (!panel) return;
+      var subs = panel.querySelectorAll(':scope > .subtabs, :scope > #sum-lite-tabs');
+      // keep the first .subtabs with st-viewers
+      var kept = null;
+      panel.querySelectorAll('.subtabs').forEach(function(el, idx){
+        if (!kept && el.querySelector('#st-viewers, #st-sum')) kept = el;
+        else if (el !== kept && el.id !== 'sc-team-tabs') {
+          // hide extras
+          if (!el.closest('#scorecard-body')) el.style.display = 'none';
+        }
+      });
+      // ensure only Match results + Viewers buttons once
+      if (kept) {
+        var seen = {};
+        kept.querySelectorAll('button').forEach(function(b){
+          var t = (b.textContent||'').trim().toLowerCase();
+          if (seen[t]) b.remove();
+          else seen[t] = 1;
+        });
+      }
+    } catch(e){}
+  }
+
+  /* Force FOW white after every render */
+  function forceFowWhite(){
+    var body = $('fow-body');
+    if (!body) return;
+    body.style.setProperty('background', '#ffffff', 'important');
+    body.style.setProperty('color', '#0f172a', 'important');
+    body.querySelectorAll('table, thead, tbody, tr, td, th').forEach(function(el){
+      if (el.tagName === 'TH') {
+        el.style.setProperty('background', '#0f766e', 'important');
+        el.style.setProperty('color', '#ffffff', 'important');
+      } else {
+        el.style.setProperty('background', '#ffffff', 'important');
+        if (el.tagName === 'TD' || el.tagName === 'TR' || el.tagName === 'TBODY' || el.tagName === 'TABLE') {
+          if (el.tagName === 'TD') el.style.setProperty('color', '#0f172a', 'important');
+        }
+      }
+    });
+  }
+
+  // Observe FOW body forever
+  try {
+    var fb = $('fow-body');
+    if (fb && !fb._v178) {
+      fb._v178 = true;
+      new MutationObserver(function(){ forceFowWhite(); }).observe(fb, { childList:true, subtree:true, attributes:true });
+    }
+  } catch(e){}
+
+  /* SAFE viewers — replaces setSumSub viewers branch behavior */
+  function safePaintViewers(){
+    var wrap = $('sum-viewers');
+    if (!wrap) return;
+    wrap.classList.remove('hidden');
+    wrap.style.setProperty('display', 'block', 'important');
+
+    var el = $('sum-viewers-table');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'sum-viewers-table';
+      wrap.innerHTML = '<div class="sec-title">Viewers log</div>';
+      wrap.appendChild(el);
+    }
+
+    // Hide other summary panes
+    ['sum-sum','sum-teams','sum-fow','sum-orange','sum-purple'].forEach(function(id){
+      var p = $(id);
+      if (p) { p.classList.add('hidden'); p.style.display = 'none'; }
+    });
+    var lite = $('sum-viewers-lite');
+    if (lite) { lite.style.display = 'none'; lite.classList.remove('active'); }
+
+    var rows = [];
+    try {
+      if (window.__viewerHistoryList && window.__viewerHistoryList.length)
+        rows = window.__viewerHistoryList.slice(0, 50);
+      else if (typeof __viewerMap === 'object' && __viewerMap)
+        rows = Object.keys(__viewerMap).map(function(k){ return __viewerMap[k]; }).slice(0, 50);
+      else if (Array.isArray(window.__lastViewerList))
+        rows = window.__lastViewerList.slice(0, 50);
+    } catch(e){ rows = []; }
+
+    if (!rows.length) {
+      el.innerHTML = '<div class="empty" style="padding:14px;background:#fff;color:#0f172a">No viewers yet. Open this live page on another phone/browser to record a visit.</div>';
+      return;
+    }
+
+    function ft(ts){
+      if (!ts) return '—';
+      try {
+        var d = new Date(typeof ts === 'number' ? ts : Date.parse(ts));
+        return isNaN(d.getTime()) ? '—' : d.toLocaleString();
+      } catch(e){ return '—'; }
+    }
+    function esc(s){ return String(s==null?'':s).replace(/</g,'&lt;'); }
+
+    var html = '<table style="width:100%;border-collapse:collapse;font-size:12px;background:#fff;color:#0f172a"><thead><tr style="background:#0f766e;color:#fff">'
+      + '<th style="padding:8px;text-align:left">Viewer</th>'
+      + '<th style="padding:8px;text-align:left">Status</th>'
+      + '<th style="padding:8px;text-align:left">In</th>'
+      + '<th style="padding:8px;text-align:left">Out</th>'
+      + '<th style="padding:8px;text-align:left">Last seen</th>'
+      + '<th style="padding:8px;text-align:left">Activity</th></tr></thead><tbody>';
+    for (var i = 0; i < rows.length; i++) {
+      var v = rows[i] || {};
+      var online = true;
+      if (v.online === false || v.status === 'offline') online = false;
+      html += '<tr style="background:#fff;color:#0f172a;border-bottom:1px solid #e2e8f0">'
+        + '<td style="padding:8px;background:#fff">'+esc(v.name||v.displayName||'Viewer')+'</td>'
+        + '<td style="padding:8px;background:#fff;font-weight:800;color:'+(online?'#16a34a':'#94a3b8')+'">'+(online?'Online':'Offline')+'</td>'
+        + '<td style="padding:8px;background:#fff">'+esc(ft(v.joinedAt||v.firstSeen))+'</td>'
+        + '<td style="padding:8px;background:#fff">'+(online?'—':esc(ft(v.leftAt||v.lastSeen)))+'</td>'
+        + '<td style="padding:8px;background:#fff">'+esc(ft(v.lastSeen))+'</td>'
+        + '<td style="padding:8px;background:#fff">'+esc(v.activity||v.tab||'watching')+'</td></tr>';
+    }
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  }
+
+  // Replace setSumSub completely
+  window.setSumSub = function(s){
+    try {
+      dedupeSummaryTabs();
+      ['teams','sum','viewers','orange','purple','fow'].forEach(function(x){
+        var b = $('st-'+x), p = $('sum-'+x);
+        if (b) b.classList.toggle('on', s === x);
+        if (p) {
+          if (s === x) { p.classList.remove('hidden'); p.style.display = 'block'; }
+          else { p.classList.add('hidden'); p.style.display = 'none'; }
+        }
+      });
+      if (s === 'viewers') {
+        // NO heartbeat, NO other modules
+        safePaintViewers();
+        return;
+      }
+      if (s === 'sum') {
+        var sum = $('sum-sum');
+        if (sum) { sum.classList.remove('hidden'); sum.style.display = 'block'; }
+      }
+      if (s === 'fow') {
+        try { if (typeof paintFallOfWickets === 'function') paintFallOfWickets(); } catch(e){}
+      }
+    } catch(e){}
+  };
+
+  // Wire buttons directly
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    if (!t || !t.closest) return;
+    var btn = t.closest('#st-viewers, #st-sum, button');
+    if (!btn) return;
+    var id = btn.id || '';
+    var label = (btn.textContent || '').trim().toLowerCase();
+    // ignore scorecard team tabs
+    if (btn.closest('#sc-team-tabs')) return;
+    if (id === 'st-viewers' || label === 'viewers') {
+      e.preventDefault();
+      e.stopPropagation();
+      try { if (typeof setViewerTab === 'function') setViewerTab('sum'); } catch(err){}
+      window.setSumSub('viewers');
+      return;
+    }
+    if (id === 'st-sum' || label === 'match results') {
+      e.preventDefault();
+      e.stopPropagation();
+      try { if (typeof setViewerTab === 'function') setViewerTab('sum'); } catch(err){}
+      window.setSumSub('sum');
+      return;
+    }
+  }, true);
+
+  // FOW tab
+  var _st = window.setViewerTab;
+  if (typeof _st === 'function') {
+    window.setViewerTab = function(t){
+      try { _st.apply(this, arguments); } catch(e){}
+      if (String(t) === 'fow') setTimeout(forceFowWhite, 0);
+      if (String(t) === 'sum') setTimeout(dedupeSummaryTabs, 0);
+    };
+  }
+
+  // Disable heartbeat globally (hang source)
+  window.heartbeat = function(){ return; };
+
+  setTimeout(function(){
+    dedupeSummaryTabs();
+    forceFowWhite();
+  }, 400);
+  setInterval(function(){ try{ forceFowWhite(); }catch(e){} }, 2000);
 })();
 </script>
 
