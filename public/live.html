@@ -5297,7 +5297,7 @@ body[data-theme="sports1"] #fow-body th {
         return res;
       });
     };
-    setInterval(__fbPoll, 1000);
+    setInterval(__fbPoll, 5000); // v179: slower float poll; score is WS push
     setTimeout(__fbPoll, 400);
     /* ===== end FLOAT BUS v21 ===== */
 
@@ -9005,6 +9005,14 @@ body[data-theme="sports1"] #fow-body th {
       // Respect Cloudflare free-tier backoff
       if(window.__cfLimitUntil && Date.now()<window.__cfLimitUntil){ setLiveDot(Math.max(failCount,5)); return; }
       if(document.hidden){ return; } // don't burn quota in background
+      // PUSH-FIRST: if score WebSocket is healthy, skip HTTP poll (huge scale win)
+      try{
+        if(window.__scoreWsOk && window.__scoreWs && window.__scoreWs.readyState===1){
+          var age = Date.now() - (window.__lastPushTs || 0);
+          // only rare safety poll if no push for 20s
+          if(age < 20000){ setLiveDot(0); return; }
+        }
+      }catch(e){}
       if(pollBusy){
         if(lastPollStart && (Date.now()-lastPollStart>4000)) pollBusy=false;
         else return;
@@ -9105,13 +9113,32 @@ body[data-theme="sports1"] #fow-body th {
           try{
             var msg = JSON.parse(ev.data);
             if(!msg) return;
-            if(msg.type === 'pong') return;
-            if(msg.type === 'score' || msg.runs != null || (msg.data && msg.data.runs != null)){
-              try{ applyData(msg); }catch(e){}
+            if(msg.type === 'pong' || msg.type === 'hello') return;
+            // Push payload from MatchDO: full | update | score | presence
+            if(msg.type === 'full' || msg.type === 'update' || msg.type === 'score'){
+              var payload = msg.data != null ? msg.data : msg;
+              try{ applyData(payload); }catch(e){}
+              window.__scoreWsOk = true;
+              window.__lastPushTs = Date.now();
+              return;
+            }
+            if(msg.type === 'presence'){
+              try{
+                var list = msg.data || msg.viewers || [];
+                window.__lastViewerList = list;
+                if(typeof renderViewers === 'function') renderViewers(list, list.length||0);
+              }catch(e){}
               return;
             }
             if(msg.type === 'float' || msg.emoji || msg.text){
               try{ applyFloats([msg]); }catch(e){}
+              return;
+            }
+            // raw live object
+            if(msg.runs != null || (msg.data && msg.data.runs != null)){
+              try{ applyData(msg.data || msg); }catch(e){}
+              window.__scoreWsOk = true;
+              window.__lastPushTs = Date.now();
             }
           }catch(e){}
         };
@@ -18235,6 +18262,324 @@ try{mountDashboards()}catch(e){}
     forceFowWhite();
   }, 400);
   setInterval(function(){ try{ forceFowWhite(); }catch(e){} }, 2000);
+})();
+</script>
+
+
+<script id="v179-push-first-js">
+(function(){
+  'use strict';
+  if (window.__v179push) return;
+  window.__v179push = true;
+
+  // Ensure score WS connects early
+  function bootWs(){
+    try {
+      if (typeof connectScoreWs === 'function') connectScoreWs();
+    } catch(e){}
+  }
+  bootWs();
+  setInterval(bootWs, 8000);
+
+  // Stable apply: skip identical score/over/commentary signatures
+  var lastSig = '';
+  function sigOf(d){
+    if (!d || typeof d !== 'object') return '';
+    var balls = d.balls|0, runs = d.runs|0, wk = d.wickets|0;
+    var chip = '';
+    try {
+      if (d.thisOver && d.thisOver.balls) chip = d.thisOver.balls.join(',');
+      else if (Array.isArray(d.currentOverBalls)) {
+        chip = d.currentOverBalls.map(function(c){ return c&&c.label!=null?c.label:c; }).join(',');
+      }
+    } catch(e){}
+    var lastComm = '';
+    try {
+      var c = d.commentary || [];
+      lastComm = c.length ? String(c[c.length-1]).slice(0,60) : '';
+    } catch(e){}
+    return [balls,runs,wk,chip,lastComm,d.ts||''].join('|');
+  }
+
+  if (typeof window.applyData === 'function' && !window.applyData._v179) {
+    var _apply = window.applyData;
+    window.applyData = function(data){
+      try {
+        var d = data && data.data && (data.data.runs!=null||data.data.balls!=null) ? data.data : data;
+        var s = sigOf(d);
+        if (s && s === lastSig) return; // no-op identical push/poll
+        lastSig = s;
+      } catch(e){}
+      return _apply.apply(this, arguments);
+    };
+    window.applyData._v179 = true;
+  }
+
+  // Mark push time when apply succeeds via WS path is already in handler
+})();
+</script>
+
+
+<script id="v180-viewers-table-js">
+(function(){
+  'use strict';
+  if (window.__v180viewers) return;
+  window.__v180viewers = true;
+
+  function $(id){ return document.getElementById(id); }
+
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function fmt(ts){
+    if (ts == null || ts === '' || ts === 0) return '—';
+    var n = typeof ts === 'number' ? ts : Date.parse(ts);
+    if (!n || isNaN(n)) return '—';
+    try {
+      var d = new Date(n);
+      var dd = d.toLocaleDateString(undefined, { day:'2-digit', month:'short' });
+      var tt = d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
+      return dd + ' ' + tt;
+    } catch(e){ return '—'; }
+  }
+
+  function collectRows(){
+    var rows = [];
+    var seen = Object.create(null);
+
+    function add(v){
+      if (!v) return;
+      var name = v.name || v.displayName || v.user || v.n || 'Viewer';
+      var id = String(v.id || v.sessionId || v.sid || name);
+      if (seen[id]) {
+        var prev = seen[id];
+        if (v.lastSeen && (!prev.lastSeen || v.lastSeen > prev.lastSeen)) prev.lastSeen = v.lastSeen;
+        if (v.joinedAt && !prev.joinedAt) prev.joinedAt = v.joinedAt;
+        if (v.leftAt) prev.leftAt = v.leftAt;
+        if (v.online === false || v.status === 'offline') prev.online = false;
+        else if (v.online === true || v.status === 'online') prev.online = true;
+        if (v.activity || v.tab) prev.activity = v.activity || v.tab;
+        return;
+      }
+      var online = true;
+      if (v.online === false || v.status === 'offline') online = false;
+      var row = {
+        id: id,
+        name: name,
+        online: online,
+        joinedAt: v.joinedAt || v.firstSeen || v.in || null,
+        leftAt: v.leftAt || v.out || null,
+        lastSeen: v.lastSeen || null,
+        activity: v.activity || v.tab || v.act || 'watching'
+      };
+      seen[id] = row;
+      rows.push(row);
+    }
+
+    try {
+      if (Array.isArray(window.__viewerHistoryList))
+        window.__viewerHistoryList.forEach(add);
+    } catch(e){}
+    try {
+      if (typeof __viewerMap === 'object' && __viewerMap) {
+        Object.keys(__viewerMap).forEach(function(k){ add(__viewerMap[k]); });
+      }
+    } catch(e){}
+    try {
+      if (Array.isArray(window.__lastViewerList))
+        window.__lastViewerList.forEach(add);
+    } catch(e){}
+    try {
+      var d = window.__lastLiveData || window.lastData || {};
+      if (Array.isArray(d.viewers)) d.viewers.forEach(add);
+      if (Array.isArray(d.viewersList)) d.viewersList.forEach(add);
+      if (Array.isArray(d.presence)) d.presence.forEach(add);
+    } catch(e){}
+
+    // Always show at least current visitor
+    if (!rows.length) {
+      add({
+        name: (function(){ try{ return localStorage.getItem('cricket_viewer_name')||'You'; }catch(e){ return 'You'; } })(),
+        online: true,
+        joinedAt: Date.now(),
+        lastSeen: Date.now(),
+        activity: 'watching'
+      });
+    }
+
+    rows.sort(function(a,b){
+      if (a.online !== b.online) return a.online ? -1 : 1;
+      return (b.lastSeen||0) - (a.lastSeen||0);
+    });
+    return rows.slice(0, 100);
+  }
+
+  function ensurePanel(){
+    var panel = $('panel-sum');
+    if (!panel) return null;
+
+    // single subtab row
+    var sub = panel.querySelector('.subtabs');
+    if (!sub) {
+      sub = document.createElement('div');
+      sub.className = 'subtabs';
+      sub.style.cssText = 'display:flex;gap:8px;margin:8px;flex-wrap:wrap';
+      panel.insertBefore(sub, panel.firstChild);
+    }
+    if (!$('st-sum')) {
+      var b1 = document.createElement('button');
+      b1.type = 'button'; b1.className = 'subtab on'; b1.id = 'st-sum';
+      b1.textContent = 'Match results';
+      b1.style.cssText = 'flex:1;padding:10px;border-radius:999px;font-weight:800;cursor:pointer';
+      sub.appendChild(b1);
+    }
+    if (!$('st-viewers')) {
+      var b2 = document.createElement('button');
+      b2.type = 'button'; b2.className = 'subtab'; b2.id = 'st-viewers';
+      b2.textContent = 'Viewers';
+      b2.style.cssText = 'flex:1;padding:10px;border-radius:999px;font-weight:800;cursor:pointer';
+      sub.appendChild(b2);
+    }
+
+    // hide duplicate lite tabs
+    var lite = $('sum-lite-tabs');
+    if (lite) lite.style.display = 'none';
+
+    var wrap = $('sum-viewers');
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.id = 'sum-viewers';
+      wrap.className = 'hidden';
+      panel.appendChild(wrap);
+    }
+    wrap.innerHTML =
+      '<div style="padding:8px 10px 4px;font-weight:900;font-size:14px;color:#0f172a">Viewers</div>'+
+      '<div id="sum-viewers-table" style="padding:4px 8px 12px;overflow:auto"></div>';
+    return wrap;
+  }
+
+  function paintTable(){
+    ensurePanel();
+    var el = $('sum-viewers-table');
+    if (!el) return;
+    var rows = collectRows();
+    var html = '<table style="width:100%;border-collapse:collapse;font-size:12px;background:#fff;color:#0f172a">'+
+      '<thead><tr style="background:#0f766e;color:#fff">'+
+      '<th style="text-align:left;padding:8px 6px">Name</th>'+
+      '<th style="text-align:left;padding:8px 6px">Status</th>'+
+      '<th style="text-align:left;padding:8px 6px">Log in</th>'+
+      '<th style="text-align:left;padding:8px 6px">Out</th>'+
+      '<th style="text-align:left;padding:8px 6px">Activity</th>'+
+      '</tr></thead><tbody>';
+    for (var i = 0; i < rows.length; i++) {
+      var v = rows[i];
+      var st = v.online
+        ? '<span style="color:#16a34a;font-weight:800">Online</span>'
+        : '<span style="color:#94a3b8;font-weight:700">Offline</span>';
+      html += '<tr style="border-bottom:1px solid #e2e8f0;background:#fff">'+
+        '<td style="padding:8px 6px;font-weight:700;background:#fff">'+esc(v.name)+'</td>'+
+        '<td style="padding:8px 6px;background:#fff">'+st+'</td>'+
+        '<td style="padding:8px 6px;background:#fff;white-space:nowrap">'+esc(fmt(v.joinedAt))+'</td>'+
+        '<td style="padding:8px 6px;background:#fff;white-space:nowrap">'+esc(v.online ? '—' : fmt(v.leftAt || v.lastSeen))+'</td>'+
+        '<td style="padding:8px 6px;background:#fff">'+esc(v.activity || 'watching')+'</td>'+
+        '</tr>';
+    }
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  }
+
+  function openViewers(){
+    // show summary panel
+    try {
+      if (typeof setViewerTab === 'function') setViewerTab('sum');
+    } catch(e){}
+    ['panel-live','panel-comm','panel-stats','panel-fow','panel-caps','panel-fan'].forEach(function(id){
+      var p = $(id);
+      if (p) { p.classList.add('hidden'); p.style.display = 'none'; }
+    });
+    var panel = $('panel-sum');
+    if (panel) {
+      panel.classList.remove('hidden');
+      panel.style.setProperty('display','block','important');
+    }
+    // sub panes
+    ['sum-sum','sum-teams','sum-fow','sum-orange','sum-purple','sum-viewers-lite'].forEach(function(id){
+      var p = $(id);
+      if (p) { p.classList.add('hidden'); p.style.display = 'none'; }
+    });
+    var wrap = ensurePanel();
+    if (wrap) {
+      wrap.classList.remove('hidden');
+      wrap.style.setProperty('display','block','important');
+    }
+    if ($('st-sum')) $('st-sum').classList.remove('on');
+    if ($('st-viewers')) $('st-viewers').classList.add('on');
+    paintTable();
+  }
+
+  function openResults(){
+    try { if (typeof setViewerTab === 'function') setViewerTab('sum'); } catch(e){}
+    var wrap = $('sum-viewers');
+    if (wrap) { wrap.classList.add('hidden'); wrap.style.display = 'none'; }
+    var sum = $('sum-sum');
+    if (sum) { sum.classList.remove('hidden'); sum.style.display = 'block'; }
+    if ($('st-viewers')) $('st-viewers').classList.remove('on');
+    if ($('st-sum')) $('st-sum').classList.add('on');
+  }
+
+  // Override setSumSub / paintViewersSummary lightly
+  window.setSumSub = function(s){
+    if (s === 'viewers') { openViewers(); return; }
+    if (s === 'sum') { openResults(); return; }
+    try {
+      ['teams','sum','viewers','orange','purple','fow'].forEach(function(x){
+        var b = $('st-'+x), p = $('sum-'+x);
+        if (b) b.classList.toggle('on', s === x);
+        if (p) {
+          if (s === x) { p.classList.remove('hidden'); p.style.display = 'block'; }
+          else { p.classList.add('hidden'); p.style.display = 'none'; }
+        }
+      });
+    } catch(e){}
+  };
+  window.paintViewersSummary = function(){ paintTable(); };
+
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    if (!t || !t.closest) return;
+    var btn = t.closest('button, .subtab');
+    if (!btn) return;
+    if (btn.closest('#sc-team-tabs')) return;
+    var id = btn.id || '';
+    var label = (btn.textContent || '').trim().toLowerCase();
+    if (id === 'st-viewers' || label === 'viewers') {
+      e.preventDefault(); e.stopPropagation();
+      openViewers();
+    } else if (id === 'st-sum' || label === 'match results') {
+      e.preventDefault(); e.stopPropagation();
+      openResults();
+    }
+  }, true);
+
+  // Presence updates refresh table only if open
+  if (typeof window.renderViewers === 'function' && !window.renderViewers._v180) {
+    var _rv = window.renderViewers;
+    window.renderViewers = function(list, count){
+      try {
+        if (Array.isArray(list)) window.__lastViewerList = list;
+        window.__lastViewerCount = count|0;
+      } catch(e){}
+      try { _rv.apply(this, arguments); } catch(e){}
+      try {
+        if ($('st-viewers') && $('st-viewers').classList.contains('on')) paintTable();
+      } catch(e){}
+    };
+    window.renderViewers._v180 = true;
+  }
+
+  setTimeout(function(){ try{ ensurePanel(); }catch(e){} }, 400);
 })();
 </script>
 
