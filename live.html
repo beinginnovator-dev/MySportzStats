@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>MySportz Live</title>
+<meta name="theme-color" content="#0b1220"/>
+<style>
+:root{--bg:#0b1220;--bg2:#111827;--card:#1a2336;--line:rgba(255,255,255,.1);--text:#f8fafc;--muted:#94a3b8;--red:#e11d48;--gold:#fbbf24;--blue:#38bdf8;--accent:#e11d48}
+body.theme-light{--bg:#fff;--bg2:#fff;--card:#fff;--line:rgba(15,23,42,.12);--text:#0f172a;--muted:#64748b;--accent:#0f766e;--blue:#0284c7}
+body.theme-ipl{--bg:#0c0a1a;--bg2:#16132a;--card:#221c40;--muted:#a5b4fc;--accent:#7c3aed;--blue:#a78bfa}
+body.theme-icc{--bg:#071a14;--bg2:#0c241c;--card:#134032;--muted:#6ee7b7;--accent:#059669;--blue:#34d399}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app{max-width:480px;margin:0 auto;padding-bottom:28px}
+.broadcast{position:relative;background:linear-gradient(180deg,rgba(11,18,32,.92),rgba(11,18,32,.95)),url('https://images.unsplash.com/photo-1531415076815-8dd6c0d1f2f2?auto=format&fit=crop&w=1200&q=60') center/cover no-repeat;border-bottom:1px solid var(--line);padding:12px;position:relative;overflow:hidden}
+body.theme-light .broadcast{background:linear-gradient(180deg,rgba(11,30,75,.93),rgba(10,36,99,.95)),url('https://images.unsplash.com/photo-1531415076815-8dd6c0d1f2f2?auto=format&fit=crop&w=1200&q=60') center/cover no-repeat;color:#f8fafc}
+.bar{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;position:relative;z-index:2}
+.live-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(225,29,72,.18);border:1px solid rgba(225,29,72,.45);color:#fecdd3;font-size:11px;font-weight:900;padding:4px 8px;border-radius:999px}
+.live-pill i{width:7px;height:7px;border-radius:50%;background:var(--red)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;position:relative;z-index:2}
+
+.match-center{text-align:center;min-width:88px;max-width:42%}
+.match-center .title{font-size:18px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);line-height:1.15}
+.match-center .sub{font-size:12px;font-weight:700;color:#cbd5e1;margin-top:3px;line-height:1.3}
+.match-center .time{font-size:11px;font-weight:800;color:#e2e8f0;margin-top:2px}
+.match-center .vs-label{font-size:12px;font-weight:900;letter-spacing:.16em;color:#94a3b8;margin-top:6px}
+
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;position:relative;z-index:2}
+.live-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(225,29,72,.18);border:1px solid rgba(225,29,72,.45);color:#fecdd3;font-size:11px;font-weight:900;padding:4px 8px;border-radius:999px}
+.live-pill i{width:7px;height:7px;border-radius:50%;background:var(--red)}
+.gear{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;border-radius:999px;width:34px;height:34px;cursor:pointer}
+/* Header strip: match name ABOVE scores, full width, no overlap */
+.match-header{
+  text-align:center;padding:4px 8px 2px;position:relative;z-index:2;
+}
+.match-header .title{
+  font-size:17px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--gold);line-height:1.2;max-width:100%;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.match-header .sub{
+  font-size:11px;font-weight:700;color:#cbd5e1;margin-top:2px;line-height:1.3;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.match-header .time{
+  font-size:11px;font-weight:800;color:#e2e8f0;margin-top:1px;
+}
+.score-grid{
+  display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;
+  margin-top:10px;position:relative;z-index:1;padding:0 2px;
+}
+.side{text-align:center;min-width:0}
+.tname{
+  font-size:11px;font-weight:800;text-transform:uppercase;
+  display:flex;align-items:center;justify-content:center;gap:5px;color:#f8fafc;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+}
+.tname img{width:22px;height:15px;object-fit:cover;border-radius:3px;flex-shrink:0}
+.tname img.wave{animation:flagWave 1.2s ease-in-out infinite;transform-origin:center center}
+@keyframes flagWave{0%{transform:translateX(-2px) rotate(-4deg)}50%{transform:translateX(2px) rotate(4deg)}100%{transform:translateX(-2px) rotate(-4deg)}}
+.score-num{font-size:26px;font-weight:900;line-height:1.05;margin:4px 0 0;color:#fff}
+.overs{font-size:12px;color:#cbd5e1;margin-top:1px;font-weight:700}
+.role{font-size:9px;color:var(--blue);font-weight:800;margin-top:1px;text-transform:uppercase}
+.match-center{text-align:center;min-width:40px;padding:0 4px}
+.match-center .vs-label{font-size:12px;font-weight:900;letter-spacing:.14em;color:#94a3b8}
+.match-center .title,.match-center .sub,.match-center .time{display:none!important}
+
+.score-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;margin-top:10px;position:relative;z-index:1;padding:0 2px}
+.score-num{font-size:27px;font-weight:900;line-height:1.1;margin:6px 0 0;color:#fff}
+.tname{font-size:12px;font-weight:800;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:6px;color:#f8fafc;margin-top:4px}
+.result-overlay{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(2,6,23,.55);backdrop-filter:blur(2px)}
+.result-overlay .result{width:100%;max-width:360px}
+.comm-item .hi{font-weight:900;color:#fbbf24}
+.comm-item .hi-w{font-weight:900;color:#fb7185}
+.comm-item .hi-b{font-weight:900;color:#4ade80}
+.comm-item .ov{font-weight:800;color:var(--blue);margin-right:6px}
+
+.gear{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;border-radius:999px;width:34px;height:34px;cursor:pointer}
+.settings-backdrop{position:fixed;inset:0;z-index:9998}
+.settings-dd{position:fixed;right:12px;top:56px;z-index:9999;background:#0f172a;border:1px solid rgba(255,255,255,.2);border-radius:14px;min-width:240px;max-height:75vh;overflow:auto;padding:8px}
+.settings-dd .dd-title{font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;padding:6px 12px}
+.settings-dd button{display:block;width:100%;text-align:left;border:0;background:transparent;color:#f8fafc;font-weight:700;font-size:13px;padding:11px 12px;border-radius:10px;cursor:pointer}
+.settings-dd button.on,.settings-dd button:hover{background:rgba(56,189,248,.22)}
+.settings-dd .sep{height:1px;background:rgba(255,255,255,.12);margin:6px 8px}
+.score-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-top:22px;position:relative;z-index:1}
+.side{text-align:center;min-width:0}
+.tname{font-size:12px;font-weight:800;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:6px;color:#f8fafc}
+.tname img{width:24px;height:16px;object-fit:cover;border-radius:3px}
+.tname img.wave{animation:flagWave 1.2s ease-in-out infinite;transform-origin:center center}
+@keyframes flagWave{0%{transform:translateX(-2px) rotate(-4deg)}50%{transform:translateX(2px) rotate(4deg)}100%{transform:translateX(-2px) rotate(-4deg)}}
+.score-num{font-size:27px;font-weight:900;line-height:1.1;margin:4px 0 0;color:#fff}
+.overs{font-size:14px;color:#cbd5e1;margin-top:2px;font-weight:700}
+.role{font-size:10px;color:var(--blue);font-weight:800;margin-top:2px;text-transform:uppercase}
+.match-center{text-align:center}
+.match-center .vs-label{font-size:13px;font-weight:900;letter-spacing:.16em;color:#94a3b8}
+.crr{display:flex;justify-content:center;gap:14px;margin-top:8px;font-size:11px;color:#cbd5e1}
+.crr b{color:#fff}
+.anim-slot{min-height:42px;margin-top:6px;display:flex;align-items:center;justify-content:center;position:relative;z-index:3}
+.ev-banner{min-width:130px;padding:12px 18px;border-radius:14px;font-weight:900;font-size:16px;text-align:center;color:#fff;opacity:0;box-shadow:0 10px 28px rgba(0,0,0,.4)}
+.ev-banner.show{animation:evpop 2.6s ease-out forwards}
+.ev-banner.runs{background:linear-gradient(135deg,#2563eb,#3b82f6)}
+.ev-banner.four{background:linear-gradient(135deg,#16a34a,#22c55e)}
+.ev-banner.six{background:linear-gradient(135deg,#7c3aed,#a855f7)}
+.ev-banner.dot{background:linear-gradient(135deg,#475569,#64748b)}
+.ev-banner.extra{background:linear-gradient(135deg,#6d28d9,#a855f7)}
+.ev-banner.wicket{background:linear-gradient(135deg,#b91c1c,#ef4444)}
+@keyframes evpop{0%{opacity:0;transform:scale(.85)}10%{opacity:1;transform:scale(1.08)}70%{opacity:1;transform:scale(1)}100%{opacity:0}}
+.result-wrap{position:relative;overflow:hidden;border-radius:14px;margin-top:10px;z-index:2}
+.result{padding:14px 12px;background:linear-gradient(135deg,#9a3412,#ea580c 55%,#f59e0b);text-align:center;color:#fff;border-radius:14px;position:relative;z-index:2}
+.result .lbl{font-size:10px;font-weight:900;letter-spacing:.14em}
+.result .txt{font-size:16px;font-weight:900;margin:4px 0}
+.result .sc{font-size:12px;line-height:1.45}
+.result .pom{margin-top:6px;font-size:12px;font-weight:800;color:#fef3c7}
+.cracker{position:absolute;inset:0;z-index:1;pointer-events:none}
+.cracker i{position:absolute;width:8px;height:8px;border-radius:2px;animation:fall 2.4s linear infinite}
+@keyframes fall{0%{transform:translateY(-12px) rotate(0);opacity:1}100%{transform:translateY(140px) rotate(320deg);opacity:0}}
+.fw{position:fixed;inset:0;pointer-events:none;z-index:50}
+.fw span{position:absolute;width:6px;height:6px;border-radius:50%;animation:fw 1.2s ease-out forwards}
+@keyframes fw{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--x),var(--y)) scale(0);opacity:0}}
+.tabs{display:flex;gap:0;overflow-x:auto;background:var(--bg2);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.tabs button{flex:0 0 auto;border:0;background:transparent;color:var(--muted);font-weight:800;font-size:13px;padding:12px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button.on{color:var(--text);border-bottom-color:var(--accent)}
+.panel{padding:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.card h3{margin:0 0 10px;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:900}
+.players-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.players-row .bowl-full{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px;margin-top:2px}
+.pbox{background:rgba(127,127,127,.06);border:1px solid var(--line);border-radius:12px;padding:10px}
+.pbox .k{font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase}
+.pbox .v{font-size:15px;font-weight:800;margin-top:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{min-width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;background:#475569}
+.chip.c0{background:#64748b}.chip.c1{background:#2563eb}.chip.c4{background:#16a34a}.chip.c6{background:#7c3aed}.chip.cw{background:#e11d48}.chip.cx{background:#9333ea}
+.comm-item{padding:10px 0;border-bottom:1px solid var(--line);font-size:15px;line-height:1.45}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;padding:6px 4px;border-bottom:1px solid var(--line)}
+td{padding:6px 4px;border-bottom:1px solid var(--line)}
+.subtabs{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.subtabs button{flex:1;min-width:40%;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;padding:9px;font-weight:800;font-size:12px;cursor:pointer}
+.subtabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn{border:1px solid var(--line);background:rgba(127,127,127,.06);color:var(--text);border-radius:999px;padding:8px 12px;font-weight:800;font-size:12px;cursor:pointer}
+.btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kv .item{background:rgba(127,127,127,.06);border:1px solid var(--line);border-radius:12px;padding:10px}
+.kv .item .k{font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase}
+.kv .item .v{font-size:14px;font-weight:800;margin-top:4px}
+.welcome{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,.72);padding:16px}
+.welcome .box{width:min(400px,92vw);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;text-align:center}
+.footer{text-align:center;padding:14px;font-size:11px;color:var(--muted)}
+.muted{color:var(--muted)}
+#error{display:none;padding:12px;color:#fecaca;background:#450a0a;font-size:13px}
+</style>
+</head>
+<body class="theme-dark">
+<div id="error"></div>
+<div id="root"></div>
+<script>
+window.onerror=function(msg,src,line){var e=document.getElementById('error');if(e){e.style.display='block';e.textContent='Error: '+msg+' @'+line;}};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+<script>
+(function(){
+  'use strict';
+  if(!window.React || !window.ReactDOM){
+    var e=document.getElementById('error');
+    if(e){e.style.display='block';e.textContent='Failed to load React UMD libraries.';}
+    return;
+  }
+  var h=React.createElement;
+  function lsGet(k, fallback){
+    try{ var v=lsGet(k,null); return v==null?fallback:v; }catch(e){ return fallback; }
+  }
+  function lsSet(k, v){
+    try{ localStorage.setItem(k, v); return true; }
+    catch(e){
+      try{
+        // quota full — purge non-essential keys then retry once
+        var kill=[];
+        for(var i=0;i<localStorage.length;i++){
+          var key=localStorage.key(i);
+          if(key && (key.indexOf('react_')===0 || key.indexOf('cricket_')===0 || key.indexOf('flag')>=0)) kill.push(key);
+        }
+        kill.forEach(function(key){ try{ localStorage.removeItem(key); }catch(_e){} });
+        localStorage.setItem(k, v);
+        return true;
+      }catch(e2){ return false; }
+    }
+  }
+
+  var useState=React.useState, useEffect=React.useEffect, useRef=React.useRef, useMemo=React.useMemo, useCallback=React.useCallback;
+
+  var FLAG_POOL=['in','au','eng','nz','za','pk','bd','sl','af','ie','wi','np','nl','zw','sc'];
+  var FLAG_URL={in:'https://flagcdn.com/w40/in.png',au:'https://flagcdn.com/w40/au.png',eng:'https://flagcdn.com/w40/gb-eng.png',nz:'https://flagcdn.com/w40/nz.png',za:'https://flagcdn.com/w40/za.png',pk:'https://flagcdn.com/w40/pk.png',bd:'https://flagcdn.com/w40/bd.png',sl:'https://flagcdn.com/w40/lk.png',af:'https://flagcdn.com/w40/af.png',ie:'https://flagcdn.com/w40/ie.png',wi:'https://flagcdn.com/w40/jm.png',np:'https://flagcdn.com/w40/np.png',nl:'https://flagcdn.com/w40/nl.png',zw:'https://flagcdn.com/w40/zw.png',sc:'https://flagcdn.com/w40/gb-sct.png'};
+
+  function hashStr(s){s=String(s||'');var x=0;for(var i=0;i<s.length;i++)x=((x<<5)-x)+s.charCodeAt(i)|0;return Math.abs(x);}
+  function flagsForMatch(d){
+    var key=String((d&&d.matchId)||'')+'|'+((d&&(d.teamA||d.teamAName))||'A')+'|'+((d&&(d.teamB||d.teamBName))||'B')+'|'+(d&&d.matchStartTime||'');
+    try{
+      var k='react_flags_v2_'+key;
+      var c=lsGet(k,null);
+      if(c){var p=JSON.parse(c);if(p&&p.a&&p.b)return p;}
+      var ia=hashStr(key)%FLAG_POOL.length;
+      var ib=(ia+3+hashStr(key+'b'))%FLAG_POOL.length;
+      if(ib===ia)ib=(ib+1)%FLAG_POOL.length;
+      var out={a:FLAG_POOL[ia],b:FLAG_POOL[ib]};
+      lsSet(k,JSON.stringify(out));
+      return out;
+    }catch(e){return {a:'in',b:'au'};}
+  }
+  function n(v){return v==null?0:(Number(v)||0);}
+  function sr(runs,balls){var b=n(balls);return b?Math.round((n(runs)/b)*1000)/10:0;}
+  function oversFromBalls(balls){var b=n(balls);return Math.floor(b/6)+'.'+(b%6);}
+  function econ(runs,balls){var b=n(balls);return b?(n(runs)/(b/6)).toFixed(2):'0.00';}
+  function formatScore(runs,wkts,overs,fmt){
+    if(runs==null)return {main:'Yet to bat',sub:''};
+    var r=runs,w=wkts==null?0:wkts,o=(overs==null||overs==='')?'-':overs;
+    if(fmt==='cricinfo')return {main:r+' for '+w,sub:'in '+o+' overs'};
+    if(fmt==='broadcast')return {main:r+'-'+w,sub:'('+o+')'};
+    if(fmt==='compact')return {main:r+'/'+w,sub:'Ov '+o};
+    if(fmt==='split')return {main:String(r),sub:w+' wkts · '+o+' ov'};
+    return {main:r+'/'+w,sub:'('+o+')'};
+  }
+  function dualTeamScores(d){
+    d=d||{};
+    var nameA=d.teamA||d.teamAName||'Team A';
+    var nameB=d.teamB||d.teamBName||'Team B';
+    var first=String(d.firstBattingTeam||d.battingFirst||'A').toUpperCase()==='B'?'B':'A';
+    var inns=n(d.innings||(d.score&&d.score.innings)||1)||1;
+    var curRuns=d.runs!=null?d.runs:(d.score&&d.score.runs);
+    var curWk=d.wickets!=null?d.wickets:(d.score&&d.score.wickets);
+    var curOv=d.overs||(d.score&&d.score.overs)||'0.0';
+    var fiR=d.firstInningsScore!=null?d.firstInningsScore:(d.innings1Score&&d.innings1Score.runs);
+    var fiW=d.firstInningsWickets!=null?d.firstInningsWickets:(d.innings1Score&&d.innings1Score.wickets);
+    var fiO=d.firstInningsOvers||(d.innings1Score&&d.innings1Score.overs);
+    var aR=d.teamARuns,aW=d.teamAWickets,aO=d.teamAOvers;
+    var bR=d.teamBRuns,bW=d.teamBWickets,bO=d.teamBOvers;
+    if(aR==null||bR==null){
+      if(first==='A'){
+        if(aR==null&&fiR!=null){aR=fiR;aW=fiW;aO=fiO;}
+        if(inns>=2){if(bR==null&&curRuns!=null){bR=curRuns;bW=curWk;bO=curOv;}}
+        else if(aR==null&&curRuns!=null){aR=curRuns;aW=curWk;aO=curOv;}
+      }else{
+        if(bR==null&&fiR!=null){bR=fiR;bW=fiW;bO=fiO;}
+        if(inns>=2){if(aR==null&&curRuns!=null){aR=curRuns;aW=curWk;aO=curOv;}}
+        else if(bR==null&&curRuns!=null){bR=curRuns;bW=curWk;bO=curOv;}
+      }
+    }
+    return {nameA:nameA,nameB:nameB,aR:aR,aW:aW,aO:aO,bR:bR,bW:bW,bO:bO,
+      aBat:(inns===1&&first==='A')||(inns>=2&&first==='B'),
+      bBat:(inns===1&&first==='B')||(inns>=2&&first==='A')};
+  }
+  function matchMeta(d){
+    d=d||{};
+    return {
+      name:d.matchName||d.matchTitle||d.leagueName||d.tournamentName||d.matchDesc||d.title||'',
+      type:d.matchType||d.tournamentType||d.format||'',
+      venue:d.venue||d.location||d.ground||''
+    };
+  }
+  function matchStartTs(d){
+    if(!d)return null;
+    var t=d.matchStartTime||d.startTime||d.startedAt||d.matchStartedAt||d.startTs;
+    if(t==null)return null;
+    if(typeof t==='number')return t;
+    var nms=Date.parse(t);
+    return isNaN(nms)?null:nms;
+  }
+  function fmtClock(ts){if(!ts)return '-';try{return new Date(ts).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});}catch(e){return '-';}}
+  function fmtElapsed(ms){
+    if(ms==null||ms<0)return '00:00';
+    var s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60);
+    function p(x){return String(x).padStart(2,'0');}
+    return p(h)+':'+p(m);
+  }
+  function fmtTime(ts){
+    if(ts==null||ts===''||ts===0)return '-';
+    var nms=typeof ts==='number'?ts:Date.parse(ts);
+    if(!nms||isNaN(nms))return '-';
+    try{return new Date(nms).toLocaleString();}catch(e){return '-';}
+  }
+  function unwrap(msg){
+    if(!msg||typeof msg!=='object')return null;
+    // worker often sends {type,data} and also flat copies
+    if(msg.type==='presence'||msg.type==='pong'||msg.type==='chat'||msg.type==='float') return null;
+    if(msg.type==='mic'||String(msg.type||'').indexOf('webrtc')===0||msg.type==='mic-join') return null;
+    var d=msg;
+    if(msg.data&&typeof msg.data==='object'){
+      d=msg.data;
+      // prefer nested but keep top-level fallbacks
+      if(d.runs==null&&msg.runs!=null) d.runs=msg.runs;
+      if(d.wickets==null&&msg.wickets!=null) d.wickets=msg.wickets;
+      if(d.balls==null&&msg.balls!=null) d.balls=msg.balls;
+    }
+    if(d.runs==null&&d.score&&typeof d.score==='object'){
+      d.runs=d.score.runs; d.wickets=d.score.wickets; d.overs=d.overs||d.score.overs;
+    }
+    if(d.runs==null&&d.teamA==null&&d.balls==null&&!d.strikerName) return null;
+    return d;
+  }
+  function chipClass(lab){
+    lab=String(lab||'').toUpperCase();
+    if(lab==='4')return 'chip c4';
+    if(lab==='6')return 'chip c6';
+    if(lab==='W'||(lab.charAt(0)==='W'&&lab.indexOf('WD')<0))return 'chip cw';
+    if(/WD|NB|LB/.test(lab))return 'chip cx';
+    if(lab==='0'||lab==='.'||lab==='•')return 'chip c0';
+    return 'chip c1';
+  }
+  function detectEvent(d,prev){
+    if(!d)return null;
+    var chipArr=(d.thisOver&&d.thisOver.balls)||d.currentOverBalls||[];
+    var chip='';
+    if(chipArr.length){
+      var last=chipArr[chipArr.length-1];
+      chip=String(typeof last==='object'?(last.label||last.chip||''):last).toUpperCase().trim();
+    }
+    var ev=String(d.lastEvent||d.event||'').toLowerCase();
+    if(chip==='W'||(chip.charAt(0)==='W'&&chip.indexOf('WD')<0)||ev.indexOf('wicket')>=0)return {kind:'wicket',text:'WICKET'};
+    if(chip==='6'||ev==='six')return {kind:'six',text:'SIX'};
+    if(chip==='4'||ev==='four')return {kind:'four',text:'FOUR'};
+    if(chip.indexOf('WD')>=0||ev==='wide')return {kind:'extra',text:'WIDE'};
+    if(chip.indexOf('NB')>=0)return {kind:'extra',text:'NO BALL'};
+    if(chip.indexOf('LB')>=0)return {kind:'extra',text:'LEG BYE'};
+    if(chip==='0'||chip==='.'||chip==='•'||ev==='dot')return {kind:'dot',text:'DOT'};
+    if(chip==='3')return {kind:'runs',text:'3 RUNS'};
+    if(chip==='2')return {kind:'runs',text:'2 RUNS'};
+    if(chip==='1')return {kind:'runs',text:'1 RUN'};
+    if(prev){
+      if(n(d.wickets)>n(prev.wickets))return {kind:'wicket',text:'WICKET'};
+      var dr=n(d.runs)-n(prev.runs);
+      if(dr===6)return {kind:'six',text:'SIX'};
+      if(dr===4)return {kind:'four',text:'FOUR'};
+      if(dr===0&&n(d.balls)>n(prev.balls))return {kind:'dot',text:'DOT'};
+      if(dr===3)return {kind:'runs',text:'3 RUNS'};
+      if(dr===2)return {kind:'runs',text:'2 RUNS'};
+      if(dr===1)return {kind:'runs',text:'1 RUN'};
+    }
+    return null;
+  }
+  function getMaleVoice(){
+    var voices=speechSynthesis.getVoices()||[];
+    var male=/male|david|daniel|mark|james|george|thomas|alex|ravi|guy|ryan/i;
+    var female=/female|zira|susan|linda|karen|moira|samantha|victoria|fiona/i;
+    for(var i=0;i<voices.length;i++){
+      if(male.test(voices[i].name)&&!female.test(voices[i].name)&&/en/i.test(voices[i].lang||''))return voices[i];
+    }
+    for(var j=0;j<voices.length;j++){
+      if(/en/i.test(voices[j].lang||'')&&!female.test(voices[j].name))return voices[j];
+    }
+    return null;
+  }
+  function speakMale(text){
+    if(!window.speechSynthesis)return;
+    text=String(text||'').replace(/[*＊]/g,' ').trim();
+    if(!text)return;
+    try{speechSynthesis.cancel();}catch(e){}
+    var u=new SpeechSynthesisUtterance(text);
+    var v=getMaleVoice();if(v)u.voice=v;
+    u.pitch=0.85;u.rate=1.1;speechSynthesis.speak(u);
+  }
+  var __stadCache={};
+  function stadEnabled(){
+    try{
+      if(localStorage.getItem('cricket_sound_master')==='0')return false;
+      if(localStorage.getItem('cricket_stadium_on')==='0')return false;
+      return true;
+    }catch(e){return true;}
+  }
+  function stadPlaySample(kind, vol, rate){
+    if(!stadEnabled())return;
+    try{
+      var src = kind==='cheer' || kind==='chant' ? '/sounds/crowd_whistle.mp3' : '/sounds/crowd_whistle.mp3';
+      var a=new Audio(src+'?v=stad16');
+      a.volume = vol==null?0.45:vol;
+      try{a.playbackRate = rate||1;}catch(e){}
+      a.play().catch(function(){});
+    }catch(e){}
+  }
+  function playSfx(vol){ stadPlaySample('cheer', vol==null?0.12:vol, 1); }
+  function stadiumForEvent(ev){
+    if(!ev||!stadEnabled())return;
+    var e=String(ev.kind||'').toLowerCase();
+    if(e==='six'||e==='four'){ stadPlaySample('cheer', 0.55, 1); }
+    else if(e==='wicket'){ stadPlaySample('chant', 0.55, 1); }
+  }
+  function stadiumMatchEnd(){
+    if(!stadEnabled())return;
+    stadPlaySample('cheer', 0.6, 1);
+    setTimeout(function(){ try{ stadPlaySample('cheer', 0.5, 1); }catch(e){} }, 900);
+  }
+  function teamLines(d){
+    if(!d)return {batA:[],bowlA:[],batB:[],bowlB:[],nameA:'Team A',nameB:'Team B'};
+    var first=String(d.firstBattingTeam||'A').toUpperCase()==='B'?'B':'A';
+    var i1b=d.innings1Batters||[],i1o=d.innings1Bowlers||[],i2b=d.innings2Batters||[],i2o=d.innings2Bowlers||[];
+    var nameA=d.teamA||d.teamAName||'Team A',nameB=d.teamB||d.teamBName||'Team B';
+    return {
+      batA:first==='A'?i1b:i2b, batB:first==='B'?i1b:i2b,
+      bowlA:first==='A'?i2o:i1o, bowlB:first==='B'?i2o:i1o,
+      nameA:nameA,nameB:nameB
+    };
+  }
+  function histLabel(h){
+    if(!h)return 'Match';
+    if(h.matchName)return h.matchName;
+    var a=h.teamA||h.teamAName||'';
+    var b=h.teamB||h.teamBName||'';
+    if(a&&b)return a+' vs '+b;
+    return h.teams||h.name||h.title||'Match';
+  }
+  function histWhen(h){
+    if(!h)return '-';
+    var t=h.endedAt||h.ts||h.date||h.finishedAt||h.savedAt||h.time;
+    return fmtTime(t);
+  }
+  function formatCommLine(line){
+    line=String(line||'');
+    // strip decorative asterisks for display cleanliness
+    var clean=line.replace(/\*+/g,'').trim();
+    var m=clean.match(/^(\d+(?:\.\d+)?)\s+(.*)$/);
+    var over='', rest=clean;
+    if(m){ over=m[1]; rest=m[2]; }
+    // highlight events
+    rest=rest.replace(/\b(SIX|FOUR|FOUR!|SIX!)\b/gi, function(x){ return '|||HIB|||'+x+'|||/HIB|||'; });
+    rest=rest.replace(/\b(WICKET|OUT|CAUGHT|BOWLED|LBW|RUN OUT|STUMPED)\b/gi, function(x){ return '|||HIW|||'+x+'|||/HIW|||'; });
+    rest=rest.replace(/\b(\d+)\s*runs?\b/gi, function(x){ return '|||HIB|||'+x+'|||/HIB|||'; });
+    return {over:over, text:rest};
+  }
+  function renderCommLine(line, key){
+    var f=formatCommLine(line);
+    var parts=String(f.text).split(/(\|\|\|HI[BW]\|\|\|.*?\|\|\|\/HI[BW]\|\|\|)/);
+    var kids=[];
+    if(f.over) kids.push(h('span',{className:'ov'},f.over+' '));
+    parts.forEach(function(part,i){
+      if(!part)return;
+      var mb=part.match(/^\|\|\|HIB\|\|\|(.*?)\|\|\|\/HIB\|\|\|$/);
+      var mw=part.match(/^\|\|\|HIW\|\|\|(.*?)\|\|\|\/HIW\|\|\|$/);
+      if(mb) kids.push(h('span',{className:'hi-b',key:i},mb[1]));
+      else if(mw) kids.push(h('span',{className:'hi-w',key:i},mw[1]));
+      else kids.push(h('span',{key:i},part));
+    });
+    return h('div',{className:'comm-item',key:key}, kids);
+  }
+  function histResult(h){
+    if(!h)return '-';
+    return h.result||h.matchResult||h.summary||h.winnerText||'-';
+  }
+
+  function useLiveMatch(){
+    var _d=useState(null),data=_d[0],setData=_d[1];
+    var _v=useState([]),viewers=_v[0],setViewers=_v[1];
+    var _c=useState(false),connected=_c[0],setConnected=_c[1];
+    var lastSig=useRef('');
+    var wsRef=useRef(null);
+    var apply=useCallback(function(raw){
+      var d=unwrap(raw);if(!d)return;
+      // Always accept if runs/wickets/balls/overs/ts/striker change
+      var chip='';
+      try{
+        var arr=(d.thisOver&&d.thisOver.balls)||d.currentOverBalls||[];
+        chip=arr.map(function(x){return typeof x==='object'?(x.label||''):String(x);}).join(',');
+      }catch(e){}
+      var sig=[d.runs,d.wickets,d.balls,d.overs,d.innings,d.ts,d.strikerName,d.bowlerName,d.matchEnded,chip].join('|');
+      if(sig===lastSig.current)return;
+      lastSig.current=sig;
+      setData(function(prev){
+        // merge so partial payloads still update scoreboard
+        if(prev && typeof prev==='object') return Object.assign({}, prev, d);
+        return d;
+      });
+      if(Array.isArray(d.viewers)) setViewers(d.viewers);
+      else if(d.viewersCount!=null){ /* keep */ }
+    },[]);
+    useEffect(function(){
+      var match=new URLSearchParams(location.search).get('match')||'current';
+      var dead=false,retry=0,pollTimer;
+      function connect(){
+        if(dead)return;
+        try{
+          var proto=location.protocol==='https:'?'wss:':'ws:';
+          var ws=new WebSocket(proto+'//'+location.host+'/ws?match='+encodeURIComponent(match)+'&name=ReactFan');
+          wsRef.current=ws;
+          ws.onopen=function(){setConnected(true);retry=0;};
+          ws.onmessage=function(ev){
+            try{
+              var msg=JSON.parse(ev.data);
+              if(!msg||msg.type==='pong')return;
+              if(msg.type==='presence'){setViewers(Array.isArray(msg.data)?msg.data:[]);return;}
+              if(msg.type==='full'||msg.type==='update'||msg.type==='score'||msg.runs!=null)apply(msg.data||msg);
+            }catch(e){}
+          };
+          ws.onclose=function(){setConnected(false);setTimeout(connect,Math.min(15000,800+retry++*700));};
+        }catch(e){}
+      }
+      connect();
+      function poll(){
+        fetch('/api/live-public?match='+encodeURIComponent(match)+'&_='+Date.now(),{cache:'no-store'})
+          .then(function(r){return r.ok?r.json():null;})
+          .then(function(j){if(j)apply(j);})
+          .catch(function(){});
+      }
+      pollTimer=setInterval(poll,2000);poll();
+      return function(){dead=true;clearInterval(pollTimer);try{if(wsRef.current)wsRef.current.close();}catch(e){};};
+    },[apply]);
+    return {data:data,viewers:viewers,connected:connected};
+  }
+
+  function MiniBatStats(props){
+    var d=props.d||{};
+    return h('table',null,
+      h('thead',null,h('tr',null,h('th',null,'R'),h('th',null,'B'),h('th',null,'4s'),h('th',null,'6s'),h('th',null,'SR'))),
+      h('tbody',null,h('tr',null,
+        h('td',null,n(d.runs)),h('td',null,n(d.balls)),h('td',null,n(d.fours)),h('td',null,n(d.sixes)),h('td',null,sr(d.runs,d.balls))
+      ))
+    );
+  }
+  function MiniBowlStats(props){
+    var d=props.d||{};
+    return h('table',null,
+      h('thead',null,h('tr',null,h('th',null,'O'),h('th',null,'R'),h('th',null,'W'),h('th',null,'Econ'))),
+      h('tbody',null,h('tr',null,
+        h('td',null,oversFromBalls(d.balls)),h('td',null,n(d.runs)),h('td',null,n(d.wickets)),h('td',null,econ(d.runs,d.balls))
+      ))
+    );
+  }
+
+  function App(){
+    var live=useLiveMatch();
+    var data=live.data,viewers=live.viewers,connected=live.connected;
+    var _tab=useState('live'),tab=_tab[0],setTab=_tab[1];
+    var _w=useState(true),welcome=_w[0],setWelcome=_w[1];
+    var _tts=useState(function(){return lsGet('cricket_tts_on','1')!=='0';}),ttsOn=_tts[0],setTtsOn=_tts[1];
+    var _th=useState(function(){return lsGet('react_live_theme','dark')||'dark';}),theme=_th[0],setTheme=_th[1];
+    var _sf=useState(function(){return lsGet('react_score_fmt','classic')||'classic';}),scoreFmt=_sf[0],setScoreFmt=_sf[1];
+    var _so=useState(false),settingsOpen=_so[0],setSettingsOpen=_so[1];
+    var _st=useState(function(){return lsGet('cricket_stadium_on','1')!=='0';}),stadiumOn=_st[0],setStadiumOn=_st[1];
+    var _sc=useState('A'),scTeam=_sc[0],setScTeam=_sc[1];
+    var _cap=useState('orange'),capSub=_cap[0],setCapSub=_cap[1];
+    var _ev=useState(null),event=_ev[0],setEvent=_ev[1];
+    var _fw=useState(false),showFw=_fw[0],setShowFw=_fw[1];
+    var _now=useState(Date.now()),nowTick=_now[0],setNowTick=_now[1];
+    var prevRef=useRef(null);
+    var lastEvKey=useRef('');
+    var lastComm=useRef('');
+    var endedFired=useRef(false);
+
+    var lines=useMemo(function(){return teamLines(data);},[data]);
+    var dual=useMemo(function(){return dualTeamScores(data);},[data]);
+    var meta=useMemo(function(){return matchMeta(data);},[data]);
+    var flags=useMemo(function(){return flagsForMatch(data);},[data]);
+
+    useEffect(function(){
+      document.body.classList.remove('theme-dark','theme-light','theme-ipl','theme-icc');
+      document.body.classList.add('theme-'+theme);
+    },[theme]);
+    useEffect(function(){
+      var id=setInterval(function(){setNowTick(Date.now());},1000);
+      return function(){clearInterval(id);};
+    },[]);
+
+    // animations
+    useEffect(function(){
+      if(!data)return;
+      var ev=detectEvent(data,prevRef.current);
+      var key=ev?(String(data.balls)+'|'+String(data.runs)+'|'+String(data.wickets)+'|'+ev.kind):'';
+      if(ev&&key!==lastEvKey.current){
+        lastEvKey.current=key;
+        setEvent(ev);
+        try{stadiumForEvent(ev);}catch(e){}
+        var t=setTimeout(function(){setEvent(null);},2600);
+        prevRef.current={runs:data.runs,wickets:data.wickets,balls:data.balls};
+        return function(){clearTimeout(t);};
+      }
+      prevRef.current={runs:data.runs,wickets:data.wickets,balls:data.balls};
+    },[data]);
+
+    // match end fireworks
+    useEffect(function(){
+      var ended=!!(data&&(data.matchEnded||data.matchEnd||data.matchResult||data.status==='completed'));
+      if(ended&&!endedFired.current){
+        endedFired.current=true;
+        setShowFw(true);
+        try{stadiumMatchEnd();}catch(e){}
+        setTimeout(function(){setShowFw(false);},2800);
+      }
+      if(!ended)endedFired.current=false;
+    },[data]);
+
+    useEffect(function(){
+      if(!data||!ttsOn)return;
+      var arr=data.commentary||[];
+      var line=arr.length?String(arr[arr.length-1]):'';
+      if(line&&line!==lastComm.current){lastComm.current=line;speakMale(line);}
+    },[data,ttsOn]);
+
+    var ended=!!(data&&(data.matchEnded||data.matchEnd||data.status==='completed'||data.status==='ended'||data.matchResult));
+    var startTs=matchStartTs(data);
+    var startLabel=startTs?fmtClock(startTs):'-';
+    var elapsed=(startTs&&!ended)?fmtElapsed(nowTick-startTs):(ended?'Final':'00:00');
+    var fa=dual.aR==null?{main:'Yet to bat',sub:''}:formatScore(dual.aR,dual.aW,dual.aO,scoreFmt);
+    var fb=dual.bR==null?{main:'Yet to bat',sub:''}:formatScore(dual.bR,dual.bW,dual.bO,scoreFmt);
+    var pom=data&&(data.playerOfMatch||data.pom||data.manOfMatch||data.mom);
+    var balls=(data&&data.thisOver&&data.thisOver.balls)||(data&&data.currentOverBalls)||[];
+    var title=meta.name||meta.type||'LIVE MATCH';
+    var venueLine=meta.venue?('@ '+meta.venue):'';
+    // keep type short; never put full team names into header title
+    if(meta.type && meta.type.length < 24) venueLine = meta.type + (venueLine?(' · '+venueLine):'');
+    // clamp title so it cannot paint over scores
+    if(title && title.length > 28) title = title.slice(0, 28) + '…';
+    var evCls=event?(event.kind==='wicket'?'wicket':event.kind==='six'?'six':event.kind==='four'?'four':event.kind==='dot'?'dot':event.kind==='extra'?'extra':'runs'):'';
+
+    var history=[];
+    if(data){
+      if(Array.isArray(data.matchHistory))history=data.matchHistory;
+      else if(Array.isArray(data.todayMatches))history=data.todayMatches;
+      else if(Array.isArray(data.history))history=data.history;
+    }
+
+    var viewerRows=useMemo(function(){
+      var cutoff=Date.now()-14*24*60*60*1000;
+      var src=(viewers&&viewers.length)?viewers:((data&&(data.viewerHistory||data.viewersLog))||[]);
+      var list=(src||[]).filter(function(v){
+        var t=v.lastSeen||v.joinedAt||v.firstSeen||v.leftAt||0;
+        var num=typeof t==='number'?t:Date.parse(t);
+        return !num||num>=cutoff;
+      });
+      if(!list.length)list=[{name:'You',status:'online',joinedAt:Date.now(),activity:'watching'}];
+      return list;
+    },[viewers,data]);
+
+    var tabs=[['live','LIVE'],['scorecard','SCORECARD'],['commentary','COMMENTARY'],['fow','FOW'],['caps','CAPS'],['info','INFO'],['players','SQUAD'],['history','HISTORY'],['viewers','VIEWERS']];
+
+    var strikerStats={
+      runs:data&&data.strikerRuns, balls:data&&data.strikerBalls,
+      fours:data&&(data.strikerFours!=null?data.strikerFours:data.striker4s),
+      sixes:data&&(data.strikerSixes!=null?data.strikerSixes:data.striker6s)
+    };
+    var nonStats={
+      runs:data&&data.nonStrikerRuns, balls:data&&data.nonStrikerBalls,
+      fours:data&&(data.nonStrikerFours!=null?data.nonStrikerFours:data.nonStriker4s),
+      sixes:data&&(data.nonStrikerSixes!=null?data.nonStrikerSixes:data.nonStriker6s)
+    };
+    var bowlStats={runs:data&&data.bowlerRuns,balls:data&&data.bowlerBalls,wickets:data&&data.bowlerWickets};
+
+    return h('div',{className:'app'},
+      welcome?h('div',{className:'welcome',onClick:function(){setWelcome(false);}},
+        h('div',{className:'box'},
+          h('div',{style:{fontSize:11,fontWeight:900,letterSpacing:'.14em',color:'var(--red)'}},'LIVE CRICKET'),
+          h('div',{style:{fontSize:18,fontWeight:900,margin:'8px 0'}},dual.nameA+' vs '+dual.nameB),
+          h('div',{className:'muted'},ended?((data&&data.matchResult)||'Match completed'):(data&&data.runs!=null?('Live · '+data.runs+'/'+data.wickets+' ('+(data.overs||'-')+')'):'Waiting for scoring')),
+          h('div',{style:{fontSize:22,fontWeight:900,margin:'10px 0'}},(data&&data.runs!=null?data.runs:'-')+'/'+(data&&data.wickets!=null?data.wickets:'-')),
+          h('div',{className:'muted',style:{fontSize:12}},'Start '+startLabel+' · '+elapsed+(meta.venue?(' · '+meta.venue):''))
+        )
+      ):null,
+
+      showFw?h('div',{className:'fw','aria-hidden':true},
+        Array.from({length:36}).map(function(_,i){
+          var ang=(i/36)*Math.PI*2,dist=40+ (i%5)*30;
+          return h('span',{key:i,style:{
+            left:'50%',top:'30%',
+            background:['#fde68a','#f97316','#fb7185','#a3e635','#38bdf8','#c084fc'][i%6],
+            ['--x']:(Math.cos(ang)*dist)+'px',
+            ['--y']:(Math.sin(ang)*dist)+'px',
+            animationDelay:(i*0.02)+'s'
+          }});
+        })
+      ):null,
+
+      h('div',{className:'broadcast'},
+        h('div',{className:'bar'},
+          h('span',{className:'live-pill'},h('i'),'LIVE · '+((viewers&&viewers.length)||0)),
+          h('div',{style:{flex:1}}),
+          h('button',{className:'gear',type:'button',onClick:function(){setSettingsOpen(!settingsOpen);}},'⚙')
+        ),
+
+        settingsOpen?h(React.Fragment,null,
+          h('div',{className:'settings-backdrop',onClick:function(){setSettingsOpen(false);}}),
+          h('div',{className:'settings-dd'},
+            h('div',{className:'dd-title'},'Sound'),
+            h('button',{type:'button',className:ttsOn?'on':'',onClick:function(){
+              var next=!ttsOn;setTtsOn(next);lsSet('cricket_tts_on',next?'1':'0');if(next)speakMale('Male commentary on');
+            }},ttsOn?'Commentary ON (Male)':'Commentary OFF'),
+            h('button',{type:'button',className:stadiumOn?'on':'',onClick:function(){
+              var next=!stadiumOn;setStadiumOn(next);lsSet('cricket_stadium_on',next?'1':'0');if(next)playSfx(0.12);
+            }},stadiumOn?'Stadium ON':'Stadium OFF'),
+            h('div',{className:'sep'}),
+            h('div',{className:'dd-title'},'Themes'),
+            [['dark','Broadcast Dark'],['light','Light Pro'],['ipl','IPL Night'],['icc','ICC Green']].map(function(pair){
+              return h('button',{key:pair[0],type:'button',className:theme===pair[0]?'on':'',onClick:function(){
+                setTheme(pair[0]);lsSet('react_live_theme',pair[0]);
+              }},pair[1]);
+            }),
+            h('div',{className:'sep'}),
+            h('div',{className:'dd-title'},'Score format'),
+            [['classic','Classic'],['cricinfo','Cricinfo'],['broadcast','Broadcast'],['compact','Compact'],['split','Split']].map(function(pair){
+              return h('button',{key:pair[0],type:'button',className:scoreFmt===pair[0]?'on':'',onClick:function(){
+                setScoreFmt(pair[0]);lsSet('react_score_fmt',pair[0]);
+              }},pair[1]);
+            })
+          )
+        ):null,
+
+        h('div',{className:'match-header'},
+          h('div',{className:'title'},title),
+          venueLine?h('div',{className:'sub'},venueLine):null,
+          h('div',{className:'time'},'Start '+startLabel+' · '+elapsed)
+        ),
+        h('div',{className:'score-grid'},
+          h('div',{className:'side'},
+            h('div',{className:'tname'},
+              h('img',{className:dual.aBat&&!ended?'wave':'',src:FLAG_URL[flags.a]||FLAG_URL.in,alt:''}),
+              h('span',null,dual.nameA)
+            ),
+            h('div',{className:'score-num'},fa.main),
+            fa.sub?h('div',{className:'overs'},fa.sub):null,
+            h('div',{className:'role'},dual.aBat&&!ended?'Batting':'Bowling')
+          ),
+          h('div',{className:'match-center'},
+            h('div',{className:'vs-label'},'VS')
+          ),
+          h('div',{className:'side'},
+            h('div',{className:'tname'},
+              h('span',null,dual.nameB),
+              h('img',{className:dual.bBat&&!ended?'wave':'',src:FLAG_URL[flags.b]||FLAG_URL.au,alt:''})
+            ),
+            h('div',{className:'score-num'},fb.main),
+            fb.sub?h('div',{className:'overs'},fb.sub):null,
+            h('div',{className:'role'},dual.bBat&&!ended?'Batting':'Bowling')
+          )
+        ),
+
+        h('div',{className:'crr'},
+          h('span',null,'CRR ',h('b',null,data&&data.crr!=null?Number(data.crr).toFixed(2):'-')),
+          h('span',null,'RRR ',h('b',null,data&&data.rrr!=null?Number(data.rrr).toFixed(2):'-')),
+          h('span',null,'NRR ',h('b',null,data&&data.nrr!=null?Number(data.nrr).toFixed(2):(data&&data.netRunRate!=null?Number(data.netRunRate).toFixed(2):'-')))
+        ),
+        h('div',{className:'anim-slot'},
+          event?h('div',{className:'ev-banner show '+evCls},event.text):null
+        ),
+
+        ended?h('div',{className:'result-overlay'},
+          h('div',{className:'result-wrap',style:{width:'100%',maxWidth:'360px'}},
+            h('div',{className:'cracker','aria-hidden':true},
+              Array.from({length:22}).map(function(_,i){
+                var colors=['#fde68a','#f97316','#fb7185','#a3e635','#38bdf8','#c084fc'];
+                return h('i',{key:i,style:{left:(3+i*4.4)+'%',background:colors[i%6],animationDelay:(i*0.07)+'s',width:(6+(i%3)*2)+'px',height:(6+(i%2)*3)+'px'}});
+              })
+            ),
+            h('div',{className:'result'},
+              h('div',{className:'lbl'},'MATCH RESULT'),
+              h('div',{className:'txt'},(data&&(data.matchResult||data.resultText))||'Match completed'),
+              h('div',{className:'sc'},dual.nameA+': '+fa.main+' '+fa.sub,h('br'),dual.nameB+': '+fb.main+' '+fb.sub),
+              h('div',{className:'pom'},'Man of the match: '+(pom||(data&&data.strikerName)||'—'))
+            )
+          )
+        ):null
+      ),
+
+      h('div',{className:'tabs'},
+        tabs.map(function(pair){
+          return h('button',{key:pair[0],className:tab===pair[0]?'on':'',onClick:function(){setTab(pair[0]);}},pair[1]);
+        })
+      ),
+
+      h('div',{className:'panel'},
+        tab==='live'?h(React.Fragment,null,
+          h('div',{className:'card',style:{borderColor: (typeof window!=='undefined'&&window.__micLive)?'#e11d48':'var(--line)'}},
+            h('h3',null,'Live mic commentary'),
+            h('div',{style:{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}},
+              h('button',{className:'btn on',type:'button',onClick:function(){
+                try{
+                  var a=document.querySelector('audio');
+                  if(a){ a.muted=false; a.play(); }
+                  // force re-join
+                  if(window.__micJoin) window.__micJoin();
+                  alert(window.__micLive ? ('Listening to '+(window.__micName||'commentator')) : 'Mic not live yet. Scorer must press Start Mic Commentary.');
+                }catch(e){}
+              }},'🎙️ Enable / Listen'),
+              h('span',{className:'muted',style:{fontSize:12}},
+                (typeof window!=='undefined'&&window.__micLive)?('Live now · '+(window.__micName||'Commentator')):'Waiting for scorer mic…'
+              )
+            )
+          ),
+          h('div',{className:'card'},
+            h('h3',null,'Batsmen & bowler'),
+            h('div',{className:'players-row'},
+              h('div',{className:'pbox'},
+                h('div',{className:'k'},'Striker'),
+                h('div',{className:'v'},(data&&data.strikerName)||'-'),
+                h(MiniBatStats,{d:strikerStats})
+              ),
+              h('div',{className:'pbox'},
+                h('div',{className:'k'},'Non-striker'),
+                h('div',{className:'v'},(data&&(data.nonStrikerName||data.nonStriker))||'-'),
+                h(MiniBatStats,{d:nonStats})
+              ),
+              h('div',{className:'pbox bowl-full'},
+                h('div',{className:'k'},'Bowler'),
+                h('div',{className:'v'},(data&&data.bowlerName)||'-'),
+                h(MiniBowlStats,{d:bowlStats})
+              )
+            )
+          ),
+          h('div',{className:'card'},
+            h('h3',null,'This over'),
+            h('div',{className:'chips'},
+              (balls||[]).map(function(b,i){
+                var lab=typeof b==='object'?(b.label||''):String(b==null?'':b);
+                return h('span',{key:i,className:chipClass(lab)},lab||'•');
+              }),
+              !(balls&&balls.length)?h('span',{className:'muted'},'No balls yet'):null
+            )
+          )
+        ):null,
+
+        tab==='scorecard'?h('div',{className:'card'},
+          h('div',{className:'subtabs'},
+            h('button',{className:scTeam==='A'?'on':'',onClick:function(){setScTeam('A');}},lines.nameA),
+            h('button',{className:scTeam==='B'?'on':'',onClick:function(){setScTeam('B');}},lines.nameB)
+          ),
+          h('h3',null,'Batting'),
+          (function(){
+            var list=scTeam==='B'?lines.batB.slice():lines.batA.slice();
+            var squad=scTeam==='B'?((data&&data.squadB)||[]):((data&&data.squadA)||[]);
+            var seen={};
+            list.forEach(function(p){if(p&&p.name)seen[String(p.name).toLowerCase()]=1;});
+            (squad||[]).forEach(function(p){
+              var name=typeof p==='string'?p:(p.name||'');
+              if(name&&!seen[name.toLowerCase()]){
+                list.push({name:name,runs:0,balls:0,fours:0,sixes:0,isOut:false,yetToBat:true});
+              }
+            });
+            if(!list.length)return h('div',{className:'muted'},'Yet to bat');
+            return h('table',null,
+              h('thead',null,h('tr',null,h('th',null,'Batter'),h('th',null,'R'),h('th',null,'B'),h('th',null,'4s'),h('th',null,'6s'),h('th',null,'SR'))),
+              h('tbody',null,list.map(function(p,i){
+                if(p.yetToBat) return h('tr',{key:i},h('td',null,p.name),h('td',{colSpan:5,className:'muted'},'yet to bat'));
+                return h('tr',{key:i},h('td',null,(p.name||'-')+(p.isOut?'':' *')),h('td',null,n(p.runs)),h('td',null,n(p.balls)),h('td',null,n(p.fours)),h('td',null,n(p.sixes)),h('td',null,sr(p.runs,p.balls)));
+              }))
+            );
+          })(),
+          h('h3',{style:{marginTop:14}},'Bowling'),
+          (function(){
+            var list=scTeam==='B'?lines.bowlB:lines.bowlA;
+            if(!list.length)return h('div',{className:'muted'},'Yet to bowl');
+            return h('table',null,
+              h('thead',null,h('tr',null,h('th',null,'Bowler'),h('th',null,'O'),h('th',null,'R'),h('th',null,'W'),h('th',null,'Econ'))),
+              h('tbody',null,list.map(function(p,i){
+                var bb=p.bowlBalls!=null?n(p.bowlBalls):n(p.balls);
+                var rr=p.bowlRuns!=null?n(p.bowlRuns):n(p.runs);
+                return h('tr',{key:i},h('td',null,p.name||'-'),h('td',null,oversFromBalls(bb)),h('td',null,rr),h('td',null,n(p.wickets)),h('td',null,econ(rr,bb)));
+              }))
+            );
+          })()
+        ):null,
+
+        tab==='commentary'?h('div',{className:'card'},
+          h('div',{className:'row'},
+            h('button',{className:'btn'+(ttsOn?' on':''),onClick:function(){
+              var next=!ttsOn;setTtsOn(next);lsSet('cricket_tts_on',next?'1':'0');if(next)speakMale('Male commentary on');
+            }},'Voice '+(ttsOn?'ON · Male':'OFF')),
+            h('button',{className:'btn',onClick:function(){speakMale('Four runs! Brilliant timing!');}},'Test male voice')
+          ),
+          (data&&data.commentary?data.commentary.slice().reverse().slice(0,50):[]).map(function(line,i){
+            return renderCommLine(line,i);
+          }),
+          !(data&&data.commentary&&data.commentary.length)?h('div',{className:'muted'},'No commentary yet'):null
+        ):null,
+
+        tab==='fow'?h('div',{className:'card'},
+          h('h3',null,'Fall of wickets'),
+          h('table',null,
+            h('thead',null,h('tr',null,h('th',null,'#'),h('th',null,'Score'),h('th',null,'Batter'),h('th',null,'Dismissal'))),
+            h('tbody',null,
+              (data&&data.fallOfWickets?data.fallOfWickets:[]).map(function(w,i){
+                return h('tr',{key:i},
+                  h('td',null,i+1),
+                  h('td',null,w.score!=null?w.score:(w.runs!=null?w.runs:'-')),
+                  h('td',null,w.batsman||w.player||w.name||'-'),
+                  h('td',null,w.dismissal||w.howOut||'-')
+                );
+              }),
+              !(data&&data.fallOfWickets&&data.fallOfWickets.length)?h('tr',null,h('td',{colSpan:4,className:'muted'},'No wickets yet')):null
+            )
+          )
+        ):null,
+
+        tab==='caps'?h('div',{className:'card'},
+          h('div',{className:'subtabs'},
+            h('button',{className:capSub==='orange'?'on':'',onClick:function(){setCapSub('orange');}},'Orange Cap'),
+            h('button',{className:capSub==='purple'?'on':'',onClick:function(){setCapSub('purple');}},'Purple Cap')
+          ),
+          capSub==='orange'?h('table',null,
+            h('thead',null,h('tr',null,h('th',null,'#'),h('th',null,'Player'),h('th',null,'Runs'),h('th',null,'Balls'),h('th',null,'Avg'),h('th',null,'SR'))),
+            h('tbody',null,
+              (data&&data.orangeCap?data.orangeCap.slice(0,20):[]).map(function(p,i){
+                return h('tr',{key:i},
+                  h('td',null,i+1),h('td',null,p.name),h('td',null,p.runs||0),h('td',null,p.balls||0),
+                  h('td',null,p.avg!=null?p.avg:(p.average!=null?p.average:'-')),
+                  h('td',null,p.sr!=null?p.sr:sr(p.runs,p.balls))
+                );
+              }),
+              !(data&&data.orangeCap&&data.orangeCap.length)?h('tr',null,h('td',{colSpan:6,className:'muted'},'No data')):null
+            )
+          ):h('table',null,
+            h('thead',null,h('tr',null,h('th',null,'#'),h('th',null,'Player'),h('th',null,'W'),h('th',null,'Runs'),h('th',null,'Overs'),h('th',null,'Econ'))),
+            h('tbody',null,
+              (data&&data.purpleCap?data.purpleCap.slice(0,20):[]).map(function(p,i){
+                var bb=p.bowlBalls!=null?n(p.bowlBalls):n(p.balls);
+                var rr=p.bowlRuns!=null?n(p.bowlRuns):n(p.runs);
+                return h('tr',{key:i},
+                  h('td',null,i+1),h('td',null,p.name),h('td',null,p.wickets||0),h('td',null,rr),
+                  h('td',null,oversFromBalls(bb)),h('td',null,econ(rr,bb))
+                );
+              }),
+              !(data&&data.purpleCap&&data.purpleCap.length)?h('tr',null,h('td',{colSpan:6,className:'muted'},'No data')):null
+            )
+          )
+        ):null,
+
+        tab==='info'?h('div',{className:'card'},
+          h('h3',null,'Match info'),
+          h('div',{className:'kv'},
+            h('div',{className:'item'},h('div',{className:'k'},'Teams'),h('div',{className:'v'},dual.nameA+' vs '+dual.nameB)),
+            h('div',{className:'item'},h('div',{className:'k'},'Status'),h('div',{className:'v'},ended?((data&&data.matchResult)||'Completed'):((data&&data.statusText)||'Live'))),
+            h('div',{className:'item'},h('div',{className:'k'},'Match'),h('div',{className:'v'},meta.name||'-')),
+            h('div',{className:'item'},h('div',{className:'k'},'Type'),h('div',{className:'v'},meta.type||'-')),
+            h('div',{className:'item'},h('div',{className:'k'},'Venue'),h('div',{className:'v'},meta.venue||'-')),
+            h('div',{className:'item'},h('div',{className:'k'},'Toss'),h('div',{className:'v'},(data&&(data.tossText||data.toss))||'-')),
+            h('div',{className:'item'},h('div',{className:'k'},'Overs'),h('div',{className:'v'},(data&&(data.maxOvers||data.totalOvers))||'-')),
+            h('div',{className:'item'},h('div',{className:'k'},'Target'),h('div',{className:'v'},(data&&(data.target||data.targetScore))||'-'))
+          )
+        ):null,
+
+        tab==='players'?h('div',{className:'card'},
+          h('h3',null,'Squad'),
+          h('div',{className:'subtabs'},
+            h('button',{className:scTeam!=='B'?'on':'',onClick:function(){setScTeam('A');}},lines.nameA),
+            h('button',{className:scTeam==='B'?'on':'',onClick:function(){setScTeam('B');}},lines.nameB)
+          ),
+          (function(){
+            var list=[];
+            if(scTeam==='B'){
+              list=(data&&data.squadB&&data.squadB.length)?data.squadB:(data&&data.teamBPlayers)||lines.batB||[];
+            }else{
+              list=(data&&data.squadA&&data.squadA.length)?data.squadA:(data&&data.teamAPlayers)||lines.batA||[];
+            }
+            if(!list.length)return h('div',{className:'muted'},'No squad data from scorer yet');
+            return h('table',null,
+              h('thead',null,h('tr',null,h('th',null,'#'),h('th',null,'Player'),h('th',null,'R'),h('th',null,'B'),h('th',null,''))),
+              h('tbody',null,list.map(function(p,i){
+                var name=typeof p==='string'?p:(p.name||'-');
+                var runs=typeof p==='object'?n(p.runs):0;
+                var balls=typeof p==='object'?n(p.balls):0;
+                var out=typeof p==='object'&&p.isOut?'out':'';
+                return h('tr',{key:i},h('td',null,i+1),h('td',null,name),h('td',null,runs),h('td',null,balls),h('td',null,out));
+              }))
+            );
+          })()
+        ):null,
+
+        tab==='history'?h('div',{className:'card'},
+          h('h3',null,'Match history'),
+          h('table',null,
+            h('thead',null,h('tr',null,h('th',null,'Match'),h('th',null,'Result'),h('th',null,'When'))),
+            h('tbody',null,
+              history.slice(0,20).map(function(item,i){
+                return h('tr',{key:i},
+                  h('td',null,histLabel(item)),
+                  h('td',null,histResult(item)),
+                  h('td',null,histWhen(item))
+                );
+              }),
+              !history.length?h('tr',null,h('td',{colSpan:3,className:'muted'},'No finished matches in payload')):null
+            )
+          )
+        ):null,
+
+        tab==='viewers'?h('div',{className:'card'},
+          h('h3',null,'Viewers · last 2 weeks'),
+          h('table',null,
+            h('thead',null,h('tr',null,h('th',null,'Name'),h('th',null,'Status'),h('th',null,'Log in'),h('th',null,'Out'),h('th',null,'Activity'))),
+            h('tbody',null,
+              viewerRows.map(function(v,i){
+                var online=!(v.status==='offline'||v.online===false);
+                return h('tr',{key:i},
+                  h('td',null,v.name||v.displayName||'Viewer'),
+                  h('td',{style:{color:online?'#22c55e':'#94a3b8',fontWeight:800}},online?'Online':'Offline'),
+                  h('td',null,fmtTime(v.joinedAt||v.firstSeen)),
+                  h('td',null,online?'-':fmtTime(v.leftAt||v.lastSeen)),
+                  h('td',null,v.activity||v.tab||'watching')
+                );
+              })
+            )
+          )
+        ):null
+      ),
+
+      h('div',{className:'footer'},'MySportz React Live')
+    );
+  }
+
+  var rootEl=document.getElementById('root');
+  if(rootEl){
+    if(ReactDOM.createRoot) ReactDOM.createRoot(rootEl).render(h(App));
+    else ReactDOM.render(h(App), rootEl);
+  }
+})();
+</script>
+
+<script id="mic-webrtc-listener">
+(function(){
+  var pc=null, remoteAudio=null, micWs=null, viewerId='fan_'+Math.random().toString(36).slice(2,10);
+  var ICE=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}];
+  function matchId(){
+    try{ return new URLSearchParams(location.search).get('match')||'current'; }catch(e){ return 'current'; }
+  }
+  function ensureAudioEl(){
+    if(remoteAudio) return remoteAudio;
+    remoteAudio=document.createElement('audio');
+    remoteAudio.autoplay=true;
+    remoteAudio.playsInline=true;
+    remoteAudio.setAttribute('playsinline','');
+    remoteAudio.style.display='none';
+    document.body.appendChild(remoteAudio);
+    return remoteAudio;
+  }
+  function setBadge(live, name){
+    var el=document.getElementById('mic-live-badge');
+    if(!el){
+      el=document.createElement('div');
+      el.id='mic-live-badge';
+      el.style.cssText='position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:9999;padding:12px 18px;border-radius:999px;font-weight:800;font-size:13px;display:none;box-shadow:0 8px 28px rgba(0,0,0,.45);border:2px solid #fff;';
+      document.body.appendChild(el);
+    }
+    if(live){
+      el.style.display='block';
+      el.style.background='#e11d48';
+      el.style.color='#fff';
+      el.textContent='🎙️ Live mic'+(name?(' · '+name):'')+' · tap to unmute';
+      el.onclick=function(){ try{ ensureAudioEl().play(); }catch(e){} el.textContent='🎙️ Live mic'+(name?(' · '+name):'')+' · listening'; };
+    } else {
+      el.style.display='none';
+    }
+  }
+  function cleanupPc(){
+    try{ if(pc) pc.close(); }catch(e){}
+    pc=null;
+  }
+  function send(msg){ try{ if(micWs&&micWs.readyState===1) micWs.send(JSON.stringify(msg)); }catch(e){} }
+  window.__micJoin=function(){ try{ send({ type:'mic-join', viewerId: viewerId }); }catch(e){} };
+  function attachListenerSocket(){
+    // Prefer existing app socket if any; else open dedicated
+    var proto=location.protocol==='https:'?'wss:':'ws:';
+    var url=proto+'//'+location.host+'/ws?match='+encodeURIComponent(matchId())+'&role=viewer&name='+encodeURIComponent('Fan');
+    try{ if(micWs) micWs.close(); }catch(e){}
+    micWs=new WebSocket(url);
+    micWs.onopen=function(){ send({ type:'mic-join', viewerId: viewerId }); };
+    micWs.onmessage=function(ev){
+      var msg; try{ msg=JSON.parse(ev.data); }catch(e){ return; }
+      if(msg.type==='mic'){
+        if(msg.data&&msg.data.live){ setBadge(true, msg.data.name); window.__micLive=true; window.__micName=msg.data.name||''; send({ type:'mic-join', viewerId: viewerId }); try{document.dispatchEvent(new CustomEvent('mic-live',{detail:{live:true,name:msg.data.name}}));}catch(e){} }
+        else { setBadge(false); window.__micLive=false; cleanupPc(); try{document.dispatchEvent(new CustomEvent('mic-live',{detail:{live:false}}));}catch(e){} }
+      } else if(msg.type==='webrtc-offer' && msg.sdp){
+        handleOffer(msg);
+      } else if(msg.type==='webrtc-ice' && msg.candidate){
+        if(pc) pc.addIceCandidate(msg.candidate).catch(function(){});
+      } else if(msg.type==='full' && msg.data && msg.data.micLive){
+        setBadge(true, msg.data.micName||'');
+        send({ type:'mic-join', viewerId: viewerId });
+      }
+    };
+    micWs.onclose=function(){ setTimeout(attachListenerSocket, 2000); };
+  }
+  async function handleOffer(msg){
+    cleanupPc();
+    pc=new RTCPeerConnection({ iceServers: ICE });
+    pc.ontrack=function(ev){
+      var a=ensureAudioEl();
+      a.srcObject=ev.streams[0]||new MediaStream([ev.track]);
+      a.play().catch(function(){ setBadge(true, 'tap to unmute'); });
+    };
+    pc.onicecandidate=function(ev){
+      if(ev.candidate) send({ type:'webrtc-ice', viewerId: viewerId, candidate: ev.candidate });
+    };
+    await pc.setRemoteDescription(msg.sdp);
+    var answer=await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    send({ type:'webrtc-answer', viewerId: viewerId, sdp: pc.localDescription });
+  }
+  // boot
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', attachListenerSocket);
+  else attachListenerSocket();
+})();
+</script>
+
+</body>
+</html>
