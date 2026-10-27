@@ -39,7 +39,10 @@ export class MatchDO {
       statusText: "",
       matchDesc: "",
       predictions: [],
+      micLive: false,
+      micName: "",
     };
+    this.micBroadcaster = null; // ws of scorer with mic
   }
 
   async fetch(request) {
@@ -67,6 +70,12 @@ export class MatchDO {
       });
 
       server.addEventListener("close", () => {
+        if (this.micBroadcaster === server) {
+          this.micBroadcaster = null;
+          this.live.micLive = false;
+          this.live.micName = "";
+          this.broadcast({ type: "mic", data: { live: false } });
+        }
         this.sessions.delete(server);
         this.broadcastPresence();
       });
@@ -600,6 +609,72 @@ export class MatchDO {
           ws.send(JSON.stringify({ type: "pong" }));
         } catch (_) {}
         break;
+
+      // ---- Live mic commentary (WebRTC signaling relay) ----
+      case "mic-start":
+        if (session.role === "scorer" || session.role === "commentator") {
+          this.micBroadcaster = ws;
+          this.live.micLive = true;
+          this.live.micName = session.name || "Commentator";
+          this.broadcast({ type: "mic", data: { live: true, name: this.live.micName } });
+        }
+        break;
+
+      case "mic-stop":
+        if (this.micBroadcaster === ws || session.role === "scorer") {
+          this.micBroadcaster = null;
+          this.live.micLive = false;
+          this.live.micName = "";
+          this.broadcast({ type: "mic", data: { live: false } });
+        }
+        break;
+
+      case "mic-join": {
+        // Viewer wants to listen — notify broadcaster
+        const joinId = String(msg.viewerId || session.name || "fan").slice(0, 64);
+        session.viewerId = joinId;
+        if (this.micBroadcaster && this.live.micLive) {
+          try {
+            this.micBroadcaster.send(JSON.stringify({
+              type: "mic-join",
+              viewerId: joinId,
+              name: session.name || "Fan",
+            }));
+          } catch (_) {}
+        } else {
+          try { ws.send(JSON.stringify({ type: "mic", data: { live: false } })); } catch (_) {}
+        }
+        break;
+      }
+
+      case "webrtc-offer":
+      case "webrtc-answer":
+      case "webrtc-ice": {
+        // Relay SDP / ICE to target peer by viewerId or to broadcaster
+        const targetId = msg.targetId || msg.viewerId || "";
+        const payload = {
+          type: msg.type,
+          viewerId: msg.viewerId || targetId,
+          from: session.name,
+          sdp: msg.sdp || null,
+          candidate: msg.candidate || null,
+        };
+        if (msg.type === "webrtc-offer" || (msg.type === "webrtc-ice" && session.role === "scorer")) {
+          // Scorer → specific viewer
+          for (const [peer, sess] of this.sessions) {
+            if (peer === ws) continue;
+            if (String(sess.viewerId || "") === String(targetId) || String(sess.name) === String(targetId)) {
+              try { peer.send(JSON.stringify(payload)); } catch (_) {}
+            }
+          }
+        } else {
+          // Viewer → broadcaster
+          if (this.micBroadcaster) {
+            try { this.micBroadcaster.send(JSON.stringify(payload)); } catch (_) {}
+          }
+        }
+        break;
+      }
     }
   }
 
