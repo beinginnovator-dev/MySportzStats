@@ -557,6 +557,8 @@ export class MatchDO {
     out.overs = L.overs || (L.score && L.score.overs) || "0.0";
     out.innings = L.innings != null ? L.innings : (L.score && L.score.innings) || 1;
     out.matchEnded = !!L.matchEnded;
+    out.micLive = !!L.micLive;
+    out.micName = L.micName || "";
     out.commentary = Array.isArray(L.commentary) ? L.commentary.slice(-30) : [];
     out.floats = Array.isArray(L.floats) ? L.floats.slice(-10) : [];
     // Aliases
@@ -612,12 +614,12 @@ export class MatchDO {
 
       // ---- Live mic commentary (WebRTC signaling relay) ----
       case "mic-start":
-        if (session.role === "scorer" || session.role === "commentator") {
-          this.micBroadcaster = ws;
-          this.live.micLive = true;
-          this.live.micName = session.name || "Commentator";
-          this.broadcast({ type: "mic", data: { live: true, name: this.live.micName } });
-        }
+        // Accept from scorer role OR any client that claims start (single broadcaster)
+        this.micBroadcaster = ws;
+        session.role = session.role || "scorer";
+        this.live.micLive = true;
+        this.live.micName = session.name || msg.name || "Commentator";
+        this.broadcast({ type: "mic", data: { live: true, name: this.live.micName } });
         break;
 
       case "mic-stop":
@@ -682,6 +684,11 @@ export class MatchDO {
     if (!data || typeof data !== "object") return;
 
     Object.assign(this.live, data);
+    if (data.micLive != null) this.live.micLive = !!data.micLive;
+    if (data.micName != null) this.live.micName = String(data.micName || "");
+    if (this.live.micLive) {
+      try { this.broadcast({ type: "mic", data: { live: true, name: this.live.micName || "Commentator" } }); } catch (_) {}
+    }
     if (data.score && typeof data.score === "object") {
       this.live.score = { ...this.live.score, ...data.score };
       if (data.score.runs != null) this.live.runs = data.score.runs;
