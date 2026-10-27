@@ -7149,6 +7149,7 @@ function placeBoundaryAnimationOnStriker(toast){
             teamAName: teamConfig.A.name,
             teamBName: teamConfig.B.name,
             matchName: (function(){ try{ var el=document.getElementById('cup-match-name'); return (el && el.value) ? el.value.trim() : (window.matchName||''); }catch(e){ return window.matchName||''; } })(),
+            matchStartTime: (function(){ try{ return window.matchStartTime || null; }catch(e){ return null; } })(),
             matchType: (function(){ try{ var el=document.getElementById('cup-match-type'); if(!el) return ''; var t=el.options[el.selectedIndex]; return (t && t.text) ? t.text : el.value; }catch(e){ return ''; } })(),
             venue: (function(){ try{ var el=document.getElementById('cup-venue')||document.getElementById('match-venue')||document.getElementById('venue'); return (el && el.value) ? el.value.trim() : (window.matchVenue||''); }catch(e){ return ''; } })(),
             teamAOvers: (function(){
@@ -18660,6 +18661,141 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
       try { if (typeof publishLiveViewerState === 'function') publishLiveViewerState(); } catch(e){}
     }, 120);
   }, true);
+})();
+</script>
+
+
+<script id="v195-match-meta-sync">
+(function(){
+  function syncMeta(){
+    try{
+      var n=document.getElementById('cup-match-name');
+      var t=document.getElementById('cup-match-type');
+      var v=document.getElementById('cup-venue');
+      if(n) window.matchName = (n.value||'').trim();
+      if(v) window.matchVenue = (v.value||'').trim();
+      if(t){
+        var opt=t.options[t.selectedIndex];
+        window.matchTypeLabel = opt ? (opt.text||opt.value) : '';
+      }
+      if(!window.matchStartTime) window.matchStartTime = Date.now();
+    }catch(e){}
+  }
+  ['cup-match-name','cup-match-type','cup-venue'].forEach(function(id){
+    document.addEventListener('change', function(ev){
+      if(ev.target && ev.target.id===id) syncMeta();
+    });
+    document.addEventListener('input', function(ev){
+      if(ev.target && ev.target.id===id) syncMeta();
+    });
+  });
+  document.addEventListener('DOMContentLoaded', syncMeta);
+  // also when start match clicked
+  document.addEventListener('click', function(ev){
+    var t=ev.target;
+    if(!t) return;
+    if((t.id==='cup-start-match-btn') || (t.closest && t.closest('#cup-start-match-btn'))){
+      syncMeta();
+      window.matchStartTime = Date.now();
+    }
+  }, true);
+  // patch buildLivePayload fields via periodic mirror into globals already read by payload
+  setInterval(syncMeta, 3000);
+})();
+</script>
+
+
+<div id="mic-commentary-bar" style="position:fixed;bottom:72px;left:50%;transform:translateX(-50%);z-index:9990;display:flex;gap:8px;align-items:center;background:rgba(15,23,42,.92);border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:8px 12px;box-shadow:0 8px 28px rgba(0,0,0,.35);max-width:94vw;">
+  <button type="button" id="mic-toggle-btn" onclick="window.toggleMicCommentary&&window.toggleMicCommentary()" style="border:0;border-radius:999px;padding:10px 14px;font-weight:800;font-size:13px;cursor:pointer;background:#e11d48;color:#fff;">🎤 Start Mic Commentary</button>
+  <span id="mic-status-label" style="color:#e2e8f0;font-size:12px;font-weight:700;white-space:nowrap;">Mic off</span>
+</div>
+<script id="mic-webrtc-scorer">
+(function(){
+  var micOn=false, localStream=null, micWs=null, peers={};
+  var ICE=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}];
+  function matchId(){
+    try{ return (window.liveMatchId||localStorage.getItem('liveMatchId')||'current'); }catch(e){ return 'current'; }
+  }
+  function setLabel(t, on){
+    var l=document.getElementById('mic-status-label');
+    var b=document.getElementById('mic-toggle-btn');
+    if(l) l.textContent=t;
+    if(b){ b.textContent=on?'⏹ Stop Mic Commentary':'🎤 Start Mic Commentary'; b.style.background=on?'#64748b':'#e11d48'; }
+  }
+  function wsUrl(){
+    var proto=location.protocol==='https:'?'wss:':'ws:';
+    return proto+'//'+location.host+'/ws?match='+encodeURIComponent(matchId())+'&role=scorer&name='+encodeURIComponent('Scorer');
+  }
+  function send(msg){ try{ if(micWs&&micWs.readyState===1) micWs.send(JSON.stringify(msg)); }catch(e){} }
+  async function ensureMic(){
+    if(localStream) return localStream;
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true, noiseSuppression:true, autoGainControl:true }, video:false });
+    return localStream;
+  }
+  function closePeers(){
+    Object.keys(peers).forEach(function(id){
+      try{ peers[id].close(); }catch(e){}
+      delete peers[id];
+    });
+  }
+  async function createPeerForViewer(viewerId){
+    if(!localStream||!viewerId) return;
+    if(peers[viewerId]){ try{ peers[viewerId].close(); }catch(e){} }
+    var pc=new RTCPeerConnection({ iceServers: ICE });
+    peers[viewerId]=pc;
+    localStream.getTracks().forEach(function(track){ pc.addTrack(track, localStream); });
+    pc.onicecandidate=function(ev){
+      if(ev.candidate) send({ type:'webrtc-ice', viewerId: viewerId, targetId: viewerId, candidate: ev.candidate });
+    };
+    pc.onconnectionstatechange=function(){
+      if(pc.connectionState==='failed'||pc.connectionState==='closed'){ try{ pc.close(); }catch(e){} delete peers[viewerId]; }
+    };
+    var offer=await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    send({ type:'webrtc-offer', viewerId: viewerId, targetId: viewerId, sdp: pc.localDescription });
+  }
+  function connectWs(){
+    if(micWs&&micWs.readyState===1) return;
+    try{ if(micWs) micWs.close(); }catch(e){}
+    micWs=new WebSocket(wsUrl());
+    micWs.onopen=function(){ send({ type:'mic-start' }); setLabel('Mic LIVE · waiting for listeners', true); };
+    micWs.onclose=function(){ if(micOn) setTimeout(connectWs, 1200); };
+    micWs.onmessage=function(ev){
+      try{
+        var msg=JSON.parse(ev.data);
+        if(msg.type==='mic-join'){ createPeerForViewer(msg.viewerId||msg.name); }
+        else if(msg.type==='webrtc-answer'){
+          var id=msg.viewerId; var pc=peers[id];
+          if(pc&&msg.sdp) pc.setRemoteDescription(msg.sdp).catch(function(){});
+        } else if(msg.type==='webrtc-ice'){
+          var id2=msg.viewerId; var pc2=peers[id2];
+          if(pc2&&msg.candidate) pc2.addIceCandidate(msg.candidate).catch(function(){});
+        }
+      }catch(e){}
+    };
+  }
+  window.toggleMicCommentary=async function(){
+    try{
+      if(micOn){
+        micOn=false;
+        send({ type:'mic-stop' });
+        try{ if(micWs) micWs.close(); }catch(e){}
+        micWs=null;
+        closePeers();
+        if(localStream){ localStream.getTracks().forEach(function(tr){ tr.stop(); }); localStream=null; }
+        setLabel('Mic off', false);
+        return;
+      }
+      await ensureMic();
+      micOn=true;
+      connectWs();
+      setLabel('Mic LIVE', true);
+    }catch(err){
+      alert('Microphone permission required for live commentary.');
+      setLabel('Mic permission denied', false);
+      micOn=false;
+    }
+  };
 })();
 </script>
 
