@@ -466,10 +466,11 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
       if(sig===lastSig.current)return;
       lastSig.current=sig;
       setData(function(prev){
-        // merge so partial payloads still update scoreboard
         if(prev && typeof prev==='object') return Object.assign({}, prev, d);
         return d;
       });
+      if(d.micLive){ window.__micLive=true; window.__micName=d.micName||window.__micName||'Commentator'; }
+      else if(d.micLive===false){ window.__micLive=false; }
       if(Array.isArray(d.viewers)) setViewers(d.viewers);
       else if(d.viewersCount!=null){ /* keep */ }
     },[]);
@@ -733,8 +734,7 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
 
         h('div',{className:'crr'},
           h('span',null,'CRR ',h('b',null,data&&data.crr!=null?Number(data.crr).toFixed(2):'-')),
-          h('span',null,'RRR ',h('b',null,data&&data.rrr!=null?Number(data.rrr).toFixed(2):'-')),
-          h('span',null,'NRR ',h('b',null,data&&data.nrr!=null?Number(data.nrr).toFixed(2):(data&&data.netRunRate!=null?Number(data.netRunRate).toFixed(2):'-')))
+          h('span',null,'NRR ',h('b',null,data&&data.nrr!=null?Number(data.nrr).toFixed(2):(data&&data.netRunRate!=null?Number(data.netRunRate).toFixed(2):(data&&data.rrr!=null?Number(data.rrr).toFixed(2):'-'))))
         ),
         h('div',{className:'anim-slot'},
           event?h('div',{className:'ev-banner show '+evCls},event.text):null
@@ -766,20 +766,20 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
 
       h('div',{className:'panel'},
         tab==='live'?h(React.Fragment,null,
-          h('div',{className:'card',style:{borderColor: (typeof window!=='undefined'&&window.__micLive)?'#e11d48':'var(--line)'}},
+          h('div',{className:'card',style:{borderColor: ((data&&data.micLive)||(typeof window!=='undefined'&&window.__micLive))?'#e11d48':'var(--line)'}},
             h('h3',null,'Live mic commentary'),
             h('div',{style:{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}},
               h('button',{className:'btn on',type:'button',onClick:function(){
                 try{
-                  var a=document.querySelector('audio');
-                  if(a){ a.muted=false; a.play(); }
-                  // force re-join
                   if(window.__micJoin) window.__micJoin();
-                  alert(window.__micLive ? ('Listening to '+(window.__micName||'commentator')) : 'Mic not live yet. Scorer must press Start Mic Commentary.');
+                  var a=document.querySelector('audio');
+                  if(a){ a.muted=false; a.volume=1; a.play().catch(function(){}); }
                 }catch(e){}
-              }},'🎙️ Enable / Listen'),
+              }}, ((data&&data.micLive)||(typeof window!=='undefined'&&window.__micLive)) ? '🎙️ Listen now' : '🎙️ Reconnect mic'),
               h('span',{className:'muted',style:{fontSize:12}},
-                (typeof window!=='undefined'&&window.__micLive)?('Live now · '+(window.__micName||'Commentator')):'Waiting for scorer mic…'
+                ((data&&data.micLive)||(typeof window!=='undefined'&&window.__micLive))
+                  ? ('Live now · '+((data&&data.micName)||window.__micName||'Commentator'))
+                  : 'Waiting for scorer mic…'
               )
             )
           ),
@@ -1067,9 +1067,9 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
         handleOffer(msg);
       } else if(msg.type==='webrtc-ice' && msg.candidate){
         if(pc) pc.addIceCandidate(msg.candidate).catch(function(){});
-      } else if(msg.type==='full' && msg.data && msg.data.micLive){
-        setBadge(true, msg.data.micName||'');
-        send({ type:'mic-join', viewerId: viewerId });
+      } else if((msg.type==='full'||msg.type==='update'||msg.type==='score') && msg.data){
+        if(msg.data.micLive){ setBadge(true, msg.data.micName||''); window.__micLive=true; window.__micName=msg.data.micName||''; send({ type:'mic-join', viewerId: viewerId }); }
+        else if(msg.data.micLive===false){ setBadge(false); window.__micLive=false; }
       }
     };
     micWs.onclose=function(){ setTimeout(attachListenerSocket, 2000); };
@@ -1093,6 +1093,19 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
   // boot
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', attachListenerSocket);
   else attachListenerSocket();
+  setInterval(function(){ if(window.__micLive){ try{ send({ type:'mic-join', viewerId: viewerId }); }catch(e){} } }, 8000);
+  // HTTP fallback for mic flag
+  setInterval(function(){
+    try{
+      var mid=matchId();
+      fetch('/api/live-public?match='+encodeURIComponent(mid)+'&_='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(j){
+        var d=j&&(j.data||j);
+        if(!d)return;
+        if(d.micLive){ window.__micLive=true; window.__micName=d.micName||'Commentator'; setBadge(true, window.__micName); send({ type:'mic-join', viewerId: viewerId }); }
+        else if(d.micLive===false){ window.__micLive=false; setBadge(false); }
+      }).catch(function(){});
+    }catch(e){}
+  }, 5000);
 })();
 </script>
 

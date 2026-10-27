@@ -18714,7 +18714,25 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
   var micOn=false, localStream=null, micWs=null, peers={};
   var ICE=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}];
   function matchId(){
-    try{ return (window.liveMatchId||localStorage.getItem('liveMatchId')||'current'); }catch(e){ return 'current'; }
+    try{
+      if(typeof getLiveMatchId==='function') return getLiveMatchId();
+      var id=(window.liveMatchId||localStorage.getItem('liveMatchId')||localStorage.getItem('cricket_live_match_id')||'').trim();
+      return id || 'current';
+    }catch(e){ return 'current'; }
+  }
+  function postMicFlag(live){
+    try{
+      var mid=matchId();
+      var url=(window.CRICKET_SERVER||location.origin).replace(/\/+$/,'')+'/api/live?match='+encodeURIComponent(mid);
+      var x=new XMLHttpRequest();
+      x.open('POST', url, true);
+      x.setRequestHeader('Content-Type','application/json');
+      try{
+        var key=localStorage.getItem('cricket_live_key')||localStorage.getItem('LIVE_KEY')||'';
+        if(key) x.setRequestHeader('X-Live-Key', key);
+      }catch(e){}
+      x.send(JSON.stringify({ micLive: !!live, micName: live ? 'Scorer' : '', ts: Date.now() }));
+    }catch(e){}
   }
   function setLabel(t, on){
     var l=document.getElementById('mic-status-label');
@@ -18758,7 +18776,7 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
     if(micWs&&micWs.readyState===1) return;
     try{ if(micWs) micWs.close(); }catch(e){}
     micWs=new WebSocket(wsUrl());
-    micWs.onopen=function(){ send({ type:'mic-start' }); setLabel('Mic LIVE · waiting for listeners', true); };
+    micWs.onopen=function(){ send({ type:'mic-start' }); postMicFlag(true); setLabel('Mic LIVE · match '+matchId(), true); try{ console.log('[mic] live on match', matchId()); }catch(e){} };
     micWs.onclose=function(){ if(micOn) setTimeout(connectWs, 1200); };
     micWs.onmessage=function(ev){
       try{
@@ -18779,6 +18797,7 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
       if(micOn){
         micOn=false;
         send({ type:'mic-stop' });
+        postMicFlag(false);
         try{ if(micWs) micWs.close(); }catch(e){}
         micWs=null;
         closePeers();
@@ -18790,6 +18809,7 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
       micOn=true;
       connectWs();
       setLabel('Mic LIVE', true);
+      try{ if(window.__micHb) clearInterval(window.__micHb); window.__micHb=setInterval(function(){ if(micOn){ send({ type:'mic-start' }); postMicFlag(true); } }, 10000); }catch(e){}
     }catch(err){
       alert('Microphone permission required for live commentary.');
       setLabel('Mic permission denied', false);
