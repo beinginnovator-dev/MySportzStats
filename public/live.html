@@ -19,13 +19,54 @@ body.theme-light .broadcast{background:linear-gradient(180deg,rgba(11,30,75,.93)
 .live-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(225,29,72,.18);border:1px solid rgba(225,29,72,.45);color:#fecdd3;font-size:11px;font-weight:900;padding:4px 8px;border-radius:999px}
 .live-pill i{width:7px;height:7px;border-radius:50%;background:var(--red)}
 .bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;position:relative;z-index:2}
-.bar-mid{display:none}
+
 .match-center{text-align:center;min-width:88px;max-width:42%}
 .match-center .title{font-size:18px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);line-height:1.15}
 .match-center .sub{font-size:12px;font-weight:700;color:#cbd5e1;margin-top:3px;line-height:1.3}
 .match-center .time{font-size:11px;font-weight:800;color:#e2e8f0;margin-top:2px}
 .match-center .vs-label{font-size:12px;font-weight:900;letter-spacing:.16em;color:#94a3b8;margin-top:6px}
-.score-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:start;margin-top:28px;position:relative;z-index:1}
+
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;position:relative;z-index:2}
+.live-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(225,29,72,.18);border:1px solid rgba(225,29,72,.45);color:#fecdd3;font-size:11px;font-weight:900;padding:4px 8px;border-radius:999px}
+.live-pill i{width:7px;height:7px;border-radius:50%;background:var(--red)}
+.gear{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;border-radius:999px;width:34px;height:34px;cursor:pointer}
+/* Header strip: match name ABOVE scores, full width, no overlap */
+.match-header{
+  text-align:center;padding:4px 8px 2px;position:relative;z-index:2;
+}
+.match-header .title{
+  font-size:14px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--gold);line-height:1.2;max-width:100%;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.match-header .sub{
+  font-size:10px;font-weight:700;color:#cbd5e1;margin-top:2px;line-height:1.3;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.match-header .time{
+  font-size:10px;font-weight:800;color:#e2e8f0;margin-top:1px;
+}
+.score-grid{
+  display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;
+  margin-top:10px;position:relative;z-index:1;padding:0 2px;
+}
+.side{text-align:center;min-width:0}
+.tname{
+  font-size:11px;font-weight:800;text-transform:uppercase;
+  display:flex;align-items:center;justify-content:center;gap:5px;color:#f8fafc;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+}
+.tname img{width:22px;height:15px;object-fit:cover;border-radius:3px;flex-shrink:0}
+.tname img.wave{animation:flagWave 1.2s ease-in-out infinite;transform-origin:center center}
+@keyframes flagWave{0%{transform:translateX(-2px) rotate(-4deg)}50%{transform:translateX(2px) rotate(4deg)}100%{transform:translateX(-2px) rotate(-4deg)}}
+.score-num{font-size:26px;font-weight:900;line-height:1.05;margin:4px 0 0;color:#fff}
+.overs{font-size:12px;color:#cbd5e1;margin-top:1px;font-weight:700}
+.role{font-size:9px;color:var(--blue);font-weight:800;margin-top:1px;text-transform:uppercase}
+.match-center{text-align:center;min-width:40px;padding:0 4px}
+.match-center .vs-label{font-size:12px;font-weight:900;letter-spacing:.14em;color:#94a3b8}
+.match-center .title,.match-center .sub,.match-center .time{display:none!important}
+
+.score-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;margin-top:10px;position:relative;z-index:1;padding:0 2px}
 .score-num{font-size:27px;font-weight:900;line-height:1.1;margin:6px 0 0;color:#fff}
 .tname{font-size:12px;font-weight:800;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:6px;color:#f8fafc;margin-top:4px}
 .result-overlay{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(2,6,23,.55);backdrop-filter:blur(2px)}
@@ -520,7 +561,11 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     var pom=data&&(data.playerOfMatch||data.pom||data.manOfMatch||data.mom);
     var balls=(data&&data.thisOver&&data.thisOver.balls)||(data&&data.currentOverBalls)||[];
     var title=meta.name||meta.type||'LIVE MATCH';
-    var venueLine=(meta.type?(meta.type+' · '):'')+(meta.venue?('@ '+meta.venue):'');
+    var venueLine=meta.venue?('@ '+meta.venue):'';
+    // keep type short; never put full team names into header title
+    if(meta.type && meta.type.length < 24) venueLine = meta.type + (venueLine?(' · '+venueLine):'');
+    // clamp title so it cannot paint over scores
+    if(title && title.length > 28) title = title.slice(0, 28) + '…';
     var evCls=event?(event.kind==='wicket'?'wicket':event.kind==='six'?'six':event.kind==='four'?'four':event.kind==='dot'?'dot':event.kind==='extra'?'extra':'runs'):'';
 
     var history=[];
@@ -614,6 +659,11 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
           )
         ):null,
 
+        h('div',{className:'match-header'},
+          h('div',{className:'title'},title),
+          venueLine?h('div',{className:'sub'},venueLine):null,
+          h('div',{className:'time'},'Start '+startLabel+' · '+elapsed)
+        ),
         h('div',{className:'score-grid'},
           h('div',{className:'side'},
             h('div',{className:'tname'},
@@ -625,9 +675,6 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
             h('div',{className:'role'},dual.aBat&&!ended?'Batting':'Bowling')
           ),
           h('div',{className:'match-center'},
-            h('div',{className:'title'},title),
-            venueLine?h('div',{className:'sub'},venueLine):null,
-            h('div',{className:'time'},'Start '+startLabel+' · '+elapsed),
             h('div',{className:'vs-label'},'VS')
           ),
           h('div',{className:'side'},
