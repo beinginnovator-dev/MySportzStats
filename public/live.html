@@ -35,16 +35,16 @@ body.theme-light .broadcast{background:linear-gradient(180deg,rgba(11,30,75,.93)
   text-align:center;padding:4px 8px 2px;position:relative;z-index:2;
 }
 .match-header .title{
-  font-size:14px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;
+  font-size:17px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;
   color:var(--gold);line-height:1.2;max-width:100%;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .match-header .sub{
-  font-size:10px;font-weight:700;color:#cbd5e1;margin-top:2px;line-height:1.3;
+  font-size:11px;font-weight:700;color:#cbd5e1;margin-top:2px;line-height:1.3;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .match-header .time{
-  font-size:10px;font-weight:800;color:#e2e8f0;margin-top:1px;
+  font-size:11px;font-weight:800;color:#e2e8f0;margin-top:1px;
 }
 .score-grid{
   display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;
@@ -170,6 +170,26 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     return;
   }
   var h=React.createElement;
+  function lsGet(k, fallback){
+    try{ var v=lsGet(k,null); return v==null?fallback:v; }catch(e){ return fallback; }
+  }
+  function lsSet(k, v){
+    try{ localStorage.setItem(k, v); return true; }
+    catch(e){
+      try{
+        // quota full — purge non-essential keys then retry once
+        var kill=[];
+        for(var i=0;i<localStorage.length;i++){
+          var key=localStorage.key(i);
+          if(key && (key.indexOf('react_')===0 || key.indexOf('cricket_')===0 || key.indexOf('flag')>=0)) kill.push(key);
+        }
+        kill.forEach(function(key){ try{ localStorage.removeItem(key); }catch(_e){} });
+        localStorage.setItem(k, v);
+        return true;
+      }catch(e2){ return false; }
+    }
+  }
+
   var useState=React.useState, useEffect=React.useEffect, useRef=React.useRef, useMemo=React.useMemo, useCallback=React.useCallback;
 
   var FLAG_POOL=['in','au','eng','nz','za','pk','bd','sl','af','ie','wi','np','nl','zw','sc'];
@@ -180,13 +200,13 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     var key=String((d&&d.matchId)||'')+'|'+((d&&(d.teamA||d.teamAName))||'A')+'|'+((d&&(d.teamB||d.teamBName))||'B')+'|'+(d&&d.matchStartTime||'');
     try{
       var k='react_flags_v2_'+key;
-      var c=localStorage.getItem(k);
+      var c=lsGet(k,null);
       if(c){var p=JSON.parse(c);if(p&&p.a&&p.b)return p;}
       var ia=hashStr(key)%FLAG_POOL.length;
       var ib=(ia+3+hashStr(key+'b'))%FLAG_POOL.length;
       if(ib===ia)ib=(ib+1)%FLAG_POOL.length;
       var out={a:FLAG_POOL[ia],b:FLAG_POOL[ib]};
-      localStorage.setItem(k,JSON.stringify(out));
+      lsSet(k,JSON.stringify(out));
       return out;
     }catch(e){return {a:'in',b:'au'};}
   }
@@ -263,8 +283,22 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
   }
   function unwrap(msg){
     if(!msg||typeof msg!=='object')return null;
-    if(msg.data&&typeof msg.data==='object'&&(msg.data.runs!=null||msg.data.teamA||msg.data.balls!=null))return msg.data;
-    return msg;
+    // worker often sends {type,data} and also flat copies
+    if(msg.type==='presence'||msg.type==='pong'||msg.type==='chat'||msg.type==='float') return null;
+    if(msg.type==='mic'||String(msg.type||'').indexOf('webrtc')===0||msg.type==='mic-join') return null;
+    var d=msg;
+    if(msg.data&&typeof msg.data==='object'){
+      d=msg.data;
+      // prefer nested but keep top-level fallbacks
+      if(d.runs==null&&msg.runs!=null) d.runs=msg.runs;
+      if(d.wickets==null&&msg.wickets!=null) d.wickets=msg.wickets;
+      if(d.balls==null&&msg.balls!=null) d.balls=msg.balls;
+    }
+    if(d.runs==null&&d.score&&typeof d.score==='object'){
+      d.runs=d.score.runs; d.wickets=d.score.wickets; d.overs=d.overs||d.score.overs;
+    }
+    if(d.runs==null&&d.teamA==null&&d.balls==null&&!d.strikerName) return null;
+    return d;
   }
   function chipClass(lab){
     lab=String(lab||'').toUpperCase();
@@ -422,12 +456,22 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     var wsRef=useRef(null);
     var apply=useCallback(function(raw){
       var d=unwrap(raw);if(!d)return;
-      var chip=(d.thisOver&&d.thisOver.balls)?d.thisOver.balls.join(','):'';
-      var sig=[d.balls,d.runs,d.wickets,d.ts,chip,d.matchEnded].join('|');
+      // Always accept if runs/wickets/balls/overs/ts/striker change
+      var chip='';
+      try{
+        var arr=(d.thisOver&&d.thisOver.balls)||d.currentOverBalls||[];
+        chip=arr.map(function(x){return typeof x==='object'?(x.label||''):String(x);}).join(',');
+      }catch(e){}
+      var sig=[d.runs,d.wickets,d.balls,d.overs,d.innings,d.ts,d.strikerName,d.bowlerName,d.matchEnded,chip].join('|');
       if(sig===lastSig.current)return;
       lastSig.current=sig;
-      setData(d);
-      if(Array.isArray(d.viewers))setViewers(d.viewers);
+      setData(function(prev){
+        // merge so partial payloads still update scoreboard
+        if(prev && typeof prev==='object') return Object.assign({}, prev, d);
+        return d;
+      });
+      if(Array.isArray(d.viewers)) setViewers(d.viewers);
+      else if(d.viewersCount!=null){ /* keep */ }
     },[]);
     useEffect(function(){
       var match=new URLSearchParams(location.search).get('match')||'current';
@@ -452,13 +496,12 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
       }
       connect();
       function poll(){
-        if(wsRef.current&&wsRef.current.readyState===1)return;
         fetch('/api/live-public?match='+encodeURIComponent(match)+'&_='+Date.now(),{cache:'no-store'})
           .then(function(r){return r.ok?r.json():null;})
           .then(function(j){if(j)apply(j);})
           .catch(function(){});
       }
-      pollTimer=setInterval(poll,4000);poll();
+      pollTimer=setInterval(poll,2000);poll();
       return function(){dead=true;clearInterval(pollTimer);try{if(wsRef.current)wsRef.current.close();}catch(e){};};
     },[apply]);
     return {data:data,viewers:viewers,connected:connected};
@@ -488,11 +531,11 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     var data=live.data,viewers=live.viewers,connected=live.connected;
     var _tab=useState('live'),tab=_tab[0],setTab=_tab[1];
     var _w=useState(true),welcome=_w[0],setWelcome=_w[1];
-    var _tts=useState(function(){return localStorage.getItem('cricket_tts_on')!=='0';}),ttsOn=_tts[0],setTtsOn=_tts[1];
-    var _th=useState(function(){return localStorage.getItem('react_live_theme')||'dark';}),theme=_th[0],setTheme=_th[1];
-    var _sf=useState(function(){return localStorage.getItem('react_score_fmt')||'classic';}),scoreFmt=_sf[0],setScoreFmt=_sf[1];
+    var _tts=useState(function(){return lsGet('cricket_tts_on','1')!=='0';}),ttsOn=_tts[0],setTtsOn=_tts[1];
+    var _th=useState(function(){return lsGet('react_live_theme','dark')||'dark';}),theme=_th[0],setTheme=_th[1];
+    var _sf=useState(function(){return lsGet('react_score_fmt','classic')||'classic';}),scoreFmt=_sf[0],setScoreFmt=_sf[1];
     var _so=useState(false),settingsOpen=_so[0],setSettingsOpen=_so[1];
-    var _st=useState(function(){return localStorage.getItem('cricket_stadium_on')!=='0';}),stadiumOn=_st[0],setStadiumOn=_st[1];
+    var _st=useState(function(){return lsGet('cricket_stadium_on','1')!=='0';}),stadiumOn=_st[0],setStadiumOn=_st[1];
     var _sc=useState('A'),scTeam=_sc[0],setScTeam=_sc[1];
     var _cap=useState('orange'),capSub=_cap[0],setCapSub=_cap[1];
     var _ev=useState(null),event=_ev[0],setEvent=_ev[1];
@@ -637,23 +680,23 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
           h('div',{className:'settings-dd'},
             h('div',{className:'dd-title'},'Sound'),
             h('button',{type:'button',className:ttsOn?'on':'',onClick:function(){
-              var next=!ttsOn;setTtsOn(next);localStorage.setItem('cricket_tts_on',next?'1':'0');if(next)speakMale('Male commentary on');
+              var next=!ttsOn;setTtsOn(next);lsSet('cricket_tts_on',next?'1':'0');if(next)speakMale('Male commentary on');
             }},ttsOn?'Commentary ON (Male)':'Commentary OFF'),
             h('button',{type:'button',className:stadiumOn?'on':'',onClick:function(){
-              var next=!stadiumOn;setStadiumOn(next);localStorage.setItem('cricket_stadium_on',next?'1':'0');if(next)playSfx(0.12);
+              var next=!stadiumOn;setStadiumOn(next);lsSet('cricket_stadium_on',next?'1':'0');if(next)playSfx(0.12);
             }},stadiumOn?'Stadium ON':'Stadium OFF'),
             h('div',{className:'sep'}),
             h('div',{className:'dd-title'},'Themes'),
             [['dark','Broadcast Dark'],['light','Light Pro'],['ipl','IPL Night'],['icc','ICC Green']].map(function(pair){
               return h('button',{key:pair[0],type:'button',className:theme===pair[0]?'on':'',onClick:function(){
-                setTheme(pair[0]);localStorage.setItem('react_live_theme',pair[0]);
+                setTheme(pair[0]);lsSet('react_live_theme',pair[0]);
               }},pair[1]);
             }),
             h('div',{className:'sep'}),
             h('div',{className:'dd-title'},'Score format'),
             [['classic','Classic'],['cricinfo','Cricinfo'],['broadcast','Broadcast'],['compact','Compact'],['split','Split']].map(function(pair){
               return h('button',{key:pair[0],type:'button',className:scoreFmt===pair[0]?'on':'',onClick:function(){
-                setScoreFmt(pair[0]);localStorage.setItem('react_score_fmt',pair[0]);
+                setScoreFmt(pair[0]);lsSet('react_score_fmt',pair[0]);
               }},pair[1]);
             })
           )
@@ -690,7 +733,8 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
 
         h('div',{className:'crr'},
           h('span',null,'CRR ',h('b',null,data&&data.crr!=null?Number(data.crr).toFixed(2):'-')),
-          h('span',null,'RRR ',h('b',null,data&&data.rrr!=null?Number(data.rrr).toFixed(2):(data&&data.nrr!=null?Number(data.nrr).toFixed(2):'-')))
+          h('span',null,'RRR ',h('b',null,data&&data.rrr!=null?Number(data.rrr).toFixed(2):'-')),
+          h('span',null,'NRR ',h('b',null,data&&data.nrr!=null?Number(data.nrr).toFixed(2):(data&&data.netRunRate!=null?Number(data.netRunRate).toFixed(2):'-')))
         ),
         h('div',{className:'anim-slot'},
           event?h('div',{className:'ev-banner show '+evCls},event.text):null
@@ -722,6 +766,23 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
 
       h('div',{className:'panel'},
         tab==='live'?h(React.Fragment,null,
+          h('div',{className:'card',style:{borderColor: (typeof window!=='undefined'&&window.__micLive)?'#e11d48':'var(--line)'}},
+            h('h3',null,'Live mic commentary'),
+            h('div',{style:{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}},
+              h('button',{className:'btn on',type:'button',onClick:function(){
+                try{
+                  var a=document.querySelector('audio');
+                  if(a){ a.muted=false; a.play(); }
+                  // force re-join
+                  if(window.__micJoin) window.__micJoin();
+                  alert(window.__micLive ? ('Listening to '+(window.__micName||'commentator')) : 'Mic not live yet. Scorer must press Start Mic Commentary.');
+                }catch(e){}
+              }},'🎙️ Enable / Listen'),
+              h('span',{className:'muted',style:{fontSize:12}},
+                (typeof window!=='undefined'&&window.__micLive)?('Live now · '+(window.__micName||'Commentator')):'Waiting for scorer mic…'
+              )
+            )
+          ),
           h('div',{className:'card'},
             h('h3',null,'Batsmen & bowler'),
             h('div',{className:'players-row'},
@@ -798,7 +859,7 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
         tab==='commentary'?h('div',{className:'card'},
           h('div',{className:'row'},
             h('button',{className:'btn'+(ttsOn?' on':''),onClick:function(){
-              var next=!ttsOn;setTtsOn(next);localStorage.setItem('cricket_tts_on',next?'1':'0');if(next)speakMale('Male commentary on');
+              var next=!ttsOn;setTtsOn(next);lsSet('cricket_tts_on',next?'1':'0');if(next)speakMale('Male commentary on');
             }},'Voice '+(ttsOn?'ON · Male':'OFF')),
             h('button',{className:'btn',onClick:function(){speakMale('Four runs! Brilliant timing!');}},'Test male voice')
           ),
@@ -971,7 +1032,7 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     if(!el){
       el=document.createElement('div');
       el.id='mic-live-badge';
-      el.style.cssText='position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9999;padding:8px 14px;border-radius:999px;font-weight:800;font-size:12px;display:none;box-shadow:0 8px 24px rgba(0,0,0,.35);';
+      el.style.cssText='position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:9999;padding:12px 18px;border-radius:999px;font-weight:800;font-size:13px;display:none;box-shadow:0 8px 28px rgba(0,0,0,.45);border:2px solid #fff;';
       document.body.appendChild(el);
     }
     if(live){
@@ -989,6 +1050,7 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     pc=null;
   }
   function send(msg){ try{ if(micWs&&micWs.readyState===1) micWs.send(JSON.stringify(msg)); }catch(e){} }
+  window.__micJoin=function(){ try{ send({ type:'mic-join', viewerId: viewerId }); }catch(e){} };
   function attachListenerSocket(){
     // Prefer existing app socket if any; else open dedicated
     var proto=location.protocol==='https:'?'wss:':'ws:';
@@ -999,8 +1061,8 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     micWs.onmessage=function(ev){
       var msg; try{ msg=JSON.parse(ev.data); }catch(e){ return; }
       if(msg.type==='mic'){
-        if(msg.data&&msg.data.live){ setBadge(true, msg.data.name); send({ type:'mic-join', viewerId: viewerId }); }
-        else { setBadge(false); cleanupPc(); }
+        if(msg.data&&msg.data.live){ setBadge(true, msg.data.name); window.__micLive=true; window.__micName=msg.data.name||''; send({ type:'mic-join', viewerId: viewerId }); try{document.dispatchEvent(new CustomEvent('mic-live',{detail:{live:true,name:msg.data.name}}));}catch(e){} }
+        else { setBadge(false); window.__micLive=false; cleanupPc(); try{document.dispatchEvent(new CustomEvent('mic-live',{detail:{live:false}}));}catch(e){} }
       } else if(msg.type==='webrtc-offer' && msg.sdp){
         handleOffer(msg);
       } else if(msg.type==='webrtc-ice' && msg.candidate){
