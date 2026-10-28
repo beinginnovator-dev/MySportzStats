@@ -122,8 +122,8 @@ body.theme-light .broadcast{background:linear-gradient(180deg,rgba(11,30,75,.93)
 .match-center .vs-label{font-size:13px;font-weight:900;letter-spacing:.16em;color:#94a3b8}
 .crr{display:flex;justify-content:center;gap:14px;margin-top:8px;font-size:11px;color:#cbd5e1}
 .crr b{color:#fff}
-.anim-slot{min-height:42px;margin-top:6px;display:flex;align-items:center;justify-content:center;position:relative;z-index:3}
-.ev-banner{min-width:130px;padding:12px 18px;border-radius:14px;font-weight:900;font-size:16px;text-align:center;color:#fff;opacity:0;box-shadow:0 10px 28px rgba(0,0,0,.4)}
+.anim-slot{min-height:48px;margin-top:6px;display:flex;align-items:center;justify-content:center;position:relative;z-index:30}
+.ev-banner{min-width:150px;padding:14px 22px;border-radius:14px;font-weight:900;font-size:20px;text-align:center;color:#fff;opacity:0;box-shadow:0 12px 32px rgba(0,0,0,.5);letter-spacing:.04em}
 .ev-banner.show{animation:evpop 2.6s ease-out forwards}
 .ev-banner.runs{background:linear-gradient(135deg,#2563eb,#3b82f6)}
 .ev-banner.four{background:linear-gradient(135deg,#16a34a,#22c55e)}
@@ -385,11 +385,11 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     var hi = COMM_LANG==='hi';
     if(ev){
       var k=ev.kind;
-      if(k==='four') return hi ? (bw+' से '+st+' — '+HI.four+' '+score) : (bw+' to '+st+' — FOUR! Cracking shot through the gap. '+st+' looking good. '+score+' ('+over+').');
-      if(k==='six') return hi ? (bw+' से '+st+' — '+HI.six+' '+score) : (bw+' to '+st+' — SIX! Out of the ground! Huge hit. '+score+' ('+over+').');
+      if(k==='four') return hi ? (bw+' की गेंद पर '+st+' ने शानदार चौका मारा! बाउंड्री! स्कोर '+score+' ('+over+')') : (bw+' to '+st+' — FOUR! Cracking shot through the gap. '+st+' looking good. '+score+' ('+over+').');
+      if(k==='six') return hi ? (bw+' की गेंद '+st+' ने स्टेडियम के बाहर भेजी! छक्का! स्कोर '+score+' ('+over+')') : (bw+' to '+st+' — SIX! Out of the ground! Huge hit. '+score+' ('+over+').');
       if(k==='wicket'){
         var wt=(ev.text&&ev.text!=='WICKET')?ev.text:'WICKET';
-        return hi ? (wt+'! '+st+' आउट। '+HI.wicket+' '+score) : (wt+'! '+bw+' gets '+st+'. Big moment. '+score+' ('+over+').');
+        return hi ? ('विकेट! '+st+' आउट — '+wt+'. शानदार गेंदबाजी '+bw+' की तरफ से। स्कोर '+score+' ('+over+')') : (wt+'! '+bw+' gets '+st+'. Big moment. '+score+' ('+over+').');
       }
       if(k==='dot') return hi ? (bw+' से '+st+' — '+HI.dot) : (bw+' to '+st+' — dot ball. Tight lines.');
       if(k==='one'||k==='two'||k==='three'){
@@ -466,34 +466,42 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     if(!d)return null;
     var chipArr=(d.thisOver&&d.thisOver.balls)||d.currentOverBalls||[];
     var chip='';
+    var lastRuns=null;
     if(chipArr.length){
       var last=chipArr[chipArr.length-1];
-      chip=String(typeof last==='object'?(last.label||last.chip||''):last).toUpperCase().trim();
+      if(typeof last==='object'&&last){
+        chip=String(last.label||last.chip||'').toUpperCase().trim();
+        lastRuns=last.runs!=null?n(last.runs):null;
+      } else {
+        chip=String(last).toUpperCase().trim();
+      }
     }
-    var ev=String(d.lastEvent||d.event||'').toLowerCase();
-    if(chip==='W'||(chip.charAt(0)==='W'&&chip.indexOf('WD')<0)||ev.indexOf('wicket')>=0||(prev&&n(d.wickets)>n(prev.wickets)))
+    var ev=String(d.lastEvent||d.event||d.lastBallEvent||'').toLowerCase();
+    // wicket
+    if(chip==='W'||(chip.charAt(0)==='W'&&chip.indexOf('WD')<0)||ev.indexOf('wicket')>=0||ev==='w'||(prev&&n(d.wickets)>n(prev.wickets)))
       return {kind:'wicket',text:wicketTypeFromData(d)};
-    if(chip==='6'||ev==='six')return {kind:'six',text:'SIX'};
-    if(chip==='4'||ev==='four')return {kind:'four',text:'FOUR'};
+    if(chip==='6'||ev==='six'||ev==='6'||lastRuns===6)return {kind:'six',text:'SIX'};
+    if(chip==='4'||ev==='four'||ev==='4'||lastRuns===4)return {kind:'four',text:'FOUR'};
     if(chip.indexOf('WD')>=0||ev==='wide')return {kind:'extra',text:'WIDE'};
-    if(chip.indexOf('NB')>=0)return {kind:'extra',text:'NO BALL'};
+    if(chip.indexOf('NB')>=0||ev==='noball'||ev==='no ball')return {kind:'extra',text:'NO BALL'};
     if(chip.indexOf('LB')>=0)return {kind:'extra',text:'LEG BYE'};
     if(chip==='0'||chip==='.'||chip==='•'||ev==='dot')return {kind:'dot',text:'DOT'};
-    if(chip==='3')return {kind:'runs',text:'3 RUNS'};
-    if(chip==='2')return {kind:'runs',text:'2 RUNS'};
-    if(chip==='1')return {kind:'runs',text:'1 RUN'};
+    if(chip==='3'||lastRuns===3)return {kind:'runs',text:'3 RUNS'};
+    if(chip==='2'||lastRuns===2)return {kind:'runs',text:'2 RUNS'};
+    if(chip==='1'||lastRuns===1)return {kind:'runs',text:'1 RUN'};
     if(prev){
       if(n(d.wickets)>n(prev.wickets))return {kind:'wicket',text:wicketTypeFromData(d)};
       var dr=n(d.runs)-n(prev.runs);
-      if(dr===6)return {kind:'six',text:'SIX'};
-      if(dr===4)return {kind:'four',text:'FOUR'};
-      if(dr===0&&n(d.balls)>n(prev.balls))return {kind:'dot',text:'DOT'};
+      if(dr>=6)return {kind:'six',text:'SIX'};
+      if(dr===4||dr===5)return {kind:'four',text:'FOUR'};
       if(dr===3)return {kind:'runs',text:'3 RUNS'};
       if(dr===2)return {kind:'runs',text:'2 RUNS'};
       if(dr===1)return {kind:'runs',text:'1 RUN'};
+      if(dr===0 && n(d.balls)>n(prev.balls))return {kind:'dot',text:'DOT'};
     }
     return null;
   }
+
   function getMaleVoice(){
     var voices=speechSynthesis.getVoices()||[];
     var male=/male|david|daniel|mark|james|george|thomas|alex|ravi|guy|ryan/i;
@@ -589,19 +597,25 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
   }
   function toHindiComm(line){
     var s=String(line||'');
-    s=s.replace(/\bFOUR\b/gi,'चौका');
-    s=s.replace(/\bSIX\b/gi,'छक्का');
-    s=s.replace(/\bWICKET\b/gi,'विकेट');
-    s=s.replace(/\bOUT\b/gi,'आउट');
-    s=s.replace(/\bwide\b/gi,'वाइड');
-    s=s.replace(/no[-\s]?ball/gi,'नो बॉल');
-    s=s.replace(/\bdot ball\b/gi,'डॉट बॉल');
-    s=s.replace(/\bruns?\b/gi,'रन');
-    s=s.replace(/End of over/gi,'ओवर समाप्त');
-    s=s.replace(/Cracking shot/gi,'शानदार शॉट');
-    s=s.replace(/Huge hit/gi,'जबरदस्त प्रहार');
+    // Authentic broadcast Hindi (ESPNcricinfo / Star Sports style)
+    var map=[
+      [/\bFOUR\b/gi,'चौका'],[/\bSIX\b/gi,'छक्का'],[/\bWICKET\b/gi,'विकेट'],
+      [/\bOUT\b/gi,'आउट'],[/\bclean bowled\b/gi,'क्लीन बोल्ड'],[/\bbowled\b/gi,'बोल्ड'],
+      [/\bcatch(ed)?\b/gi,'कैच'],[/\bLBW\b/gi,'एलबीडब्ल्यू'],[/\brun out\b/gi,'रन आउट'],
+      [/\bstumped\b/gi,'स्टंपड'],[/\bwide\b/gi,'वाइड'],[/\bno[-\s]?ball/gi,'नो बॉल'],
+      [/\bleg bye\b/gi,'लेग बाय'],[/\bbye\b/gi,'बाय'],[/\bdot ball\b/gi,'डॉट बॉल'],
+      [/\bdot\b/gi,'डॉट'],[/\bfree hit\b/gi,'फ्री हिट'],
+      [/\bEnd of over\b/gi,'ओवर समाप्त'],[/\bover complete\b/gi,'ओवर पूरा'],
+      [/\bCracking shot\b/gi,'शानदार शॉट'],[/\bHuge hit\b/gi,'जबरदस्त प्रहार'],
+      [/\bBrilliant timing\b/gi,'शानदार टाइमिंग'],[/\bBig moment\b/gi,'बड़ा पल'],
+      [/\bto\b/g,'से'],[/\bruns?\b/gi,'रन'],[/\bboundary\b/gi,'बाउंड्री'],
+      [/\binnings\b/gi,'पारी'],[/\bmatch\b/gi,'मैच'],[/\bstriker\b/gi,'स्ट्राइकर'],
+      [/\bbowler\b/gi,'गेंदबाज'],[/\bbatter\b/gi,'बल्लेबाज'],[/\bbatsman\b/gi,'बल्लेबाज']
+    ];
+    for(var i=0;i<map.length;i++){ s=s.replace(map[i][0], map[i][1]); }
     return s;
   }
+
   function stampClass(label){
     var s=String(label||'').toUpperCase();
     if(s==='4'||s.indexOf('FOUR')>=0) return 's4';
@@ -833,7 +847,7 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     useEffect(function(){
       if(!data)return;
       var ev=detectEvent(data,prevRef.current);
-      var key=ev?(String(data.balls)+'|'+String(data.runs)+'|'+String(data.wickets)+'|'+ev.kind):'';
+      var key=ev?(String(data.balls)+'|'+String(data.runs)+'|'+String(data.wickets)+'|'+ev.kind+'|'+(data.lastEvent||'')):'';
       if(ev&&key!==lastEvKey.current){
         lastEvKey.current=key;
         setEvent(ev);

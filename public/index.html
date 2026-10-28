@@ -7644,6 +7644,20 @@ function placeBoundaryAnimationOnStriker(toast){
                 } catch(e){ return null; }
             })(),
             floatAdEvent: (function(){ try { return window.__lastFloatAdEvent || null; } catch(e){ return null; } })(),
+            lastEvent: (function(){ try {
+              var balls = (typeof currentOverBalls!=='undefined' && currentOverBalls && currentOverBalls.length) ? currentOverBalls[currentOverBalls.length-1] : null;
+              if (balls && balls.label) {
+                var lb = String(balls.label).toUpperCase();
+                if (lb==='W') return 'wicket';
+                if (lb==='4') return 'four';
+                if (lb==='6') return 'six';
+                if (lb==='WD'||lb.indexOf('WD')>=0) return 'wide';
+                if (lb==='NB'||lb.indexOf('NB')>=0) return 'noball';
+                if (lb==='0'||lb==='•') return 'dot';
+                return lb.toLowerCase();
+              }
+              return window.__lastBallEvent || null;
+            } catch(e){ return null; } })(),
             sponsors: (function(){ try { if (typeof getSponsorsConfig==='function') return getSponsorsConfig(); return JSON.parse(localStorage.getItem('cricket_sponsors_v1')||'{}'); } catch(e){ return {enabled:false,names:[]}; } })(),
             fixtures: (function(){
                 try {
@@ -17007,7 +17021,44 @@ body[data-theme="dark"] button.cup-subtab.is-active {
   }
   function previewFloatAd(){
     try { saveAdSettings(); } catch(e){}
-    try { showFloatAd(true); } catch(e2){
+    try {
+      var o = loadAd();
+      var list = [];
+      if (o.ads && o.ads.length) list = o.ads.slice();
+      if (o.image || o.text) list.unshift({ image: o.image||'', text: o.text||'' });
+      if (!list.length) {
+        try { alert('Add image URL or text (or multiple ads) first.'); } catch(e){}
+        return;
+      }
+      var i = 0;
+      function showNext(){
+        if (i >= list.length) return;
+        var a = list[i++];
+        try {
+          // temporarily apply
+          var body = document.getElementById('float-ad-body');
+          var ov = document.getElementById('float-ad-overlay') || (typeof ensureOverlay==='function' ? ensureOverlay() : null);
+          if (!ov && typeof showFloatAd === 'function') {
+            // inject one-off
+            try {
+              localStorage.setItem(AD_KEY, JSON.stringify(Object.assign({}, o, { image: a.image, text: a.text, enabled: true })));
+            } catch(eL){}
+            showFloatAd(true);
+          } else {
+            if (typeof showFloatAd === 'function') {
+              try { localStorage.setItem(AD_KEY, JSON.stringify(Object.assign({}, o, { image: a.image, text: a.text, enabled: true }))); } catch(e2){}
+              showFloatAd(true);
+            }
+          }
+        } catch(e3){}
+        if (i < list.length) setTimeout(showNext, 5500);
+        else {
+          // restore full config
+          try { localStorage.setItem(AD_KEY, JSON.stringify(o)); } catch(e4){}
+        }
+      }
+      showNext();
+    } catch(e2){
       try { alert('Preview failed'); } catch(e3){}
     }
   }
