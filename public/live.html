@@ -289,6 +289,59 @@ td{padding:6px 4px;border-bottom:1px solid var(--line)}
   0%,100%{filter:brightness(1);transform:scale(1)}
   50%{filter:brightness(1.35);transform:scale(1.04)}
 }
+
+/* Polished Navy Blue dark theme — white fonts */
+body.theme-navy{
+  --bg:#0a1628;
+  --bg2:#0f1f35;
+  --card:#132f4c;
+  --line:rgba(148,163,184,.22);
+  --text:#ffffff;
+  --muted:#c7d2fe;
+  --accent:#60a5fa;
+  --blue:#93c5fd;
+  --gold:#fde68a;
+  --red:#fb7185;
+  background:linear-gradient(180deg,#07111f 0%,#0a1628 40%,#0f1f35 100%);
+  color:#ffffff;
+}
+body.theme-navy .broadcast{
+  background:linear-gradient(165deg,#0b1c33 0%,#102a4a 45%,#0d213d 100%)!important;
+  color:#ffffff;
+  border-bottom:1px solid rgba(147,197,253,.18);
+}
+body.theme-navy .broadcast .title,
+body.theme-navy .match-center .title{color:#f8fafc!important}
+body.theme-navy .broadcast .sub,
+body.theme-navy .broadcast .time,
+body.theme-navy .match-center .sub,
+body.theme-navy .match-center .time{color:#e2e8f0!important}
+body.theme-navy .score-num{color:#ffffff!important;font-weight:900}
+body.theme-navy .overs{color:#dbeafe!important}
+body.theme-navy .role{color:#93c5fd!important}
+body.theme-navy .tabs{background:#0c1a2e;border-bottom:1px solid rgba(147,197,253,.15);min-height:44px}
+body.theme-navy .tabs button{color:#cbd5e1}
+body.theme-navy .tabs button.on{color:#ffffff;border-bottom:2px solid #60a5fa}
+body.theme-navy .card{
+  background:linear-gradient(180deg,#132f4c 0%,#0f2742 100%);
+  border:1px solid rgba(147,197,253,.16);
+  color:#ffffff;
+}
+body.theme-navy .card h3{color:#e2e8f0}
+body.theme-navy .card table th{color:#93c5fd;font-weight:600}
+body.theme-navy .card table td{color:#ffffff;font-weight:700}
+body.theme-navy .btn{background:#1e3a5f;border:1px solid rgba(147,197,253,.25);color:#fff}
+body.theme-navy .btn:hover{background:#254a75}
+body.theme-navy .muted{color:#c7d2fe}
+body.theme-navy .crr-line{color:#e2e8f0}
+body.theme-navy .crr-line b{color:#ffffff}
+body.theme-navy .sponsor-flash{color:#fde68a}
+body.theme-navy .live-pill{background:rgba(225,29,72,.2);color:#fecdd3}
+body.theme-navy .tname{color:#f8fafc}
+body.theme-navy .live-stat-val,
+body.theme-navy .live-stat-name{color:#ffffff}
+body.theme-navy .live-stat-label{color:#93c5fd}
+
 </style>
 </head>
 <body class="theme-dark">
@@ -309,6 +362,21 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     return;
   }
   var h=React.createElement;
+  function assignViewerName(input){
+    var nm = String(input||'').trim();
+    if(nm) return nm.slice(0,24);
+    try{
+      var existing = localStorage.getItem('react_viewer_name')||localStorage.getItem('viewer_name')||'';
+      if(existing && String(existing).trim()) return String(existing).trim().slice(0,24);
+    }catch(e0){}
+    var n = 1;
+    try{
+      n = parseInt(localStorage.getItem('react_fan_seq')||'0',10)||0;
+      n = n + 1;
+      localStorage.setItem('react_fan_seq', String(n));
+    }catch(e1){ n = Math.floor(Math.random()*900)+100; }
+    return 'Fan-'+n;
+  }
   function lsGet(k, fallback){
     try{ var v=lsGet(k,null); return v==null?fallback:v; }catch(e){ return fallback; }
   }
@@ -609,7 +677,7 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     short: '/sounds/crowd_short.mp3?v13',
     cheer: '/sounds/crowd_cheer.mp3?v13',
     chant: '/sounds/crowd_chant.mp3?v13',
-    whistle: '/sounds/crowd_whistle.mp3?v13'
+    whistle: '/sounds/crowd_whistle.mp3?v14'
   };
   var STAD_FALLBACK = '/sounds/crowd_whistle.mp3?v13';
   function stadEnabled(){
@@ -1079,8 +1147,18 @@ function excitingHindi(d, ev){
     var live=useLiveMatch();
     var data=live.data,viewers=live.viewers,connected=live.connected;
     var _tab=useState('live'),tab=_tab[0],setTab=_tab[1];
-    var _w=useState(function(){ try{ return !localStorage.getItem('react_viewer_name'); }catch(e){ return true; } }),welcome=_w[0],setWelcome=_w[1];
+    var _w=useState(true),welcome=_w[0],setWelcome=_w[1];
     var _wn=useState(function(){ try{ return localStorage.getItem('react_viewer_name')||''; }catch(e){ return ''; } }),welcomeName=_wn[0],setWelcomeName=_wn[1];
+    // welcome-auto-close: if name already saved, close after 4s
+    useEffect(function(){
+      var existing='';
+      try{ existing=localStorage.getItem('react_viewer_name')||localStorage.getItem('viewer_name')||''; }catch(e){}
+      if(existing && String(existing).trim()){
+        setWelcomeName(String(existing).trim());
+        var t=setTimeout(function(){ setWelcome(false); }, 4000);
+        return function(){ clearTimeout(t); };
+      }
+    },[]);
     var _tts=useState(function(){return lsGet('cricket_tts_on','1')!=='0';}),ttsOn=_tts[0],setTtsOn=_tts[1];
     var _th=useState(function(){return lsGet('react_live_theme','dark')||'dark';}),theme=_th[0],setTheme=_th[1];
     var _lang=useState(function(){return lsGet('react_comm_lang','en')||'en';}),commLang=_lang[0],setCommLangState=_lang[1];
@@ -1117,6 +1195,13 @@ function excitingHindi(d, ev){
         if(whole > prevWhole || (ballsPart===0 && Number(prev) < ov && whole===prevWhole+1) || (ballsPart===0 && Math.floor(Number(prev)) < whole)){
           setSponsorNeon(true);
           setTimeout(function(){ setSponsorNeon(false); }, 3600);
+          // soft distant crowd whistle at start of over
+          try{
+            if(typeof stadEnabled==='function' && stadEnabled()){
+              // low volume + slightly slower = distant soft sound
+              stadPlaySample('whistle', 0.16, 0.88);
+            }
+          }catch(eW){}
         }
       }
       prevOversRef.current = ov;
@@ -1185,7 +1270,7 @@ function excitingHindi(d, ev){
 
     
     useEffect(function(){
-      document.body.classList.remove('theme-dark','theme-light','theme-ipl','theme-icc','theme-iccpro','skin-strip');
+      document.body.classList.remove('theme-navy','theme-dark','theme-light','theme-ipl','theme-icc','theme-iccpro','skin-strip');
       if(theme==='strip'){
         document.body.classList.add('theme-dark');
         document.body.classList.add('skin-strip');
@@ -1330,6 +1415,7 @@ function excitingHindi(d, ev){
           h('div',{style:{fontSize:22,fontWeight:900,margin:'10px 0',color:'#ffffff'}},(data&&data.runs!=null?data.runs:'-')+'/'+(data&&data.wickets!=null?data.wickets:'-')),
           h('div',{className:'muted',style:{fontSize:12,color:'#f1f5f9'}},'Start '+startLabel+' · '+elapsed+(meta.venue?(' · '+meta.venue):'')),
           h('div',{style:{marginTop:14,fontSize:12,fontWeight:800,color:'#ffffff'}},'Enter your name or initials'),
+          h('div',{className:'muted',style:{fontSize:11,marginTop:4,color:'#cbd5e1'}},'Optional — blank becomes Fan-1, Fan-2…'),
           h('input',{
             type:'text',
             maxLength:24,
@@ -1338,25 +1424,21 @@ function excitingHindi(d, ev){
             onChange:function(e){ setWelcomeName((e.target&&e.target.value)||''); },
             onKeyDown:function(e){
               if(e.key==='Enter'){
-                var nm=String(welcomeName||'').trim();
-                if(nm.length<1) return;
+                var nm=assignViewerName(welcomeName);
                 try{ localStorage.setItem('react_viewer_name', nm); localStorage.setItem('viewer_name', nm); }catch(ex){}
+                try{ setWelcomeName(nm); }catch(eN){}
                 setWelcome(false);
-                try{ location.reload(); }catch(ex2){}
               }
             }
           }),
           h('button',{
             className:'go',
             type:'button',
-            disabled:!String(welcomeName||'').trim(),
             onClick:function(){
-              var nm=String(welcomeName||'').trim();
-              if(nm.length<1) return;
+              var nm=assignViewerName(welcomeName);
               try{ localStorage.setItem('react_viewer_name', nm); localStorage.setItem('viewer_name', nm); }catch(ex){}
+              try{ setWelcomeName(nm); }catch(eN){}
               setWelcome(false);
-              // reload so WS connects with name
-              try{ location.reload(); }catch(ex2){}
             }
           },'Continue to live')
         )
@@ -1404,7 +1486,7 @@ function excitingHindi(d, ev){
             }},stadiumOn?'Stadium ON':'Stadium OFF'),
             h('div',{className:'sep'}),
             h('div',{className:'dd-title'},'Themes'),
-            [['dark','Broadcast Dark'],['light','Light Pro'],['iccpro','ICC Pro Light'],['ipl','IPL Night'],['icc','ICC Green'],['strip','Strip Skin']].map(function(pair){
+            [['navy','Navy Blue'],['dark','Broadcast Dark'],['light','Light Pro'],['iccpro','ICC Pro Light'],['ipl','IPL Night'],['icc','ICC Green'],['strip','Strip Skin']].map(function(pair){
               return h('button',{key:pair[0],type:'button',className:theme===pair[0]?'on':'',onClick:function(){
                 setTheme(pair[0]);lsSet('react_live_theme',pair[0]);
               }},pair[1]);
