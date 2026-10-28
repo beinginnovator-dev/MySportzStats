@@ -679,28 +679,19 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
         'जबरदस्त प्रहार — छक्का!',
         'लॉन्ग ऑन के ऊपर से गेंद बाहर।'
       ],
-      one: [
-        'गैप में गेंद घुसाई और एक रन लिया।',
-        'नरम हाथों से प्ले किया, सिंगल।'
-      ],
-      two: [
-        'डीप में रखा और दो रन बनाए।',
-        'अच्छी दौड़ — दो रन।'
-      ],
+      one: ['गैप में गेंद घुसाई और एक रन लिया।','नरम हाथों से प्ले किया, सिंगल।'],
+      two: ['डीप में रखा और दो रन बनाए।','अच्छी दौड़ — दो रन।'],
       three: ['तीन रन की अच्छी दौड़।'],
-      dot: [
-        'बेहतरीन लाइन और लेंथ — कोई रन नहीं।',
-        'दबाव बनाए रखा गेंदबाज़ ने।'
-      ],
-      wicket: [
-        'बड़ा विकेट! टीम को झटका।',
-        'शानदार गेंदबाजी का नतीजा।'
-      ],
+      dot: ['बेहतरीन लाइन और लेंथ — कोई रन नहीं।','दबाव बनाए रखा गेंदबाज़ ने।'],
+      wicket: ['बड़ा विकेट! टीम को झटका।','शानदार गेंदबाजी का नतीजा।'],
       wide: ['लाइन से बाहर — वाइड।'],
       noball: ['नो बॉल! फ्री हिट आने वाली है।']
     };
     var arr = tips[kind] || [''];
-    return arr[Math.floor(Math.random()*arr.length)] || '';
+    // stable pick (no flicker on re-render)
+    var seed = String(kind||'')+'|'+String(bw||'')+'|'+String(st||'');
+    var h=0; for(var i=0;i<seed.length;i++){ h=((h<<5)-h)+seed.charCodeAt(i); h|=0; }
+    return arr[Math.abs(h)%arr.length] || '';
   }
 function excitingHindi(d, ev){
     var st=(d&&d.strikerName)||'बल्लेबाज';
@@ -1148,15 +1139,22 @@ function excitingHindi(d, ev){
           (function(){
             var sp=(data&&data.sponsors)||{};
             if(sp.enabled===false) return null;
-            var items=(sp.items&&sp.items.length)?sp.items:((sp.names||[]).map(function(n){return {name:n,logo:''};}));
+            var names=(sp.names&&sp.names.length)?sp.names.slice():[];
+            var items=(sp.items&&sp.items.length)?sp.items.slice():names.map(function(n){return {name:n,logo:''};});
+            // merge names into items if items shorter
+            if(names.length>items.length){
+              items=names.map(function(n,i){ return items[i]||{name:n,logo:''}; });
+            }
             if(!items.length) return null;
-            var it=items[spIdx%items.length]||{};
-            var name=it.name||'';
+            var idx=Math.abs(spIdx)%items.length;
+            var it=items[idx]||{};
+            var name=it.name||names[idx]||'';
+            if(!name) return null;
             var logo=it.logo||'';
             var colors=['#fbbf24','#38bdf8','#f472b6','#4ade80','#a78bfa','#fb7185','#f97316'];
-            var col=colors[spIdx%colors.length];
-            return h('div',{className:'sponsor-flash',style:{color:col,display:'flex',alignItems:'center',justifyContent:'center',gap:8}},
-              logo?h('img',{src:logo,alt:'',style:{width:22,height:22,borderRadius:6,objectFit:'contain',background:'#fff'}}):null,
+            var col=colors[idx%colors.length];
+            return h('div',{className:'sponsor-flash',style:{color:col}},
+              logo?h('img',{src:logo,alt:''}):null,
               h('span',null, name+' Presents')
             );
           })(),
