@@ -835,6 +835,61 @@ function excitingHindi(d, ev){
     );
   }
 
+  
+  function wicketTypeFromData(d){
+    try{
+      var t = (d && (d.lastWicketType || d.wicketType || d.dismissal || '')) || '';
+      t = String(t).toLowerCase();
+      if(!t && d && d.lastEvent) t = String(d.lastEvent).toLowerCase();
+      if(/catch|caught|c\s/.test(t)) return 'CAUGHT';
+      if(/bowled/.test(t)) return 'BOWLED';
+      if(/lbw/.test(t)) return 'LBW';
+      if(/stump/.test(t)) return 'STUMPED';
+      if(/run\s*out/.test(t)) return 'RUN OUT';
+      if(/hit\s*wicket/.test(t)) return 'HIT WICKET';
+      return 'WICKET';
+    }catch(e){ return 'WICKET'; }
+  }
+  function detectEvent(d, prev){
+    if(!d) return null;
+    var chipArr = (d.thisOver && d.thisOver.balls) || d.currentOverBalls || [];
+    var chip = '';
+    var lastRuns = null;
+    if(chipArr.length){
+      var last = chipArr[chipArr.length-1];
+      if(typeof last === 'object' && last){
+        chip = String(last.label || last.chip || '').toUpperCase().trim();
+        lastRuns = last.runs != null ? Number(last.runs) : null;
+      } else {
+        chip = String(last).toUpperCase().trim();
+      }
+    }
+    var ev = String(d.lastEvent || d.event || d.lastBallEvent || '').toLowerCase();
+    function n(x){ return Number(x)||0; }
+    if(chip==='W' || (chip.charAt(0)==='W' && chip.indexOf('WD')<0) || ev.indexOf('wicket')>=0 || ev==='w' || (prev && n(d.wickets)>n(prev.wickets)))
+      return {kind:'wicket', text:wicketTypeFromData(d)};
+    if(chip==='6' || ev==='six' || ev==='6' || lastRuns===6) return {kind:'six', text:'SIX'};
+    if(chip==='4' || ev==='four' || ev==='4' || lastRuns===4) return {kind:'four', text:'FOUR'};
+    if(chip.indexOf('WD')>=0 || ev==='wide') return {kind:'extra', text:'WIDE'};
+    if(chip.indexOf('NB')>=0 || ev==='noball' || ev==='no ball') return {kind:'extra', text:'NO BALL'};
+    if(chip.indexOf('LB')>=0) return {kind:'extra', text:'LEG BYE'};
+    if(chip==='0' || chip==='.' || chip==='•' || ev==='dot') return {kind:'dot', text:'DOT'};
+    if(chip==='3' || lastRuns===3) return {kind:'runs', text:'3 RUNS'};
+    if(chip==='2' || lastRuns===2) return {kind:'runs', text:'2 RUNS'};
+    if(chip==='1' || lastRuns===1) return {kind:'runs', text:'1 RUN'};
+    if(prev){
+      if(n(d.wickets)>n(prev.wickets)) return {kind:'wicket', text:wicketTypeFromData(d)};
+      var dr = n(d.runs)-n(prev.runs);
+      if(dr>=6) return {kind:'six', text:'SIX'};
+      if(dr===4 || dr===5) return {kind:'four', text:'FOUR'};
+      if(dr===3) return {kind:'runs', text:'3 RUNS'};
+      if(dr===2) return {kind:'runs', text:'2 RUNS'};
+      if(dr===1) return {kind:'runs', text:'1 RUN'};
+      if(dr===0 && n(d.balls)>n(prev.balls)) return {kind:'dot', text:'DOT'};
+    }
+    return null;
+  }
+
   function App(){
     var live=useLiveMatch();
     var data=live.data,viewers=live.viewers,connected=live.connected;
