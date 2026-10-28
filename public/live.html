@@ -637,8 +637,8 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     var m=line.match(/^([A-Za-z][A-Za-z\s.\']+?)\s+to\s+([A-Za-z][A-Za-z\s.\']+?),?\s*(\d+)(?:st|nd|rd|th)?\s*ball\s*[—\-:]\s*(.*)$/i);
     if(m){
       var bw=m[1].trim(), st=m[2].trim(), rest=m[4]||'';
-      if(/\bSIX\b|\b6\b/i.test(rest)) return ciHiLine(bw,st,'छह रन','शानदार छक्का!');
-      if(/\bFOUR\b|\b4\b/i.test(rest)) return ciHiLine(bw,st,'चार रन','बाउंड्री!');
+      if(/\bSIX\b|\b6\b/i.test(rest)) return ciHiLine(bw,st,'छह रन', hiDetail('six',bw,st));
+      if(/\bFOUR\b|\b4\b/i.test(rest)) return ciHiLine(bw,st,'चार रन', hiDetail('four',bw,st));
       if(/WICKET|OUT|bowled|caught|lbw|stumped|run out/i.test(rest)){
         var how='आउट';
         if(/bowled/i.test(rest)) how='बोल्ड आउट';
@@ -666,7 +666,43 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     return s;
   }
   function toHindiComm(line){ return toFullHindiLine(line); }
-  function excitingHindi(d, ev){
+  
+  function hiDetail(kind, bw, st){
+    var tips = {
+      four: [
+        'ऑफ स्टंप के बाहर गुड लेंथ गेंद को कवर की तरफ़ भेजा।',
+        'शानदार टाइमिंग — गेंद बाउंड्री से टकराई।',
+        'पॉवर से मारा और चौका निकाल लिया।'
+      ],
+      six: [
+        'फुल टॉस को स्टेडियम के बाहर भेज दिया।',
+        'जबरदस्त प्रहार — छक्का!',
+        'लॉन्ग ऑन के ऊपर से गेंद बाहर।'
+      ],
+      one: [
+        'गैप में गेंद घुसाई और एक रन लिया।',
+        'नरम हाथों से प्ले किया, सिंगल।'
+      ],
+      two: [
+        'डीप में रखा और दो रन बनाए।',
+        'अच्छी दौड़ — दो रन।'
+      ],
+      three: ['तीन रन की अच्छी दौड़।'],
+      dot: [
+        'बेहतरीन लाइन और लेंथ — कोई रन नहीं।',
+        'दबाव बनाए रखा गेंदबाज़ ने।'
+      ],
+      wicket: [
+        'बड़ा विकेट! टीम को झटका।',
+        'शानदार गेंदबाजी का नतीजा।'
+      ],
+      wide: ['लाइन से बाहर — वाइड।'],
+      noball: ['नो बॉल! फ्री हिट आने वाली है।']
+    };
+    var arr = tips[kind] || [''];
+    return arr[Math.floor(Math.random()*arr.length)] || '';
+  }
+function excitingHindi(d, ev){
     var st=(d&&d.strikerName)||'बल्लेबाज';
     var bw=(d&&d.bowlerName)||'गेंदबाज';
     var over=(d&&d.overs)||'';
@@ -674,9 +710,8 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     var tail=' स्कोर '+score+(over?(' ('+over+')'):'');
     if(ev){
       var k=ev.kind;
-      // Cricinfo Hindi ball call + short colour
-      if(k==='six') return ciHiLine(bw,st,'छह रन','जबरदस्त छक्का!'+tail);
-      if(k==='four') return ciHiLine(bw,st,'चार रन','शानदार चौका!'+tail);
+      if(k==='six') return ciHiLine(bw,st,'छह रन', hiDetail('six',bw,st)+tail);
+      if(k==='four') return ciHiLine(bw,st,'चार रन', hiDetail('four',bw,st)+tail);
       if(k==='wicket'){
         var how='आउट';
         var t=String(ev.text||'');
@@ -685,14 +720,14 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
         else if(/LBW/i.test(t)) how='एलबीडब्ल्यू';
         else if(/STUMP/i.test(t)) how='स्टंपड';
         else if(/RUN\s*OUT|रन आउट/i.test(t)) how='रन आउट';
-        return ciHiLine(bw,st,how,'विकेट!'+tail);
+        return ciHiLine(bw,st,how, hiDetail('wicket',bw,st)+tail);
       }
-      if(k==='dot') return ciHiLine(bw,st,'कोई रन नहीं');
-      if(k==='runs'&&/1/.test(ev.text||'')) return ciHiLine(bw,st,'1 रन');
-      if(k==='runs'&&/2/.test(ev.text||'')) return ciHiLine(bw,st,'2 रन');
-      if(k==='runs'&&/3/.test(ev.text||'')) return ciHiLine(bw,st,'3 रन');
-      if(k==='extra'&&/WIDE/i.test(ev.text||'')) return ciHiLine(bw,st,'1 वाइड');
-      if(k==='extra'&&/NO/i.test(ev.text||'')) return ciHiLine(bw,st,'1 नो बॉल');
+      if(k==='dot') return ciHiLine(bw,st,'कोई रन नहीं', hiDetail('dot',bw,st));
+      if(k==='runs'&&/1/.test(ev.text||'')) return ciHiLine(bw,st,'1 रन', hiDetail('one',bw,st)+tail);
+      if(k==='runs'&&/2/.test(ev.text||'')) return ciHiLine(bw,st,'2 रन', hiDetail('two',bw,st)+tail);
+      if(k==='runs'&&/3/.test(ev.text||'')) return ciHiLine(bw,st,'3 रन', hiDetail('three',bw,st)+tail);
+      if(k==='extra'&&/WIDE/i.test(ev.text||'')) return ciHiLine(bw,st,'1 वाइड', hiDetail('wide',bw,st));
+      if(k==='extra'&&/NO/i.test(ev.text||'')) return ciHiLine(bw,st,'1 नो बॉल', hiDetail('noball',bw,st));
       if(k==='extra') return ciHiLine(bw,st,'अतिरिक्त रन');
     }
     var lines=(d&&d.commentary)||[];
@@ -978,8 +1013,16 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
       if(line&&line!==lastComm.current){
         lastComm.current=line;
         if(ttsOn){
-          try{ speakTts(data, detectEvent(data, prevRef.current)); }
-          catch(e){ try{ speakMale(line); }catch(e2){} }
+          try{
+            if(lsGet('react_comm_lang','en')==='hi'){
+              var hiLine=excitingHindi(data, detectEvent(data, prevRef.current))||toFullHindiLine(line);
+              speakMale(hiLine);
+              // prefer Hindi voice
+              try{ speakTts(data, detectEvent(data, prevRef.current)); }catch(eH){}
+            } else {
+              speakTts(data, detectEvent(data, prevRef.current));
+            }
+          }catch(e){ try{ speakMale(line); }catch(e2){} }
         }
       }
     },[data,ttsOn]);

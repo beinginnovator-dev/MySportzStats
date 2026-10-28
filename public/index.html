@@ -2467,7 +2467,7 @@ body[data-theme="dark"] #cup-sub-create h3 {
                 
                 <div class="cup-subtab-bar">
                     <button type="button" id="cup-subtab-create" onclick="try{(window.setCupSubTab||setCupSubTab)('create')}catch(e){console.log(e)}" class="cup-subtab is-active">Create Match</button>
-                    <button type="button" id="cup-subtab-ui" onclick="try{(window.setCupSubTab||setCupSubTab)('ui')}catch(e){console.log(e)}" class="cup-subtab">UI</button>
+                    <button type="button" id="cup-subtab-ui" onclick="try{(window.setCupSubTab||setCupSubTab)('ui')}catch(e){console.log(e)}" class="cup-subtab">Advertise UI</button>
                     <button type="button" id="cup-subtab-tournament" onclick="try{(window.setCupSubTab||setCupSubTab)('tournament')}catch(e){console.log(e)}" class="cup-subtab">Tournament</button>
                 </div>
                 <div id="cup-sub-create" class="space-y-3">
@@ -2609,7 +2609,7 @@ body[data-theme="dark"] #cup-sub-create h3 {
                 </div><!-- /cup-match-settings-wrap -->
 
                 <div id="cup-ui-settings-wrap" class="hidden border theme-border rounded-xl p-3 space-y-3 bg-sky-50/40">
-                    <h3 class="text-sm font-black theme-text uppercase tracking-wider">UI Settings</h3>
+                    <h3 class="text-sm font-black theme-text uppercase tracking-wider">Advertise UI</h3>
                     <div>
                         <label class="text-xs theme-muted font-semibold block mb-1">UI Theme</label>
                         <select id="cup-theme" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm font-bold" onchange="syncCupToScoreboardSettings(); applyTheme();">
@@ -2687,24 +2687,36 @@ body[data-theme="dark"] #cup-sub-create h3 {
                         <input type="url" id="ad-float-image" placeholder="https://.../banner.png" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
                         <input type="text" id="ad-float-text" placeholder="Ad headline / sponsor" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
                         <input type="url" id="ad-float-link" placeholder="https://click-through-link" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
-                        <div class="flex gap-2">
-                            
-                        <div class="mt-3 p-2 rounded-lg border theme-border" style="background:rgba(255,255,255,0.03)">
-                          <div class="text-xs font-bold theme-text mb-1">Multiple floating ads</div>
-                          <div class="text-[10px] theme-muted mb-1">One per line: imageURL | headline | link(optional)</div>
-                          <textarea id="ad-float-multi" rows="4" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" placeholder="https://img1.png | HSBC Bank | https://hsbc.com&#10;https://img2.png | Pethe Jewellers&#10;https://img3.png | City Motors | https://example.com"></textarea>
-                          <div class="flex gap-2 mt-2">
-                            <button type="button" onclick="previewAllFloatAds()" class="flex-1 bg-indigo-600 text-white rounded-lg py-2 text-xs font-bold">Preview all ads</button>
-                            <button type="button" onclick="saveAdSettings();alert('Ads saved')" class="flex-1 bg-emerald-600 text-white rounded-lg py-2 text-xs font-bold">Save all ads</button>
+                        
+                        <div class="mt-3 p-3 rounded-xl border theme-border space-y-2" style="background:rgba(15,23,42,0.04)">
+                          <div class="text-xs font-black theme-text">Multiple floating ads</div>
+                          <div class="text-[10px] theme-muted">One per line: imageURL | headline | link(optional)</div>
+                          <textarea id="ad-float-multi" rows="4" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" placeholder="https://img1.png | HSBC Bank | https://hsbc.com&#10;https://img2.png | Pethe Jewellers"></textarea>
+                          <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="previewAllFloatAds()" class="bg-indigo-600 text-white rounded-lg py-2 text-xs font-bold">Preview all ads</button>
+                            <button type="button" onclick="saveAdSettings();try{alert('Ads saved')}catch(e){}" class="bg-emerald-600 text-white rounded-lg py-2 text-xs font-bold">Save all ads</button>
                           </div>
                         </div>
-<button type="button" onclick="previewFloatAd()" class="flex-1 bg-indigo-600 text-white text-xs font-bold py-2 rounded-lg">Preview 5s</button>
-                            <button type="button" onclick="clearAdSettings()" class="flex-1 bg-red-500 text-white text-xs font-bold py-2 rounded-lg">Delete ad</button>
+                        <div class="grid grid-cols-2 gap-2 mt-2">
+                            <button type="button" onclick="previewFloatAd()" class="bg-indigo-600 text-white text-xs font-bold py-2 rounded-lg">Preview 5s</button>
+                            <button type="button" onclick="clearAdSettings()" class="bg-red-500 text-white text-xs font-bold py-2 rounded-lg">Delete ad</button>
                         </div>
-                        <p class="text-[10px] theme-muted">Ads are sent to the Live page with match publish.</p>
+                        <p class="text-[10px] theme-muted mt-1">Ads are sent to the Live page with match publish.</p>
+
                     </div>
 
-                </div><!-- /cup-ui-settings-wrap -->
+                </div>
+                    <div id="sponsor-names-settings" class="border theme-border rounded-xl p-3 space-y-2 mt-2 theme-card">
+                      <div class="text-sm font-black theme-text">Scoreboard sponsors (rotate all)</div>
+                      <div class="text-[10px] theme-muted">One sponsor name per line</div>
+                      <textarea id="sponsor-names-list" rows="3" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" placeholder="Pethe Jewellers&#10;HSBC Bank&#10;City Motors"></textarea>
+                      <div class="text-[10px] theme-muted">Logo URLs (same order as names — optional)</div>
+                      <textarea id="sponsor-logos-list" rows="3" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" placeholder="https://.../logo1.png&#10;https://.../logo2.png"></textarea>
+                      <label class="flex items-center gap-2 text-sm theme-text"><input type="checkbox" id="sponsor-names-enabled" checked/> Enable sponsor flash</label>
+                      <button type="button" id="btn-save-sponsors" class="w-full bg-amber-600 text-white rounded-lg py-2 font-bold text-sm">Save sponsors</button>
+                    </div>
+
+                <!-- /cup-ui-settings-wrap -->
 
             </div><!-- /cup create+settings panel -->
 
@@ -18790,49 +18802,47 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
 
 
 
-<div id="sponsor-names-settings" class="border theme-border rounded-xl p-3 space-y-2 mt-2" style="background:rgba(15,23,42,.04)">
-  <div class="text-sm font-bold">Scoreboard sponsors (rotate all)</div>
-  <div class="text-xs opacity-70">Enter one sponsor name per line</div>
-  <textarea id="sponsor-names-list" rows="3" class="w-full border theme-border rounded-lg p-2 text-sm" placeholder="Pethe Jewellers&#10;HSBC Bank&#10;City Motors"></textarea>
-  <div class="text-xs opacity-70">Logo URLs (same order as names, one per line — optional)</div>
-  <textarea id="sponsor-logos-list" rows="3" class="w-full border theme-border rounded-lg p-2 text-sm" placeholder="https://.../pethe.png&#10;https://.../hsbc.png&#10;"></textarea>
-  <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="sponsor-names-enabled" checked/> Enable sponsor flash</label>
-  <button type="button" onclick="saveSponsorNames()" class="w-full bg-amber-600 text-white rounded-lg py-2 font-bold text-sm">Save sponsors</button>
-</div>
-<script>
+
+
+
+
+<script id="sponsor-save-system">
 (function(){
   var SK='cricket_sponsors_v1';
-  function load(){ try{return JSON.parse(localStorage.getItem(SK)||'{}');}catch(e){return {};} }
+  function load(){ try{ return JSON.parse(localStorage.getItem(SK)||'{}')||{}; }catch(e){ return {}; } }
   function saveSponsorNames(){
-    var ta=document.getElementById('sponsor-names-list');
-    var lg=document.getElementById('sponsor-logos-list');
-    var en=document.getElementById('sponsor-names-enabled');
-    var names=(ta&&ta.value||'').split(/
-/).map(function(s){return s.trim();}).filter(Boolean).slice(0,20);
-    var logos=(lg&&lg.value||'').split(/
-/).map(function(s){return s.trim();});
-    var items=names.map(function(name,i){ return { name:name, logo: logos[i]||'' }; });
-    var o={enabled: !!(en&&en.checked), names:names, items:items};
-    localStorage.setItem(SK, JSON.stringify(o));
-    try{ window.__sponsorsConfig=o; }catch(e){}
-    alert('Saved '+names.length+' sponsors (all will rotate)');
+    try{
+      var ta=document.getElementById('sponsor-names-list');
+      var lg=document.getElementById('sponsor-logos-list');
+      var en=document.getElementById('sponsor-names-enabled');
+      var names=String((ta&&ta.value)||'').split(/\n/).map(function(s){return s.trim();}).filter(Boolean).slice(0,20);
+      var logos=String((lg&&lg.value)||'').split(/\n/).map(function(s){return s.trim();});
+      var items=names.map(function(name,i){ return { name:name, logo: logos[i]||'' }; });
+      var o={ enabled: en ? !!en.checked : true, names: names, items: items };
+      localStorage.setItem(SK, JSON.stringify(o));
+      window.__sponsorsConfig=o;
+      try{ if(typeof buildLivePayload==='function'){ /* nudge publish */ } }catch(e){}
+      alert('Saved '+names.length+' sponsors');
+    }catch(err){ alert('Save failed: '+err); }
   }
-  window.saveSponsorNames=saveSponsorNames;
-  window.getSponsorsConfig=function(){ return load(); };
-  document.addEventListener('DOMContentLoaded', function(){
+  window.saveSponsorNames = saveSponsorNames;
+  window.getSponsorsConfig = load;
+  function bind(){
+    var btn=document.getElementById('btn-save-sponsors');
+    if(btn && !btn._bound){ btn._bound=1; btn.addEventListener('click', function(e){ e.preventDefault(); saveSponsorNames(); }); }
     var o=load();
     var ta=document.getElementById('sponsor-names-list');
     var lg=document.getElementById('sponsor-logos-list');
     var en=document.getElementById('sponsor-names-enabled');
-    if(ta) ta.value=(o.names||[]).join('
-');
-    if(lg&&o.items) lg.value=o.items.map(function(x){return x.logo||'';}).join('
-');
-    if(en) en.checked=o.enabled!==false;
-  });
+    if(ta && o.names) ta.value=(o.names||[]).join('\n');
+    if(lg && o.items) lg.value=(o.items||[]).map(function(x){return x.logo||'';}).join('\n');
+    if(en) en.checked = o.enabled !== false;
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind);
+  else bind();
+  setTimeout(bind, 500);
 })();
 </script>
-
 
 </body>
 </html>
