@@ -16989,13 +16989,23 @@ body[data-theme="dark"] button.cup-subtab.is-active {
     }
     return ov;
   }
-  function showFloatAd(force){
+  function showFloatAd(force, pickIndex){
     var o = loadAd();
     if (!force && !o.enabled) return;
-    if (!o.text && !o.image) {
+    // Multi-ad support: rotate through o.ads
+    var img = o.image || '';
+    var txt = o.text || '';
+    var link = o.link || '';
+    if (o.ads && o.ads.length) {
+      if (typeof window.__adRotateIdx !== 'number') window.__adRotateIdx = 0;
+      var idx = (pickIndex != null) ? pickIndex : (window.__adRotateIdx++ % o.ads.length);
+      var a = o.ads[idx] || o.ads[0];
+      if (a) { img = a.image || img; txt = a.text || txt; if (a.link) link = a.link; }
+    }
+    if (!txt && !img) {
       if (force) {
         try {
-          if (typeof showModal === 'function') showModal({ title: 'Ad empty', message: 'Add image URL or text first.', icon: 'ℹ️' });
+          if (typeof showModal === 'function') showModal({ title: 'Ad empty', message: 'Add image URL or text (or multiple ads) first.', icon: 'ℹ️' });
           else alert('Ad empty — add image URL or text first.');
         } catch(e) { alert('Ad empty'); }
       }
@@ -17004,6 +17014,8 @@ body[data-theme="dark"] button.cup-subtab.is-active {
     var ov = ensureOverlay();
     var body = document.getElementById('float-ad-body');
     if (!body) return;
+    // stash resolved for body fill below
+    o = Object.assign({}, o, { image: img, text: txt, link: link });
     ov.classList.remove('rect','vertical');
     ov.classList.add(o.shape === 'vertical' ? 'vertical' : 'rect');
     var imgUrl = resolveImageUrl(o.image);
@@ -18770,7 +18782,8 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
 <div id="sponsor-names-settings" class="border theme-border rounded-xl p-3 space-y-2 mt-2" style="background:rgba(15,23,42,.04)">
   <div class="text-sm font-bold">Scoreboard sponsor flash (multiple)</div>
   <div class="text-xs opacity-70">Names rotate above match title e.g. "Pethe Jewellers Presents"</div>
-  <textarea id="sponsor-names-list" rows="3" class="w-full border theme-border rounded-lg p-2 text-sm" placeholder="Pethe Jewellers&#10;Local Motors&#10;City Bank"></textarea>
+  <div class="text-xs opacity-70">One per line: Name or Name | logoImageURL</div>
+  <textarea id="sponsor-names-list" rows="3" class="w-full border theme-border rounded-lg p-2 text-sm" placeholder="Pethe Jewellers | https://.../logo.png&#10;Local Motors&#10;City Bank | https://.../logo.png"></textarea>
   <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="sponsor-names-enabled" checked/> Enable sponsor flash</label>
   <button type="button" onclick="saveSponsorNames()" class="w-full bg-amber-600 text-white rounded-lg py-2 font-bold text-sm">Save sponsors</button>
 </div>
@@ -18781,8 +18794,13 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
   function saveSponsorNames(){
     var ta=document.getElementById('sponsor-names-list');
     var en=document.getElementById('sponsor-names-enabled');
-    var names=(ta&&ta.value||'').split(/\n|,/).map(function(s){return s.trim();}).filter(Boolean).slice(0,20);
-    var o={enabled: !!(en&&en.checked), names:names};
+    var items=(ta&&ta.value||'').split(/\n/).map(function(s){
+      s=String(s||'').trim(); if(!s) return null;
+      var p=s.split('|');
+      return { name: (p[0]||'').trim(), logo: (p[1]||'').trim() };
+    }).filter(Boolean).slice(0,20);
+    var names=items.map(function(x){return x.name;});
+    var o={enabled: !!(en&&en.checked), names:names, items:items};
     localStorage.setItem(SK, JSON.stringify(o));
     try{ window.__sponsorsConfig=o; }catch(e){}
     alert('Sponsors saved ('+names.length+')');
@@ -18793,7 +18811,7 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
     var o=load();
     var ta=document.getElementById('sponsor-names-list');
     var en=document.getElementById('sponsor-names-enabled');
-    if(ta&&o.names) ta.value=(o.names||[]).join('\n');
+    if(ta){ if(o.items&&o.items.length) ta.value=o.items.map(function(x){return x.logo?(x.name+' | '+x.logo):x.name;}).join('\n'); else if(o.names) ta.value=(o.names||[]).join('\n'); }
     if(en) en.checked=o.enabled!==false;
   });
 })();

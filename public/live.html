@@ -179,7 +179,8 @@ td{padding:6px 4px;border-bottom:1px solid var(--line)}
 #error{display:none;padding:12px;color:#fecaca;background:#450a0a;font-size:13px}
 
 .sponsor-flash{text-align:center;font-size:14px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;
-  min-height:18px;margin:0 0 4px;animation:sponsorBlink 1.6s ease-in-out infinite}
+  min-height:22px;margin:0 0 4px;animation:sponsorBlink 1.6s ease-in-out infinite;display:flex;align-items:center;justify-content:center;gap:8px}
+.sponsor-flash img{width:22px;height:22px;border-radius:6px;object-fit:contain;background:#fff;flex-shrink:0}
 @keyframes sponsorBlink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(1.03)}}
 .ad-overlay{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;
   background:rgba(2,6,23,.55);padding:16px}
@@ -382,7 +383,7 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     var bw=(d.bowlerName||'Bowler');
     var over=d.overs||'';
     var score=(d.runs!=null?d.runs:'')+'/'+(d.wickets!=null?d.wickets:'');
-    var hi = COMM_LANG==='hi';
+    var hi = (lsGet('react_comm_lang','en')==='hi');
     if(ev){
       var k=ev.kind;
       if(k==='four') return hi ? (bw+' की गेंद पर '+st+' ने शानदार चौका मारा! बाउंड्री! स्कोर '+score+' ('+over+')') : (bw+' to '+st+' — FOUR! Cracking shot through the gap. '+st+' looking good. '+score+' ('+over+').');
@@ -403,7 +404,7 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     var lines=d.commentary||[];
     if(lines.length){
       var last=String(lines[lines.length-1]||'').split('*').join(' ').trim();
-      if(hi) return last; // still speak text; browser hi voice
+      if(hi) return toHindiComm(last);
       return last;
     }
     return '';
@@ -433,10 +434,11 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
       lastSpokenSig=sig;
       speechSynthesis.cancel();
       var u=new SpeechSynthesisUtterance(line);
-      u.lang = COMM_LANG==='hi' ? 'hi-IN' : 'en-IN';
-      var v=pickVoice(COMM_LANG);
+      var langNow=lsGet('react_comm_lang','en');
+      u.lang = langNow==='hi' ? 'hi-IN' : 'en-IN';
+      var v=pickVoice(langNow);
       if(v) u.voice=v;
-      u.rate = COMM_LANG==='hi' ? 1.0 : 1.08;
+      u.rate = langNow==='hi' ? 1.0 : 1.08;
       u.pitch = 1.0;
       u.volume = 1;
       speechSynthesis.speak(u);
@@ -648,8 +650,8 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     rest=rest.replace(/\b(\d+)\s*runs?\b/gi, function(x){ return '|||HIB|||'+x+'|||/HIB|||'; });
     return {over:over, text:rest, stamp:stamp};
   }
-  function renderCommLine(line, key){
-    var lang=lsGet('react_comm_lang','en'); if(lang==='hi') line=toHindiComm(line);
+  function renderCommLine(line, key, langOpt){
+    var lang=langOpt||lsGet('react_comm_lang','en'); if(lang==='hi') line=toHindiComm(line);
     var f=formatCommLine(line);
     var parts=String(f.text).split(/(\|\|\|HI[BW]\|\|\|.*?\|\|\|\/HI[BW]\|\|\|)/);
     var kids=[];
@@ -802,23 +804,28 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     var flags=useMemo(function(){return flagsForMatch(data);},[data]);
 
     useEffect(function(){
-      var t=setInterval(function(){ setSpIdx(function(x){return x+1;}); }, 4000);
-      return function(){ clearInterval(t); };
-    },[]);
-    useEffect(function(){
       if(!data) return;
       var fa=data.floatAd;
       if(!fa||!fa.enabled) return;
-      var ev=data.floatAdEvent;
-      if(!ev) return;
-      if(window.__lastAdEv===ev) return;
-      window.__lastAdEv=ev;
       var trigger=fa.trigger||'over';
-      var et=String(ev).split('-')[0];
-      if(trigger!=='random' && trigger!==et && !(trigger==='boundary' && (et==='boundary'||et==='four'||et==='six'))) return;
+      var ev=data.floatAdEvent;
+      var last=String(data.lastEvent||'').toLowerCase();
+      // Build event token
+      var et=null;
+      if(ev) et=String(ev).split('-')[0];
+      else if(trigger==='boundary' && (last==='four'||last==='six'||last==='boundary')) et='boundary';
+      else if(trigger==='wicket' && last==='wicket') et='wicket';
+      else if(trigger==='over' && n(data.balls)>0 && n(data.balls)%6===0) et='over';
+      else if(trigger==='innings' && (data.matchEnded||last==='innings')) et='innings';
+      if(!et) return;
+      if(trigger!=='random' && trigger!==et && !(trigger==='boundary'&&(et==='boundary'||et==='four'||et==='six'))) return;
+      var sig=et+'|'+String(data.balls)+'|'+String(data.runs)+'|'+String(data.wickets)+'|'+String(ev||'');
+      if(window.__lastAdEv===sig) return;
+      window.__lastAdEv=sig;
       var pick={image:fa.image||'',text:fa.text||'',link:fa.link||'',shape:fa.shape||'rect'};
       if(fa.ads&&fa.ads.length){
-        var a=fa.ads[Math.floor(Math.random()*fa.ads.length)];
+        if(typeof window.__adRot!=='number') window.__adRot=0;
+        var a=fa.ads[window.__adRot++ % fa.ads.length];
         if(a){ pick.image=a.image||pick.image; pick.text=a.text||pick.text; }
       }
       if(!pick.image&&!pick.text) return;
@@ -827,7 +834,8 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
         setTimeout(function(){ setAdShow(null); }, 5000);
       }, 3000);
       return function(){ clearTimeout(tm); };
-    },[data&&data.floatAdEvent]);
+    },[data&&data.floatAdEvent, data&&data.lastEvent, data&&data.balls, data&&data.runs, data&&data.wickets]);
+
     
     useEffect(function(){
       document.body.classList.remove('theme-dark','theme-light','theme-ipl','theme-icc','theme-iccpro','skin-strip');
@@ -986,8 +994,8 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
           h('div',{className:'settings-dd'},
             h('div',{className:'dd-title'},'Sound'),
             h('div',{className:'dd-title'},'Commentary language'),
-            h('button',{type:'button',className:commLang==='en'?'on':'',onClick:function(){setCommLangState('en');setCommLang('en');}},'English'),
-            h('button',{type:'button',className:commLang==='hi'?'on':'',onClick:function(){setCommLangState('hi');setCommLang('hi'); try{speakTts({strikerName:'अमेय',bowlerName:'मोहन',runs:12,wickets:0,overs:'1.2',balls:8},{kind:'four'});}catch(e){}}},'Hindi'),
+            h('button',{type:'button',className:commLang==='en'?'on':'',onClick:function(){lsSet('react_comm_lang','en');setCommLangState('en');setCommLang('en');}},'English'),
+            h('button',{type:'button',className:commLang==='hi'?'on':'',onClick:function(){lsSet('react_comm_lang','hi');setCommLangState('hi');setCommLang('hi'); try{speakTts({strikerName:'अमेय',bowlerName:'मोहन',runs:12,wickets:0,overs:'1.2',balls:8},{kind:'four'});}catch(e){}}},'Hindi'),
             h('button',{type:'button',className:ttsOn?'on':'',onClick:function(){
               var next=!ttsOn;setTtsOn(next);lsSet('cricket_tts_on',next?'1':'0');if(next)try{ var u=excitingLine({strikerName:'Batter',bowlerName:'Bowler',runs:10,wickets:0,overs:'1.0'}, {kind:'four'}); speakTts({strikerName:'Batter',bowlerName:'Bowler',runs:10,wickets:0,overs:'1.0',balls:6},{kind:'four'}); }catch(e){speakMale('Commentary on');}
             }},ttsOn?'Commentary ON (Male)':'Commentary OFF'),
@@ -1014,12 +1022,18 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
         h('div',{className:'match-header'},
           (function(){
             var sp=(data&&data.sponsors)||{};
-            var names=(sp.enabled!==false&&sp.names&&sp.names.length)?sp.names:[];
-            if(!names.length) return null;
-            var name=names[spIdx%names.length];
+            if(sp.enabled===false) return null;
+            var items=(sp.items&&sp.items.length)?sp.items:((sp.names||[]).map(function(n){return {name:n,logo:''};}));
+            if(!items.length) return null;
+            var it=items[spIdx%items.length]||{};
+            var name=it.name||'';
+            var logo=it.logo||'';
             var colors=['#fbbf24','#38bdf8','#f472b6','#4ade80','#a78bfa','#fb7185','#f97316'];
             var col=colors[spIdx%colors.length];
-            return h('div',{className:'sponsor-flash',style:{color:col}}, name+' Presents');
+            return h('div',{className:'sponsor-flash',style:{color:col,display:'flex',alignItems:'center',justifyContent:'center',gap:8}},
+              logo?h('img',{src:logo,alt:'',style:{width:22,height:22,borderRadius:6,objectFit:'contain',background:'#fff'}}):null,
+              h('span',null, name+' Presents')
+            );
           })(),
           h('div',{className:'title'},title),
           venueLine?h('div',{className:'sub'},venueLine):null,
@@ -1164,11 +1178,16 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
             h('button',{className:'btn',onClick:function(){speakMale('Four runs! Brilliant timing!');}},'Test male voice')
           ),
           (function(){
+            var lang=commLang||lsGet('react_comm_lang','en');
             var items=buildOverSummaries(data).reverse().slice(0,60);
-            if(!items.length) return h('div',{className:'muted'},'No commentary yet');
+            if(!items.length) return h('div',{className:'muted'}, lang==='hi' ? 'अभी कोई कमेंट्री नहीं' : 'No commentary yet');
             return items.map(function(it,i){
-              if(it.type==='sum') return h('div',{className:'comm-over-sum',key:'s'+i}, it.text);
-              return renderCommLine(it.text,i);
+              if(it.type==='sum') {
+                var st=it.text;
+                if(lang==='hi') st=toHindiComm(st);
+                return h('div',{className:'comm-over-sum',key:'s'+i}, st);
+              }
+              return renderCommLine(it.text,i,lang);
             });
           })(),
           !(data&&data.commentary&&data.commentary.length)?h('div',{className:'muted'},'No commentary yet'):null
