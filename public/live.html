@@ -384,10 +384,11 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     var over=d.overs||'';
     var score=(d.runs!=null?d.runs:'')+'/'+(d.wickets!=null?d.wickets:'');
     var hi = (lsGet('react_comm_lang','en')==='hi');
+    if(hi) return excitingHindi(d, ev);
     if(ev){
       var k=ev.kind;
-      if(k==='four') return hi ? (bw+' की गेंद पर '+st+' ने शानदार चौका मारा! बाउंड्री! स्कोर '+score+' ('+over+')') : (bw+' to '+st+' — FOUR! Cracking shot through the gap. '+st+' looking good. '+score+' ('+over+').');
-      if(k==='six') return hi ? (bw+' की गेंद '+st+' ने स्टेडियम के बाहर भेजी! छक्का! स्कोर '+score+' ('+over+')') : (bw+' to '+st+' — SIX! Out of the ground! Huge hit. '+score+' ('+over+').');
+      if(k==='four') return (bw+' to '+st+' — FOUR! Cracking shot through the gap. '+st+' looking good. '+score+' ('+over+').');
+      if(k==='six') return (bw+' to '+st+' — SIX! Out of the ground! Huge hit. '+score+' ('+over+').');
       if(k==='wicket'){
         var wt=(ev.text&&ev.text!=='WICKET')?ev.text:'WICKET';
         return hi ? ('विकेट! '+st+' आउट — '+wt+'. शानदार गेंदबाजी '+bw+' की तरफ से। स्कोर '+score+' ('+over+')') : (wt+'! '+bw+' gets '+st+'. Big moment. '+score+' ('+over+').');
@@ -597,25 +598,106 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     var t=h.endedAt||h.ts||h.date||h.finishedAt||h.savedAt||h.time;
     return fmtTime(t);
   }
-  function toHindiComm(line){
-    var s=String(line||'');
-    // Authentic broadcast Hindi (ESPNcricinfo / Star Sports style)
-    var map=[
-      [/\bFOUR\b/gi,'चौका'],[/\bSIX\b/gi,'छक्का'],[/\bWICKET\b/gi,'विकेट'],
-      [/\bOUT\b/gi,'आउट'],[/\bclean bowled\b/gi,'क्लीन बोल्ड'],[/\bbowled\b/gi,'बोल्ड'],
-      [/\bcatch(ed)?\b/gi,'कैच'],[/\bLBW\b/gi,'एलबीडब्ल्यू'],[/\brun out\b/gi,'रन आउट'],
-      [/\bstumped\b/gi,'स्टंपड'],[/\bwide\b/gi,'वाइड'],[/\bno[-\s]?ball/gi,'नो बॉल'],
-      [/\bleg bye\b/gi,'लेग बाय'],[/\bbye\b/gi,'बाय'],[/\bdot ball\b/gi,'डॉट बॉल'],
-      [/\bdot\b/gi,'डॉट'],[/\bfree hit\b/gi,'फ्री हिट'],
-      [/\bEnd of over\b/gi,'ओवर समाप्त'],[/\bover complete\b/gi,'ओवर पूरा'],
-      [/\bCracking shot\b/gi,'शानदार शॉट'],[/\bHuge hit\b/gi,'जबरदस्त प्रहार'],
-      [/\bBrilliant timing\b/gi,'शानदार टाइमिंग'],[/\bBig moment\b/gi,'बड़ा पल'],
-      [/\bto\b/g,'से'],[/\bruns?\b/gi,'रन'],[/\bboundary\b/gi,'बाउंड्री'],
-      [/\binnings\b/gi,'पारी'],[/\bmatch\b/gi,'मैच'],[/\bstriker\b/gi,'स्ट्राइकर'],
-      [/\bbowler\b/gi,'गेंदबाज'],[/\bbatter\b/gi,'बल्लेबाज'],[/\bbatsman\b/gi,'बल्लेबाज']
-    ];
-    for(var i=0;i<map.length;i++){ s=s.replace(map[i][0], map[i][1]); }
+  
+  
+  /** Cricinfo Hindi (गेंद-दर-गेंद) style — e.g. "हार्दिक, रबाडा को, 1 वाइड" / "अभिषेक, स्टब्स को, छह रन" */
+  var CI_HI = {
+    four: ['चार रन','चौका'],
+    six: ['छह रन','छक्का'],
+    one: '1 रन',
+    two: '2 रन',
+    three: '3 रन',
+    dot: 'कोई रन नहीं',
+    wide: '1 वाइड',
+    noball: '1 नो बॉल',
+    out: 'आउट',
+    overEnd: 'ओवर समाप्त',
+    wicket: 'विकेट'
+  };
+  function ciHiLine(bw, st, eventHi, extra){
+    // Cricinfo: "गेंदबाज, बल्लेबाज को, इवेंट"
+    var a = (bw||'गेंदबाज').trim();
+    var b = (st||'बल्लेबाज').trim();
+    var line = a + ', ' + b + ' को, ' + eventHi;
+    if(extra) line += ' — ' + extra;
+    return line;
+  }
+  function toFullHindiLine(line){
+    line=String(line||'').split('*').join(' ').trim();
+    if(!line) return '';
+    // Over end
+    if(/over\s*complete|end of over|Inns?\d*\s*Over|ओवर\s*(समाप्त|पूरा)/i.test(line)){
+      var om=line.match(/Over\s*(\d+)/i)||line.match(/ओवर\s*(\d+)/);
+      var on=om?om[1]:'';
+      var runsM=line.match(/(\d+)\s*रन|(\d+)\s*runs?/i);
+      var runs=runsM?(runsM[1]||runsM[2]):'';
+      return CI_HI.overEnd + (on?(' '+on):'') + (runs?(' · '+runs+' रन'):'');
+    }
+    // English pattern: Bowler to Batter, Nth ball — EVENT
+    var m=line.match(/^([A-Za-z][A-Za-z\s.\']+?)\s+to\s+([A-Za-z][A-Za-z\s.\']+?),?\s*(\d+)(?:st|nd|rd|th)?\s*ball\s*[—\-:]\s*(.*)$/i);
+    if(m){
+      var bw=m[1].trim(), st=m[2].trim(), rest=m[4]||'';
+      if(/\bSIX\b|\b6\b/i.test(rest)) return ciHiLine(bw,st,'छह रन','शानदार छक्का!');
+      if(/\bFOUR\b|\b4\b/i.test(rest)) return ciHiLine(bw,st,'चार रन','बाउंड्री!');
+      if(/WICKET|OUT|bowled|caught|lbw|stumped|run out/i.test(rest)){
+        var how='आउट';
+        if(/bowled/i.test(rest)) how='बोल्ड आउट';
+        else if(/catch|caught/i.test(rest)) how='कैच आउट';
+        else if(/lbw/i.test(rest)) how='एलबीडब्ल्यू';
+        else if(/stump/i.test(rest)) how='स्टंपड';
+        else if(/run\s*out/i.test(rest)) how='रन आउट';
+        return ciHiLine(bw,st,how,'विकेट!');
+      }
+      if(/wide/i.test(rest)) return ciHiLine(bw,st,'1 वाइड');
+      if(/no[-\s]?ball/i.test(rest)) return ciHiLine(bw,st,'1 नो बॉल');
+      if(/\bdot\b/i.test(rest)) return ciHiLine(bw,st,'कोई रन नहीं');
+      var rm=rest.match(/\b([1-3])\s*runs?/i);
+      if(rm) return ciHiLine(bw,st, rm[1]+' रन');
+      return ciHiLine(bw,st,'1 रन');
+    }
+    // Already partial Hindi / mixed — normalize key phrases only
+    var s=line;
+    s=s.replace(/\bFOUR\b/gi,'चार रन');
+    s=s.replace(/\bSIX\b/gi,'छह रन');
+    s=s.replace(/\bWICKET\b/gi,'विकेट');
+    s=s.replace(/End of over/gi,'ओवर समाप्त');
+    s=s.replace(/over complete/gi,'ओवर समाप्त');
+    s=s.replace(/\bdot ball\b/gi,'कोई रन नहीं');
     return s;
+  }
+  function toHindiComm(line){ return toFullHindiLine(line); }
+  function excitingHindi(d, ev){
+    var st=(d&&d.strikerName)||'बल्लेबाज';
+    var bw=(d&&d.bowlerName)||'गेंदबाज';
+    var over=(d&&d.overs)||'';
+    var score=(d&&d.runs!=null?d.runs:'')+'/'+(d&&d.wickets!=null?d.wickets:'');
+    var tail=' स्कोर '+score+(over?(' ('+over+')'):'');
+    if(ev){
+      var k=ev.kind;
+      // Cricinfo Hindi ball call + short colour
+      if(k==='six') return ciHiLine(bw,st,'छह रन','जबरदस्त छक्का!'+tail);
+      if(k==='four') return ciHiLine(bw,st,'चार रन','शानदार चौका!'+tail);
+      if(k==='wicket'){
+        var how='आउट';
+        var t=String(ev.text||'');
+        if(/BOWLED|बोल्ड/i.test(t)) how='बोल्ड आउट';
+        else if(/CATCH|कैच/i.test(t)) how='कैच आउट';
+        else if(/LBW/i.test(t)) how='एलबीडब्ल्यू';
+        else if(/STUMP/i.test(t)) how='स्टंपड';
+        else if(/RUN\s*OUT|रन आउट/i.test(t)) how='रन आउट';
+        return ciHiLine(bw,st,how,'विकेट!'+tail);
+      }
+      if(k==='dot') return ciHiLine(bw,st,'कोई रन नहीं');
+      if(k==='runs'&&/1/.test(ev.text||'')) return ciHiLine(bw,st,'1 रन');
+      if(k==='runs'&&/2/.test(ev.text||'')) return ciHiLine(bw,st,'2 रन');
+      if(k==='runs'&&/3/.test(ev.text||'')) return ciHiLine(bw,st,'3 रन');
+      if(k==='extra'&&/WIDE/i.test(ev.text||'')) return ciHiLine(bw,st,'1 वाइड');
+      if(k==='extra'&&/NO/i.test(ev.text||'')) return ciHiLine(bw,st,'1 नो बॉल');
+      if(k==='extra') return ciHiLine(bw,st,'अतिरिक्त रन');
+    }
+    var lines=(d&&d.commentary)||[];
+    if(lines.length) return toFullHindiLine(lines[lines.length-1]);
+    return '';
   }
 
   function stampClass(label){
@@ -685,7 +767,7 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
       } else if(m && m[2]==='5'){
         // estimate over summary
         var on=m[1];
-        out.push({type:'sum', text: 'End of over '+((parseInt(on,10))+1)+' · '+((data&&data.runs)!=null?data.runs:'-')+'/'+((data&&data.wickets)!=null?data.wickets:'-')+' ('+((data&&data.overs)||'')+') · CRR '+(data&&data.crr!=null?Number(data.crr).toFixed(2):'-')});
+        out.push({type:'sum', text: 'ओवर समाप्त '+((parseInt(on,10))+1)+' · '+((data&&data.runs)!=null?data.runs:'-')+'/'+((data&&data.wickets)!=null?data.wickets:'-')+' · CRR '+(data&&data.crr!=null?Number(data.crr).toFixed(2):'-')});
       }
     }
     return out;
