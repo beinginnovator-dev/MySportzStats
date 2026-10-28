@@ -7696,7 +7696,7 @@ function placeBoundaryAnimationOnStriker(toast){
               }
               return window.__lastBallEvent || null;
             } catch(e){ return null; } })(),
-            sponsors: (function(){ try { if (typeof getSponsorsConfig==='function') return getSponsorsConfig(); var o=JSON.parse(localStorage.getItem('cricket_sponsors_v1')||localStorage.getItem('cricket_sponsors')||'{}'); if(o&&o.names&&!o.items) o.items=o.names.map(function(n){return {name:n,logo:''};}); return o||{enabled:false,names:[],items:[]}; } catch(e){ return {enabled:false,names:[],items:[]}; } })(),
+            sponsors: (function(){ try { var o = (typeof getSponsorsConfig==='function') ? getSponsorsConfig() : JSON.parse(localStorage.getItem('cricket_sponsors_v1')||localStorage.getItem('cricket_sponsors')||'{}'); o=o||{}; var names=(o.names||[]).slice(); if((!names.length)&&o.items) names=(o.items||[]).map(function(x){return x&&x.name;}).filter(Boolean); var items=(o.items&&o.items.length)?o.items.slice():names.map(function(n){return {name:n,logo:''};}); return {enabled:o.enabled!==false, names:names, items:items}; } catch(e){ return {enabled:false,names:[],items:[]}; } })(),
             fixtures: (function(){
                 try {
                     var d = (typeof loadTournament === 'function') ? loadTournament() : null;
