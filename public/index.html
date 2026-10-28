@@ -2671,6 +2671,12 @@ body[data-theme="dark"] #cup-sub-create h3 {
                         <label class="text-xs font-black theme-text uppercase tracking-wider block">📢 Floating Ads</label>
                         <label class="flex items-center gap-2 text-sm theme-text"><input type="checkbox" id="ad-float-enabled" onchange="saveAdSettings()"/> Enable floating ads</label>
                         <label class="text-[10px] theme-muted font-semibold block">Show when</label>
+                        <label class="text-[10px] theme-muted font-semibold block">Ad play mode</label>
+                        <select id="ad-float-playmode" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
+                            <option value="trigger">On trigger only (1 ad)</option>
+                            <option value="sequence">Sequence all ads on trigger</option>
+                            <option value="random">Random 1 ad on trigger</option>
+                        </select>
                         <select id="ad-float-trigger" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
                             <option value="over">After each over</option>
                             <option value="innings">After innings</option>
@@ -2722,7 +2728,7 @@ body[data-theme="dark"] #cup-sub-create h3 {
                       <div class="text-[10px] theme-muted">Logo URLs (same order, optional)</div>
                       <textarea id="sponsor-logos-list" rows="3" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" placeholder=""></textarea>
                       <label class="flex items-center gap-2 text-sm theme-text"><input type="checkbox" id="sponsor-names-enabled" checked/> Enable sponsor flash</label>
-                      <button type="button" id="btn-save-sponsors" class="w-full bg-amber-600 text-white rounded-lg py-2 font-bold text-sm">Save sponsors</button>
+                      <button type="button" id="btn-save-sponsors" onclick="try{window.saveSponsorNames()}catch(e){alert(e)}" class="w-full bg-amber-600 text-white rounded-lg py-2 font-bold text-sm">Save sponsors</button>
                     </div>
 
                 <!-- /cup-ui-settings-wrap -->
@@ -7690,7 +7696,7 @@ function placeBoundaryAnimationOnStriker(toast){
               }
               return window.__lastBallEvent || null;
             } catch(e){ return null; } })(),
-            sponsors: (function(){ try { if (typeof getSponsorsConfig==='function') return getSponsorsConfig(); return JSON.parse(localStorage.getItem('cricket_sponsors_v1')||'{}'); } catch(e){ return {enabled:false,names:[]}; } })(),
+            sponsors: (function(){ try { if (typeof getSponsorsConfig==='function') return getSponsorsConfig(); var o=JSON.parse(localStorage.getItem('cricket_sponsors_v1')||localStorage.getItem('cricket_sponsors')||'{}'); if(o&&o.names&&!o.items) o.items=o.names.map(function(n){return {name:n,logo:''};}); return o||{enabled:false,names:[],items:[]}; } catch(e){ return {enabled:false,names:[],items:[]}; } })(),
             fixtures: (function(){
                 try {
                     var d = (typeof loadTournament === 'function') ? loadTournament() : null;
@@ -17139,15 +17145,43 @@ body[data-theme="dark"] button.cup-subtab.is-active {
       if (!o || !o.enabled) return;
       var t = o.trigger || 'over';
       var et = String(eventType || '');
+      var mode = o.playMode || 'trigger';
       if (t === 'random') {
         if (Math.random() >= 0.18) return;
-        try { window.__lastFloatAdEvent = 'random-' + Date.now(); } catch(eLE){}
-        setTimeout(function(){ try{ showFloatAd(false); }catch(e){} }, 3000);
+        et = 'random';
+      } else if (t !== et) {
         return;
       }
-      if (t !== et) return;
-      try { window.__lastFloatAdEvent = et + '-' + Date.now(); } catch(eLE2){}
-      setTimeout(function(){ try{ showFloatAd(false); }catch(e){} }, 3000);
+      try { window.__lastFloatAdEvent = et + '-' + Date.now(); } catch(eLE){}
+      var ads = (o.ads && o.ads.length) ? o.ads.slice() : [];
+      if (!ads.length && (o.image || o.text)) ads = [{image:o.image||'', text:o.text||'', link:o.link||''}];
+      if (!ads.length) return;
+      function showOne(a){
+        try {
+          localStorage.setItem(AD_KEY, JSON.stringify(Object.assign({}, o, { image:a.image||'', text:a.text||'', link:a.link||'', enabled:true })));
+          showFloatAd(true);
+        } catch(e){}
+      }
+      setTimeout(function(){
+        if (mode === 'sequence') {
+          var i = 0;
+          function next(){
+            if (i >= ads.length) {
+              try { localStorage.setItem(AD_KEY, JSON.stringify(o)); } catch(e){}
+              return;
+            }
+            showOne(ads[i++]);
+            setTimeout(next, 5500);
+          }
+          next();
+        } else if (mode === 'random') {
+          showOne(ads[Math.floor(Math.random()*ads.length)]);
+          setTimeout(function(){ try { localStorage.setItem(AD_KEY, JSON.stringify(o)); } catch(e){} }, 5500);
+        } else {
+          showOne(ads[0]);
+          setTimeout(function(){ try { localStorage.setItem(AD_KEY, JSON.stringify(o)); } catch(e){} }, 5500);
+        }
+      }, 3000);
     } catch(eAll){}
   }
   window.saveAdSettings = saveAdSettings;
@@ -18816,36 +18850,56 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
 
 
 
+
 <script id="sponsor-save-system">
 (function(){
   var SK='cricket_sponsors_v1';
-  function load(){ try{ return JSON.parse(localStorage.getItem(SK)||'{}')||{}; }catch(e){ return {}; } }
+  function load(){
+    try { return JSON.parse(localStorage.getItem(SK)||'{}')||{}; } catch(e){ return {}; }
+  }
   function saveSponsorNames(){
     try{
       var ta=document.getElementById('sponsor-names-list');
       var lg=document.getElementById('sponsor-logos-list');
       var en=document.getElementById('sponsor-names-enabled');
-      var names=String((ta&&ta.value)||'').split(/
+      var raw=ta ? String(ta.value||'') : '';
+      var names=raw.split(/?
 /).map(function(s){return s.trim();}).filter(Boolean).slice(0,20);
-      var logos=String((lg&&lg.value)||'').split(/
-/).map(function(s){return s.trim();});
+      var logos=lg ? String(lg.value||'').split(/?
+/).map(function(s){return s.trim();}) : [];
       var items=names.map(function(name,i){ return { name:name, logo: logos[i]||'' }; });
       var o={ enabled: en ? !!en.checked : true, names: names, items: items };
       localStorage.setItem(SK, JSON.stringify(o));
-      window.__sponsorsConfig=o;
-      alert('Saved '+names.length+' sponsors');
-    }catch(err){ alert('Save failed: '+err); }
+      try { localStorage.setItem('cricket_sponsors', JSON.stringify(o)); } catch(e2){}
+      window.__sponsorsConfig = o;
+      // force live payload to pick up on next publish/poll
+      try {
+        if (typeof window.publishLiveScore === 'function') window.publishLiveScore();
+        else if (typeof window.scheduleLivePublish === 'function') window.scheduleLivePublish();
+        else if (typeof window.syncLivePayload === 'function') window.syncLivePayload();
+      } catch(e3){}
+      var msg = names.length ? ('Saved '+names.length+' sponsors: '+names.join(', ')) : 'Saved (empty list)';
+      try { alert(msg); } catch(e4){ console.log(msg); }
+      return o;
+    }catch(err){
+      try { alert('Sponsor save failed: '+err); } catch(e5){}
+      return null;
+    }
   }
   window.saveSponsorNames = saveSponsorNames;
   window.getSponsorsConfig = function(){
-    var o=load();
-    if(!o.items && o.names) o.items=(o.names||[]).map(function(n){return {name:n,logo:''};});
-    return o;
+    var o = window.__sponsorsConfig || load();
+    if (!o.items && o.names) o.items = (o.names||[]).map(function(n){ return {name:n, logo:''}; });
+    if (!o.names && o.items) o.names = o.items.map(function(x){ return x.name; });
+    return o || {enabled:false, names:[], items:[]};
   };
   function bind(){
     var btn=document.getElementById('btn-save-sponsors');
-    if(btn && !btn._bound){ btn._bound=1; btn.addEventListener('click', function(e){ e.preventDefault(); saveSponsorNames(); }); }
+    if(btn){
+      btn.onclick = function(e){ if(e) e.preventDefault(); saveSponsorNames(); };
+    }
     var o=load();
+    window.__sponsorsConfig = o;
     var ta=document.getElementById('sponsor-names-list');
     var lg=document.getElementById('sponsor-logos-list');
     var en=document.getElementById('sponsor-names-enabled');
@@ -18857,9 +18911,11 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind);
   else bind();
-  setTimeout(bind, 500);
+  setTimeout(bind, 300);
+  setTimeout(bind, 1200);
 })();
 </script>
+
 
 
 <script id="ad-slots-system">
@@ -18915,6 +18971,7 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
       o.enabled = en ? !!en.checked : !!o.enabled;
       o.trigger = tr ? tr.value : (o.trigger||'over');
       o.shape = sh ? sh.value : (o.shape||'rect');
+      var pm=document.getElementById('ad-float-playmode'); o.playMode = pm ? pm.value : (o.playMode||'trigger');
       var ads = collectAdsFromSlots();
       if(ads.length){
         o.ads = ads;
