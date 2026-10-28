@@ -16947,6 +16947,7 @@ body[data-theme="dark"] button.cup-subtab.is-active {
       shape: (document.getElementById('ad-float-shape')||{}).value || 'rect',
       image: ((document.getElementById('ad-float-image')||{}).value || '').trim(),
       text: ((document.getElementById('ad-float-text')||{}).value || '').trim(),
+      ads: (function(){ try{ var ta=document.getElementById('ad-float-multi'); if(!ta) return []; return String(ta.value||'').split(/\n/).map(function(line){ line=line.trim(); if(!line)return null; var p=line.split('|'); return { image:(p[0]||'').trim(), text:(p[1]||p[0]||'').trim() }; }).filter(Boolean); }catch(e){ return []; } })(),
       link: ((document.getElementById('ad-float-link')||{}).value || '').trim()
     };
     try { localStorage.setItem(AD_KEY, JSON.stringify(o)); } catch(e){}
@@ -17038,13 +17039,21 @@ body[data-theme="dark"] button.cup-subtab.is-active {
     } catch(e){}
   }
   function maybeShowAd(eventType){
-    try { window.__lastFloatAdEvent = eventType || null; } catch(eLE){}
-
-    var o = loadAd();
-    if (!o.enabled) return;
-    var t = o.trigger || 'over';
-    if (t === 'random') { if (Math.random() < 0.18) showFloatAd(false); return; }
-    if (t === eventType) showFloatAd(false);
+    try {
+      var o = loadAd();
+      if (!o || !o.enabled) return;
+      var t = o.trigger || 'over';
+      var et = String(eventType || '');
+      if (t === 'random') {
+        if (Math.random() >= 0.18) return;
+        try { window.__lastFloatAdEvent = 'random-' + Date.now(); } catch(eLE){}
+        setTimeout(function(){ try{ showFloatAd(false); }catch(e){} }, 3000);
+        return;
+      }
+      if (t !== et) return;
+      try { window.__lastFloatAdEvent = et + '-' + Date.now(); } catch(eLE2){}
+      setTimeout(function(){ try{ showFloatAd(false); }catch(e){} }, 3000);
+    } catch(eAll){}
   }
   window.saveAdSettings = saveAdSettings;
   window.clearAdSettings = clearAdSettings;
@@ -18708,7 +18717,7 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
 
 
 <div id="sponsor-names-settings" class="border theme-border rounded-xl p-3 space-y-2 mt-2" style="background:rgba(15,23,42,.04)">
-  <div class="text-sm font-bold">Scoreboard sponsor flash</div>
+  <div class="text-sm font-bold">Scoreboard sponsor flash (multiple)</div>
   <div class="text-xs opacity-70">Names rotate above match title e.g. "Pethe Jewellers Presents"</div>
   <textarea id="sponsor-names-list" rows="3" class="w-full border theme-border rounded-lg p-2 text-sm" placeholder="Pethe Jewellers&#10;Local Motors&#10;City Bank"></textarea>
   <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="sponsor-names-enabled" checked/> Enable sponsor flash</label>

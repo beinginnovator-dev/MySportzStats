@@ -61,16 +61,16 @@ body.theme-light .broadcast{background:linear-gradient(180deg,rgba(11,30,75,.93)
   text-align:center;padding:4px 8px 2px;position:relative;z-index:2;
 }
 .match-header .title{
-  font-size:17px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;
+  font-size:19px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;
   color:var(--gold);line-height:1.2;max-width:100%;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .match-header .sub{
-  font-size:11px;font-weight:700;color:#cbd5e1;margin-top:2px;line-height:1.3;
+  font-size:12px;font-weight:700;color:#cbd5e1;margin-top:2px;line-height:1.3;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .match-header .time{
-  font-size:11px;font-weight:800;color:#e2e8f0;margin-top:1px;
+  font-size:12px;font-weight:800;color:#e2e8f0;margin-top:1px;
 }
 .score-grid{
   display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;
@@ -178,7 +178,7 @@ td{padding:6px 4px;border-bottom:1px solid var(--line)}
 .muted{color:var(--muted)}
 #error{display:none;padding:12px;color:#fecaca;background:#450a0a;font-size:13px}
 
-.sponsor-flash{text-align:center;font-size:12px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;
+.sponsor-flash{text-align:center;font-size:14px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;
   min-height:18px;margin:0 0 4px;animation:sponsorBlink 1.6s ease-in-out infinite}
 @keyframes sponsorBlink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(1.03)}}
 .ad-overlay{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;
@@ -191,6 +191,17 @@ td{padding:6px 4px;border-bottom:1px solid var(--line)}
 .ad-card .ad-close{position:absolute;top:8px;right:10px;border:0;background:rgba(255,255,255,.15);color:#fff;
   width:28px;height:28px;border-radius:50%;cursor:pointer;font-weight:900}
 
+
+.team-celebrate{animation:teamPop 1.2s ease;}
+@keyframes teamPop{0%{transform:scale(1);filter:brightness(1)}30%{transform:scale(1.08);filter:brightness(1.35)}100%{transform:scale(1);filter:brightness(1)}}
+.comm-stamp{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:22px;border-radius:6px;font-size:11px;font-weight:900;margin-right:8px;padding:0 6px;color:#0f172a}
+.comm-stamp.s4,.comm-stamp.s6{background:#4ade80}
+.comm-stamp.sw{background:#fb7185;color:#fff}
+.comm-stamp.s0{background:#94a3b8;color:#0f172a}
+.comm-stamp.s1,.comm-stamp.s2,.comm-stamp.s3{background:#38bdf8}
+.comm-stamp.sx{background:#c084fc;color:#fff}
+.comm-over-sum{margin:10px 0;padding:8px 10px;border-radius:10px;background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.35);font-size:12px;font-weight:700}
+.comm-item{display:flex;align-items:flex-start;gap:6px;padding:8px 0;border-bottom:1px solid var(--line)}
 </style>
 </head>
 <body class="theme-dark">
@@ -576,34 +587,94 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     var t=h.endedAt||h.ts||h.date||h.finishedAt||h.savedAt||h.time;
     return fmtTime(t);
   }
+  function toHindiComm(line){
+    var s=String(line||'');
+    s=s.replace(/\bFOUR\b/gi,'चौका');
+    s=s.replace(/\bSIX\b/gi,'छक्का');
+    s=s.replace(/\bWICKET\b/gi,'विकेट');
+    s=s.replace(/\bOUT\b/gi,'आउट');
+    s=s.replace(/\bwide\b/gi,'वाइड');
+    s=s.replace(/no[-\s]?ball/gi,'नो बॉल');
+    s=s.replace(/\bdot ball\b/gi,'डॉट बॉल');
+    s=s.replace(/\bruns?\b/gi,'रन');
+    s=s.replace(/End of over/gi,'ओवर समाप्त');
+    s=s.replace(/Cracking shot/gi,'शानदार शॉट');
+    s=s.replace(/Huge hit/gi,'जबरदस्त प्रहार');
+    return s;
+  }
+  function stampClass(label){
+    var s=String(label||'').toUpperCase();
+    if(s==='4'||s.indexOf('FOUR')>=0) return 's4';
+    if(s==='6'||s.indexOf('SIX')>=0) return 's6';
+    if(s==='W'||s.indexOf('WICKET')>=0||s==='OUT') return 'sw';
+    if(s==='0'||s==='•'||s==='DOT') return 's0';
+    if(s==='WD'||s==='NB'||s.indexOf('WIDE')>=0||s.indexOf('NO')>=0) return 'sx';
+    if(s==='1'||s==='2'||s==='3') return 's'+s;
+    return 's1';
+  }
   function formatCommLine(line){
     line=String(line||'');
-    // strip decorative asterisks for display cleanliness
     var clean=String(line).split('*').join('').trim();
     var m=clean.match(/^(\d+(?:\.\d+)?)\s+(.*)$/);
-    var over='', rest=clean;
+    var over='', rest=clean, stamp='';
     if(m){ over=m[1]; rest=m[2]; }
-    // highlight events
+    // detect event stamp
+    if(/\bSIX\b/i.test(rest)) stamp='6';
+    else if(/\bFOUR\b/i.test(rest)) stamp='4';
+    else if(/\bWICKET\b|\bOUT\b|bowled|caught|lbw|stumped|run out/i.test(rest)) stamp='W';
+    else if(/\bWIDE\b/i.test(rest)) stamp='WD';
+    else if(/no[-\s]?ball/i.test(rest)) stamp='NB';
+    else if(/\bdot\b/i.test(rest)) stamp='0';
+    else {
+      var rm=rest.match(/\b([0-6])\s*runs?\b/i);
+      if(rm) stamp=rm[1];
+    }
     rest=rest.replace(/\b(SIX|FOUR|FOUR!|SIX!)\b/gi, function(x){ return '|||HIB|||'+x+'|||/HIB|||'; });
     rest=rest.replace(/\b(WICKET|OUT|CAUGHT|BOWLED|LBW|RUN OUT|STUMPED)\b/gi, function(x){ return '|||HIW|||'+x+'|||/HIW|||'; });
     rest=rest.replace(/\b(\d+)\s*runs?\b/gi, function(x){ return '|||HIB|||'+x+'|||/HIB|||'; });
-    return {over:over, text:rest};
+    return {over:over, text:rest, stamp:stamp};
   }
   function renderCommLine(line, key){
+    var lang=lsGet('react_comm_lang','en'); if(lang==='hi') line=toHindiComm(line);
     var f=formatCommLine(line);
     var parts=String(f.text).split(/(\|\|\|HI[BW]\|\|\|.*?\|\|\|\/HI[BW]\|\|\|)/);
     var kids=[];
-    if(f.over) kids.push(h('span',{className:'ov'},f.over+' '));
+    if(f.stamp) kids.push(h('span',{className:'comm-stamp '+stampClass(f.stamp)}, f.stamp));
+    else if(f.over) kids.push(h('span',{className:'comm-stamp s1'}, f.over));
+    var textKids=[];
     parts.forEach(function(part,i){
       if(!part)return;
       var mb=part.match(/^\|\|\|HIB\|\|\|(.*?)\|\|\|\/HIB\|\|\|$/);
       var mw=part.match(/^\|\|\|HIW\|\|\|(.*?)\|\|\|\/HIW\|\|\|$/);
-      if(mb) kids.push(h('span',{className:'hi-b',key:i},mb[1]));
-      else if(mw) kids.push(h('span',{className:'hi-w',key:i},mw[1]));
-      else kids.push(h('span',{key:i},part));
+      if(mb) textKids.push(h('span',{className:'hi-b',key:i},mb[1]));
+      else if(mw) textKids.push(h('span',{className:'hi-w',key:i},mw[1]));
+      else textKids.push(h('span',{key:i},part));
     });
+    kids.push(h('div',{style:{flex:1}}, textKids));
     return h('div',{className:'comm-item',key:key}, kids);
   }
+  function buildOverSummaries(data){
+    // insert summary markers from thisOver / commentary when over ends
+    var out=[];
+    var lines=(data&&data.commentary)?data.commentary.slice():[];
+    var balls=n(data&&data.balls);
+    for(var i=0;i<lines.length;i++){
+      out.push({type:'line', text:lines[i]});
+      var m=String(lines[i]||'').match(/^(\d+)\.(\d+)\b/);
+      var next=String(lines[i+1]||'');
+      var n2=next.match(/^(\d+)\.(\d+)\b/);
+      // after last ball of over (x.5 or line says over complete)
+      if(/over complete|end of over|ओवर पूरा/i.test(lines[i])){
+        out.push({type:'sum', text: String(lines[i])});
+      } else if(m && m[2]==='5'){
+        // estimate over summary
+        var on=m[1];
+        out.push({type:'sum', text: 'End of over '+((parseInt(on,10))+1)+' · '+((data&&data.runs)!=null?data.runs:'-')+'/'+((data&&data.wickets)!=null?data.wickets:'-')+' ('+((data&&data.overs)||'')+') · CRR '+(data&&data.crr!=null?Number(data.crr).toFixed(2):'-')});
+      }
+    }
+    return out;
+  }
+
   function histResult(h){
     if(!h)return '-';
     return h.result||h.matchResult||h.summary||h.winnerText||'-';
@@ -697,6 +768,7 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     var _lang=useState(function(){return lsGet('react_comm_lang','en')||'en';}),commLang=_lang[0],setCommLangState=_lang[1];
     var _sp=useState(0),spIdx=_sp[0],setSpIdx=_sp[1];
     var _ad=useState(null),adShow=_ad[0],setAdShow=_ad[1];
+    var _cel=useState(null),celebSide=_cel[0],setCelebSide=_cel[1];
     var _sf=useState(function(){return lsGet('react_score_fmt','classic')||'classic';}),scoreFmt=_sf[0],setScoreFmt=_sf[1];
     var _so=useState(false),settingsOpen=_so[0],setSettingsOpen=_so[1];
     var _st=useState(function(){return lsGet('cricket_stadium_on','1')!=='0';}),stadiumOn=_st[0],setStadiumOn=_st[1];
@@ -719,21 +791,30 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
       var t=setInterval(function(){ setSpIdx(function(x){return x+1;}); }, 4000);
       return function(){ clearInterval(t); };
     },[]);
-    // show float ad when payload says so
     useEffect(function(){
       if(!data) return;
       var fa=data.floatAd;
       if(!fa||!fa.enabled) return;
-      if(!(fa.image||fa.text)) return;
       var ev=data.floatAdEvent;
-      // show on explicit event from scorer, or when over completes (balls%6==0 and balls>0)
-      var overEnd = (n(data.balls)>0 && n(data.balls)%6===0);
-      if(ev || overEnd){
-        setAdShow({image:fa.image||'',text:fa.text||'',link:fa.link||'',shape:fa.shape||'rect'});
-        var tm=setTimeout(function(){ setAdShow(null); }, 5000);
-        return function(){ clearTimeout(tm); };
+      if(!ev) return;
+      if(window.__lastAdEv===ev) return;
+      window.__lastAdEv=ev;
+      var trigger=fa.trigger||'over';
+      var et=String(ev).split('-')[0];
+      if(trigger!=='random' && trigger!==et && !(trigger==='boundary' && (et==='boundary'||et==='four'||et==='six'))) return;
+      var pick={image:fa.image||'',text:fa.text||'',link:fa.link||'',shape:fa.shape||'rect'};
+      if(fa.ads&&fa.ads.length){
+        var a=fa.ads[Math.floor(Math.random()*fa.ads.length)];
+        if(a){ pick.image=a.image||pick.image; pick.text=a.text||pick.text; }
       }
-    },[data&&data.floatAdEvent, data&&data.balls]);
+      if(!pick.image&&!pick.text) return;
+      var tm=setTimeout(function(){
+        setAdShow(pick);
+        setTimeout(function(){ setAdShow(null); }, 5000);
+      }, 3000);
+      return function(){ clearTimeout(tm); };
+    },[data&&data.floatAdEvent]);
+    
     useEffect(function(){
       document.body.classList.remove('theme-dark','theme-light','theme-ipl','theme-icc','theme-iccpro','skin-strip');
       if(theme==='strip'){
@@ -758,6 +839,15 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
         setEvent(ev);
         try{stadiumForEvent(ev);}catch(e){}
         try{ if(ttsOn) speakTts(data, ev); }catch(eT){}
+        try{
+          if(ev&&(ev.kind==='four'||ev.kind==='six'||ev.kind==='wicket')){
+            var side='A';
+            if(ev.kind==='wicket'){ side = (data.battingTeam==='B'||data.battingSide==='B')?'B':'A'; }
+            else { side = (data.battingTeam==='B'||data.battingSide==='B')?'B':'A'; }
+            setCelebSide(side);
+            setTimeout(function(){ setCelebSide(null); }, 1400);
+          }
+        }catch(eC){}
         var t=setTimeout(function(){setEvent(null);},2600);
         prevRef.current={runs:data.runs,wickets:data.wickets,balls:data.balls};
         return function(){clearTimeout(t);};
@@ -883,7 +973,7 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
             h('div',{className:'dd-title'},'Sound'),
             h('div',{className:'dd-title'},'Commentary language'),
             h('button',{type:'button',className:commLang==='en'?'on':'',onClick:function(){setCommLangState('en');setCommLang('en');}},'English'),
-            h('button',{type:'button',className:commLang==='hi'?'on':'',onClick:function(){setCommLangState('hi');setCommLang('hi');}},'Hindi'),
+            h('button',{type:'button',className:commLang==='hi'?'on':'',onClick:function(){setCommLangState('hi');setCommLang('hi'); try{speakTts({strikerName:'अमेय',bowlerName:'मोहन',runs:12,wickets:0,overs:'1.2',balls:8},{kind:'four'});}catch(e){}}},'Hindi'),
             h('button',{type:'button',className:ttsOn?'on':'',onClick:function(){
               var next=!ttsOn;setTtsOn(next);lsSet('cricket_tts_on',next?'1':'0');if(next)try{ var u=excitingLine({strikerName:'Batter',bowlerName:'Bowler',runs:10,wickets:0,overs:'1.0'}, {kind:'four'}); speakTts({strikerName:'Batter',bowlerName:'Bowler',runs:10,wickets:0,overs:'1.0',balls:6},{kind:'four'}); }catch(e){speakMale('Commentary on');}
             }},ttsOn?'Commentary ON (Male)':'Commentary OFF'),
@@ -923,7 +1013,7 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
         ),
         h('div',{className:'score-grid'},
           h('div',{className:'side'},
-            h('div',{className:'tname'},
+            h('div',{className:'tname'+(celebSide==='A'?' team-celebrate':'')},
               h('img',{className:dual.aBat&&!ended?'wave':'',src:FLAG_URL[flags.a]||FLAG_URL.in,alt:''}),
               h('span',null,dual.nameA)
             ),
@@ -935,7 +1025,7 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
             h('div',{className:'vs-label'},'VS')
           ),
           h('div',{className:'side'},
-            h('div',{className:'tname'},
+            h('div',{className:'tname'+(celebSide==='B'?' team-celebrate':'')},
               h('span',null,dual.nameB),
               h('img',{className:dual.bBat&&!ended?'wave':'',src:FLAG_URL[flags.b]||FLAG_URL.au,alt:''})
             ),
@@ -1059,9 +1149,14 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
             }},'Voice '+(ttsOn?'ON · Male':'OFF')),
             h('button',{className:'btn',onClick:function(){speakMale('Four runs! Brilliant timing!');}},'Test male voice')
           ),
-          (data&&data.commentary?data.commentary.slice().reverse().slice(0,50):[]).map(function(line,i){
-            return renderCommLine(line,i);
-          }),
+          (function(){
+            var items=buildOverSummaries(data).reverse().slice(0,60);
+            if(!items.length) return h('div',{className:'muted'},'No commentary yet');
+            return items.map(function(it,i){
+              if(it.type==='sum') return h('div',{className:'comm-over-sum',key:'s'+i}, it.text);
+              return renderCommLine(it.text,i);
+            });
+          })(),
           !(data&&data.commentary&&data.commentary.length)?h('div',{className:'muted'},'No commentary yet'):null
         ):null,
 
