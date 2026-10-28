@@ -2728,9 +2728,7 @@ body[data-theme="dark"] #cup-sub-create h3 {
                       <div class="text-[10px] theme-muted">Logo URLs (same order, optional)</div>
                       <textarea id="sponsor-logos-list" rows="3" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" placeholder=""></textarea>
                       <label class="flex items-center gap-2 text-sm theme-text"><input type="checkbox" id="sponsor-names-enabled" checked/> Enable sponsor flash</label>
-                      <button type="button" id="btn-save-sponsors" class="w-full bg-amber-600 text-white rounded-lg py-2 font-bold text-sm" onclick="try{var SK='cricket_sponsors_v1';var ta=document.getElementById('sponsor-names-list');var lg=document.getElementById('sponsor-logos-list');var en=document.getElementById('sponsor-names-enabled');var names=String((ta&&ta.value)||'').split(/
-/).map(function(s){return s.trim();}).filter(Boolean).slice(0,20);var logos=String((lg&&lg.value)||'').split(/
-/).map(function(s){return s.trim();});var items=names.map(function(n,i){return{name:n,logo:logos[i]||''};});var o={enabled:en?!!en.checked:true,names:names,items:items};localStorage.setItem(SK,JSON.stringify(o));window.__sponsorsConfig=o;window.getSponsorsConfig=function(){return o;};alert('Saved '+names.length+' sponsors');}catch(e){alert('Save error: '+e);}">Save sponsors</button>
+                      <button type="button" id="btn-save-sponsors" class="w-full bg-amber-600 text-white rounded-lg py-2 font-bold text-sm">Save sponsors</button>
                     </div>
 
                 <!-- /cup-ui-settings-wrap -->
@@ -13281,8 +13279,10 @@ function printHistoryMatch(){
     
     function toggleVoiceCommentary() {
         if (voiceCommentaryEnabled) {
-            voiceCommentaryEnabled = true;
+            voiceCommentaryEnabled = false;
             try { localStorage.setItem('cricket_voice_comm', '0'); } catch(e){}
+            try { window.__scorerTtsOn = false; localStorage.setItem('scorer_tts_on','0'); } catch(e2){}
+            try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch(e3){}
             updateVoiceToggleBtn();
             return;
         }
@@ -13299,7 +13299,7 @@ function printHistoryMatch(){
                 systemVoiceGender = 'male';
                 voiceCommentaryEnabled = true;
                 voiceMode = 'system';
-                try { localStorage.setItem('cricket_voice_gender','male'); localStorage.setItem('cricket_voice_comm','1'); } catch(e){}
+                try { localStorage.setItem('cricket_voice_gender','male'); localStorage.setItem('cricket_voice_comm','1'); try{window.__scorerTtsOn=true;localStorage.setItem('scorer_tts_on','1');}catch(e){} } catch(e){}
                 updateVoiceToggleBtn();
             },
             onCancel: function(){
@@ -13314,7 +13314,7 @@ function printHistoryMatch(){
                 systemVoiceGender = 'female';
                 voiceCommentaryEnabled = true;
                 voiceMode = 'system';
-                try { localStorage.setItem('cricket_voice_gender','female'); localStorage.setItem('cricket_voice_comm','1'); } catch(e){}
+                try { localStorage.setItem('cricket_voice_gender','female'); localStorage.setItem('cricket_voice_comm','1'); try{window.__scorerTtsOn=true;localStorage.setItem('scorer_tts_on','1');}catch(e){} } catch(e){}
                 updateVoiceToggleBtn();
             }
         });
@@ -18965,43 +18965,86 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
 </script>
 
 
+
+
+
 <script id="sponsor-save-system">
-window.saveSponsorNames = function(){
-  try{
-    var SK='cricket_sponsors_v1';
-    var ta=document.getElementById('sponsor-names-list');
-    var lg=document.getElementById('sponsor-logos-list');
-    var en=document.getElementById('sponsor-names-enabled');
-    var names=String((ta&&ta.value)||'').split(/\n/).map(function(s){return s.trim();}).filter(Boolean).slice(0,20);
-    var logos=String((lg&&lg.value)||'').split(/\n/).map(function(s){return s.trim();});
-    var items=names.map(function(n,i){return {name:n, logo:logos[i]||''};});
-    var o={enabled: en ? !!en.checked : true, names:names, items:items};
-    localStorage.setItem(SK, JSON.stringify(o));
-    try{ localStorage.setItem('cricket_sponsors', JSON.stringify(o)); }catch(e2){}
+(function(){
+  var SK = "cricket_sponsors_v1";
+  function nlSplit(s){ return String(s||"").split(String.fromCharCode(10)); }
+  function loadSponsors(){
+    try { return JSON.parse(localStorage.getItem(SK) || localStorage.getItem("cricket_sponsors") || "{}") || {}; }
+    catch(e){ return {}; }
+  }
+  function saveSponsorNames(){
+    try {
+      var ta = document.getElementById("sponsor-names-list");
+      var lg = document.getElementById("sponsor-logos-list");
+      var en = document.getElementById("sponsor-names-enabled");
+      var names = nlSplit(ta && ta.value).map(function(s){ return s.trim(); }).filter(Boolean).slice(0, 20);
+      var logos = nlSplit(lg && lg.value).map(function(s){ return s.trim(); });
+      var items = names.map(function(n, i){ return { name: n, logo: logos[i] || "" }; });
+      var o = { enabled: en ? !!en.checked : true, names: names, items: items };
+      localStorage.setItem(SK, JSON.stringify(o));
+      try { localStorage.setItem("cricket_sponsors", JSON.stringify(o)); } catch(e2){}
+      window.__sponsorsConfig = o;
+      alert("Saved " + names.length + " sponsors" + (names.length ? (": " + names.join(", ")) : ""));
+      return o;
+    } catch(err) {
+      alert("Save failed: " + err);
+      return null;
+    }
+  }
+  window.saveSponsorNames = saveSponsorNames;
+  window.getSponsorsConfig = function(){
+    var o = window.__sponsorsConfig || loadSponsors();
+    if (o.names && !o.items) o.items = o.names.map(function(n){ return { name: n, logo: "" }; });
+    return o || { enabled: false, names: [], items: [] };
+  };
+  function bind(){
+    var btn = document.getElementById("btn-save-sponsors");
+    if (btn) {
+      btn.onclick = function(e){ if (e) e.preventDefault(); saveSponsorNames(); };
+    }
+    var o = loadSponsors();
     window.__sponsorsConfig = o;
-    alert('Saved '+names.length+' sponsors'+(names.length?': '+names.join(', '):''));
-    return o;
-  }catch(err){ alert('Save failed: '+err); return null; }
-};
-window.getSponsorsConfig = function(){
-  try{
-    if(window.__sponsorsConfig) return window.__sponsorsConfig;
-    var o=JSON.parse(localStorage.getItem('cricket_sponsors_v1')||localStorage.getItem('cricket_sponsors')||'{}')||{};
-    if(o.names && !o.items) o.items=o.names.map(function(n){return {name:n,logo:''};});
-    return o;
-  }catch(e){ return {enabled:false,names:[],items:[]}; }
-};
-document.addEventListener('DOMContentLoaded', function(){
-  try{
-    var o=window.getSponsorsConfig();
-    var ta=document.getElementById('sponsor-names-list');
-    var lg=document.getElementById('sponsor-logos-list');
-    var en=document.getElementById('sponsor-names-enabled');
-    if(ta && o.names) ta.value=(o.names||[]).join('\n');
-    if(lg && o.items) lg.value=(o.items||[]).map(function(x){return x.logo||'';}).join('\n');
-    if(en) en.checked = o.enabled !== false;
-  }catch(e){}
-});
+    var ta = document.getElementById("sponsor-names-list");
+    var lg = document.getElementById("sponsor-logos-list");
+    var en = document.getElementById("sponsor-names-enabled");
+    if (ta) ta.value = (o.names && o.names.length) ? o.names.join(String.fromCharCode(10)) : "";
+    if (lg) lg.value = (o.items && o.items.length) ? o.items.map(function(x){ return x.logo || ""; }).join(String.fromCharCode(10)) : "";
+    if (en) en.checked = o.enabled !== false;
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
+  else bind();
+  setTimeout(bind, 500);
+})();
+</script>
+
+
+<script id="scorer-tts-gate">
+(function(){
+  if (typeof window.__scorerTtsOn === "undefined") {
+    try { window.__scorerTtsOn = localStorage.getItem("scorer_tts_on") !== "0"; } catch(e){ window.__scorerTtsOn = true; }
+  }
+  window.setScorerTtsOn = function(on){
+    window.__scorerTtsOn = !!on;
+    try { localStorage.setItem("scorer_tts_on", on ? "1" : "0"); } catch(e){}
+    try { if (!on && window.speechSynthesis) speechSynthesis.cancel(); } catch(e2){}
+  };
+  var _speak = window.speechSynthesis && window.speechSynthesis.speak;
+  if (_speak && !window.__ttsSpeakPatched) {
+    window.__ttsSpeakPatched = true;
+    var orig = window.speechSynthesis.speak.bind(window.speechSynthesis);
+    window.speechSynthesis.speak = function(u){
+      try {
+        if (window.__scorerTtsOn === false) return;
+        if (localStorage.getItem("scorer_tts_on") === "0") return;
+      } catch(e){}
+      return orig(u);
+    };
+  }
+})();
 </script>
 
 </body>
