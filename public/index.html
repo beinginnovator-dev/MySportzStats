@@ -8794,7 +8794,7 @@ function recordDelivery(runs, type, isW, bound, dismissal, zone, fielder) {
             if (isNotPlayingDismissal(dismissal)) dismissLabel2 = 'Not playing';
             else if (fielder && dismissal === 'Catch out') dismissLabel2 = 'Catch out (c ' + fielder + ')';
             var fowBowler = (isNotPlayingDismissal(dismissal) || !isBowlerCreditedWicket(dismissal)) ? '—' : (bw?bw.name:'Bowler');
-            fallOfWickets.push({ innings: currentInnings, batsman: st?st.name:'Batsman', personalRuns: st?st.runs:0, dismissal: dismissLabel2, bowler: fowBowler, over: overLabel, score: totalScore, team: battingTeamName, fielder: fielder || null, notPlaying: isNotPlayingDismissal(dismissal) }); requireBatsmanChange=true; lastStriker=sid; try{ window.__pickerCooldownUntil = Date.now() + 2000; window.__batWarnAt = 0; modalQueue = []; }catch(eW){} } else requireBatsmanChange=false;
+            fallOfWickets.push({ innings: currentInnings, batsman: st?st.name:'Batsman', personalRuns: st?st.runs:0, personalBalls: st?st.balls:0, balls: st?st.balls:0, dismissal: dismissLabel2, howOut: dismissLabel2, bowler: fowBowler, over: overLabel, score: totalScore, team: battingTeamName, fielder: fielder || null, notPlaying: isNotPlayingDismissal(dismissal) }); requireBatsmanChange=true; lastStriker=sid; try{ window.__pickerCooldownUntil = Date.now() + 2000; window.__batWarnAt = 0; modalQueue = []; }catch(eW){} } else requireBatsmanChange=false;
         if (isLegal && totalBalls>0 && totalBalls%6===0){
             requireBowlerChange=true; lastBowler=bid; clearOverSummaryOnNextBall=true; try{ window.__pickerCooldownUntil = Date.now() + 2500; window.__bowlWarnAt = 0; modalQueue = []; }catch(eOE){}
             try{
