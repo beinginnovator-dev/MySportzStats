@@ -292,23 +292,23 @@ td{padding:6px 4px;border-bottom:1px solid var(--line)}
 
 /* Polished Navy Blue dark theme — white fonts */
 body.theme-navy{
-  --bg:#0a1628;
-  --bg2:#0f1f35;
-  --card:#132f4c;
-  --line:rgba(148,163,184,.22);
+  --bg:#12263d;
+  --bg2:#1a3352;
+  --card:#234064;
+  --line:rgba(186,210,240,.28);
   --text:#ffffff;
-  --muted:#c7d2fe;
-  --accent:#60a5fa;
-  --blue:#93c5fd;
+  --muted:#dbe7f8;
+  --accent:#7db7ff;
+  --blue:#a8d0ff;
   --gold:#fde68a;
   --red:#fb7185;
-  background:linear-gradient(180deg,#07111f 0%,#0a1628 40%,#0f1f35 100%);
+  background:linear-gradient(180deg,#0e1f35 0%,#152b45 40%,#1a3352 100%);
   color:#ffffff;
 }
 body.theme-navy .broadcast{
-  background:linear-gradient(165deg,#0b1c33 0%,#102a4a 45%,#0d213d 100%)!important;
+  background:linear-gradient(165deg,#15304d 0%,#1c3d63 45%,#18406a 100%)!important;
   color:#ffffff;
-  border-bottom:1px solid rgba(147,197,253,.18);
+  border-bottom:1px solid rgba(167,205,255,.22);
 }
 body.theme-navy .broadcast .title,
 body.theme-navy .match-center .title{color:#f8fafc!important}
@@ -319,18 +319,18 @@ body.theme-navy .match-center .time{color:#e2e8f0!important}
 body.theme-navy .score-num{color:#ffffff!important;font-weight:900}
 body.theme-navy .overs{color:#dbeafe!important}
 body.theme-navy .role{color:#93c5fd!important}
-body.theme-navy .tabs{background:#0c1a2e;border-bottom:1px solid rgba(147,197,253,.15);min-height:44px}
+body.theme-navy .tabs{background:#183552;border-bottom:1px solid rgba(147,197,253,.15);min-height:44px}
 body.theme-navy .tabs button{color:#cbd5e1}
 body.theme-navy .tabs button.on{color:#ffffff;border-bottom:2px solid #60a5fa}
 body.theme-navy .card{
-  background:linear-gradient(180deg,#132f4c 0%,#0f2742 100%);
+  background:linear-gradient(180deg,#274f7a 0%,#1e4066 100%);
   border:1px solid rgba(147,197,253,.16);
   color:#ffffff;
 }
 body.theme-navy .card h3{color:#e2e8f0}
 body.theme-navy .card table th{color:#93c5fd;font-weight:600}
 body.theme-navy .card table td{color:#ffffff;font-weight:700}
-body.theme-navy .btn{background:#1e3a5f;border:1px solid rgba(147,197,253,.25);color:#fff}
+body.theme-navy .btn{background:#2a5080;border:1px solid rgba(147,197,253,.25);color:#fff}
 body.theme-navy .btn:hover{background:#254a75}
 body.theme-navy .muted{color:#c7d2fe}
 body.theme-navy .crr-line{color:#e2e8f0}
@@ -709,7 +709,7 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
       });
     }catch(e){}
   }
-  function playSfx(vol){ stadPlaySample('whistle', vol==null?0.12:vol, 1); }
+  function playSfx(vol){ stadPlaySample('whistle', vol==null?0.08:vol, 0.90); }
   function stadiumForEvent(ev){
     if(!ev||!stadEnabled())return;
     var e=String(ev.kind||'').toLowerCase();
@@ -1181,31 +1181,47 @@ function excitingHindi(d, ev){
     var _fw=useState(false),showFw=_fw[0],setShowFw=_fw[1];
     var _now=useState(Date.now()),nowTick=_now[0],setNowTick=_now[1];
     var prevRef=useRef(null);
-    // Neon sponsor flash at start of each over
+    // Soft distant whistle + neon sponsor at start of each over (vanilla live.html parity)
     useEffect(function(){
-      if(!data) return;
+      if(!data || data.matchEnded) return;
+      var balls = Number(data.balls)||0;
+      var inns = Number(data.innings)||1;
       var ov = Number(data.overs);
-      if(isNaN(ov)) return;
-      var whole = Math.floor(ov + 1e-9);
-      var ballsPart = Math.round((ov - Math.floor(ov)) * 10);
-      // start of over: x.0 or just after previous over completed
-      var prev = prevOversRef.current;
-      if(prev!=null){
-        var prevWhole = Math.floor(Number(prev) + 1e-9);
-        if(whole > prevWhole || (ballsPart===0 && Number(prev) < ov && whole===prevWhole+1) || (ballsPart===0 && Math.floor(Number(prev)) < whole)){
+      var ballInOver = balls % 6;
+      var overNum = Math.floor(balls / 6);
+      var key = null;
+      // Vanilla: first legal ball of over (ballInOver===1) or innings start
+      if(ballInOver === 1) key = inns + '-over-' + overNum;
+      else if(balls === 0 && inns >= 1) key = inns + '-over-start-0';
+      // also overs integer boundary
+      if(!key && !isNaN(ov)){
+        var whole = Math.floor(ov + 1e-9);
+        var ballsPart = Math.round((ov - Math.floor(ov)) * 10);
+        var prev = prevOversRef.current;
+        if(prev!=null){
+          var prevWhole = Math.floor(Number(prev) + 1e-9);
+          if(whole > prevWhole || (ballsPart===0 && Math.floor(Number(prev)) < whole)){
+            key = inns + '-over-boundary-' + whole;
+          }
+        }
+      }
+      if(key && key !== prevOversRef.current){
+        var prevKey = prevOversRef.current;
+        // avoid double on first paint
+        if(prevKey!=null && String(prevKey).indexOf(String(key))!==0){
           setSponsorNeon(true);
           setTimeout(function(){ setSponsorNeon(false); }, 3600);
-          // soft distant crowd whistle at start of over
           try{
             if(typeof stadEnabled==='function' && stadEnabled()){
-              // low volume + slightly slower = distant soft sound
-              stadPlaySample('whistle', 0.16, 0.88);
+              stadPlaySample('whistle', 0.08, 0.90);
             }
           }catch(eW){}
         }
+        prevOversRef.current = key;
+      } else if(!isNaN(ov)){
+        if(prevOversRef.current==null) prevOversRef.current = key || (inns+'-init-'+balls);
       }
-      prevOversRef.current = ov;
-    },[data&&data.overs, data&&data.balls]);
+    },[data&&data.overs, data&&data.balls, data&&data.innings]);
     // Rotate ALL sponsor names one by one
     useEffect(function(){
       var t=setInterval(function(){ setSpIdx(function(x){ return (Number(x)||0)+1; }); }, 2500);
@@ -1871,7 +1887,7 @@ function excitingHindi(d, ev){
   try{
     document.addEventListener('click', function once(){
       document.removeEventListener('click', once);
-      try{ stadPlaySample('whistle', 0.01, 1); }catch(e){}
+      try{ stadPlaySample('whistle', 0.08, 0.90); }catch(e){}
     }, {once:true});
   }catch(e){}
   var rootEl=document.getElementById('root');
