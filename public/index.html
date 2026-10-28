@@ -7696,7 +7696,7 @@ function placeBoundaryAnimationOnStriker(toast){
               }
               return window.__lastBallEvent || null;
             } catch(e){ return null; } })(),
-            sponsors: (function(){ try { var o = (typeof getSponsorsConfig==='function') ? getSponsorsConfig() : JSON.parse(localStorage.getItem('cricket_sponsors_v1')||localStorage.getItem('cricket_sponsors')||'{}'); o=o||{}; var names=(o.names||[]).slice(); if((!names.length)&&o.items) names=(o.items||[]).map(function(x){return x&&x.name;}).filter(Boolean); var items=(o.items&&o.items.length)?o.items.slice():names.map(function(n){return {name:n,logo:''};}); return {enabled:o.enabled!==false, names:names, items:items}; } catch(e){ return {enabled:false,names:[],items:[]}; } })(),
+            sponsors: (function(){ try { var o = (typeof getSponsorsConfig==='function') ? getSponsorsConfig() : JSON.parse(localStorage.getItem('cricket_sponsors_v1')||localStorage.getItem('cricket_sponsors')||localStorage.getItem('live_sponsors_cache')||'{}'); o=o||{}; var names=(o.names||[]).map(function(n){return String(n||'').trim();}).filter(Boolean); if((!names.length)&&o.items) names=(o.items||[]).map(function(x){return x&&x.name;}).filter(Boolean); var items=(o.items&&o.items.length)?o.items.slice():names.map(function(n){return {name:n,logo:''};}); if(names.length && items.length!==names.length){ items=names.map(function(n,i){ return items[i]&&items[i].name===n?items[i]:{name:n,logo:(items[i]&&items[i].logo)||''}; }); } return {enabled:o.enabled!==false, names:names, items:items, list:names}; } catch(e){ return {enabled:false,names:[],items:[],list:[]}; } })(),
             fixtures: (function(){
                 try {
                     var d = (typeof loadTournament === 'function') ? loadTournament() : null;
@@ -18988,6 +18988,7 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
       localStorage.setItem(SK, JSON.stringify(o));
       try { localStorage.setItem("cricket_sponsors", JSON.stringify(o)); } catch(e2){}
       window.__sponsorsConfig = o;
+      try { localStorage.setItem("live_sponsors_cache", JSON.stringify(o)); } catch(eC){}
       alert("Saved " + names.length + " sponsors" + (names.length ? (": " + names.join(", ")) : ""));
       return o;
     } catch(err) {
