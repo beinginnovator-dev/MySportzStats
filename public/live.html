@@ -416,6 +416,19 @@ body.theme-dark .broadcast .tname{text-shadow:0 1px 2px rgba(0,0,0,.45)}
 .broadcast.has-scorer-bg .score-num,
 .broadcast.has-scorer-bg .title,
 .broadcast.has-scorer-bg .tname{text-shadow:0 1px 2px rgba(0,0,0,.4)}
+
+.ev-banner.float-up{animation:floatUpEv 2.6s ease-out forwards}
+@keyframes floatUpEv{
+  0%{opacity:0;transform:translate(-50%,8px) scale(.9)}
+  15%{opacity:1;transform:translate(-50%,-4px) scale(1.05)}
+  70%{opacity:1;transform:translate(-50%,-18px) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-36px) scale(.96)}
+}
+.vs-stack{width:100%}
+
+.panel-ad-strip{width:100%;padding:8px 10px;box-sizing:border-box;background:rgba(2,6,23,.35);border-bottom:1px solid rgba(148,163,184,.15)}
+.panel-ad-strip img{width:100%;max-height:160px;object-fit:contain;border-radius:10px;display:block;margin:0 auto}
+.panel-ad-strip .ad-txt{text-align:center;font-size:12px;font-weight:700;margin-top:4px}
 </style>
 </head>
 <body class="theme-dark">
@@ -1039,8 +1052,11 @@ function excitingHindi(d, ev){
         var arr=(d.thisOver&&d.thisOver.balls)||d.currentOverBalls||[];
         chip=arr.map(function(x){return typeof x==='object'?(x.label||''):String(x);}).join(',');
       }catch(e){}
-      var sig=[d.runs,d.wickets,d.balls,d.overs,d.innings,d.ts,d.strikerName,d.bowlerName,d.matchEnded,chip].join('|');
-      if(sig===lastSig.current)return;
+      var sig=[d.runs,d.wickets,d.balls,d.overs,d.innings,d.ts,d.strikerName,d.bowlerName,d.matchEnded,chip,d.sponsors&&d.sponsors.anim,d.floatAd&&d.floatAd.scoreboardBg].join('|');
+      // allow forced apply after idle wake
+      var force = !!(window.__forceLiveApply);
+      if(!force && sig===lastSig.current)return;
+      window.__forceLiveApply=false;
       lastSig.current=sig;
       setData(function(prev){
         var merged = (prev && typeof prev==='object') ? Object.assign({}, prev, d) : d;
@@ -1088,7 +1104,16 @@ function excitingHindi(d, ev){
           .catch(function(){});
       }
       pollTimer=setInterval(poll,1000);poll();
-      return function(){dead=true;clearInterval(pollTimer);try{if(wsRef.current)wsRef.current.close();}catch(e){};};
+      function wakeSync(){
+        try{ window.__forceLiveApply=true; lastSig.current=''; }catch(e0){}
+        try{ poll(); }catch(e1){}
+        try{ if(!wsRef.current||wsRef.current.readyState>1){ try{if(wsRef.current)wsRef.current.close();}catch(e2){} connect(); } }catch(e3){}
+      }
+      function onVis(){ if(document.visibilityState==='visible') wakeSync(); }
+      document.addEventListener('visibilitychange', onVis);
+      window.addEventListener('online', wakeSync);
+      var wakeTimer=setInterval(function(){ try{ window.__forceLiveApply=true; poll(); }catch(e){} }, 15000);
+      return function(){dead=true;clearInterval(pollTimer);try{clearInterval(wakeTimer);}catch(eW){};try{document.removeEventListener('visibilitychange',onVis);}catch(eV){};try{window.removeEventListener('online',wakeSync);}catch(eO){};try{if(wsRef.current)wsRef.current.close();}catch(e){};};
     },[apply]);
     return {data:data,viewers:viewers,connected:connected};
   }
@@ -1307,7 +1332,7 @@ function excitingHindi(d, ev){
       }
     },[]);
     var _tts=useState(function(){return lsGet('cricket_tts_on','1')!=='0';}),ttsOn=_tts[0],setTtsOn=_tts[1];
-    var _th=useState(function(){return lsGet('react_live_theme','dark')||'dark';}),theme=_th[0],setTheme=_th[1];
+    var _th=useState(function(){return lsGet('react_theme','ipl')||lsGet('react_live_theme','ipl')||'ipl';}),theme=_th[0],setTheme=_th[1];
     var _lang=useState(function(){return lsGet('react_comm_lang','en')||'en';}),commLang=_lang[0],setCommLangState=_lang[1];
     var _sp=useState(0),spIdx=_sp[0],setSpIdx=_sp[1];
     var _neon=useState(false),sponsorNeon=_neon[0],setSponsorNeon=_neon[1];
@@ -1638,7 +1663,7 @@ function excitingHindi(d, ev){
         )
       ):null,
 
-      adShow?h('div',{className:'ad-overlay show'+((((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='xl'||((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='full')?' panel-fill':''),onClick:function(){setAdShow(null);}},
+      (adShow&&(!data||!data.floatAd||data.floatAd.displayMode!=='panel'))?h('div',{className:'ad-overlay show'+((((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='xl'||((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='full')?' panel-fill':''),onClick:function(){setAdShow(null);}},
           h('div',{className:'ad-card ad-box size-'+((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'m'),onClick:function(e){e.stopPropagation();}},
             h('button',{className:'ad-close',type:'button',onClick:function(){setAdShow(null);}},'\u00d7'),
             adShow.image?h('img',{src:adShow.image,alt:'Ad'}):null,
@@ -1745,9 +1770,21 @@ function excitingHindi(d, ev){
             var colors=['#fbbf24','#38bdf8','#f472b6','#4ade80','#a78bfa','#fb7185','#f97316'];
             var col=colors[idx % colors.length];
             return h('div',{
-              className:'sponsor-flash anim-'+((function(){ var s=(data&&data.sponsors)||{}; return s.anim||s.animation||'blink'; })())+(sponsorNeon?' neon-glow':''),
+              className:'sponsor-flash anim-'+((function(){
+                var s=(data&&data.sponsors)||{}; var it=null;
+                try{ var items=s.items||[]; for(var ii=0;ii<items.length;ii++){ if(items[ii]&&String(items[ii].name||'')===String(name)){ it=items[ii]; break; } } }catch(e){}
+                return (it&&it.anim)||s.anim||s.animation||'blink';
+              })())+(sponsorNeon?' neon-glow':''),
               key:'sp-'+idx+'-'+name,
-              style:(function(){ var s=(data&&data.sponsors)||{}; return {color:s.color||col||'#fbbf24',fontSize:(s.fontSize?s.fontSize:14)+'px',fontFamily:s.fontFamily||'Montserrat,sans-serif'}; })(),
+              style:(function(){
+                var s=(data&&data.sponsors)||{}; var it=null;
+                try{ var items=s.items||[]; for(var ii=0;ii<items.length;ii++){ if(items[ii]&&String(items[ii].name||'')===String(name)){ it=items[ii]; break; } } }catch(e){}
+                return {
+                  color:(it&&it.color)||s.color||col||'#fbbf24',
+                  fontSize:((it&&it.fontSize)||s.fontSize||14)+'px',
+                  fontFamily:(it&&it.fontFamily)||s.fontFamily||'Montserrat,sans-serif'
+                };
+              })(),
               title: name
             },
               logo?h('img',{src:logo,alt:''}):null,
@@ -1769,8 +1806,10 @@ function excitingHindi(d, ev){
             h('div',{className:'role'},dual.aBat&&!ended?'Batting':'Bowling')
           ),
           h('div',{className:'match-center'},
-            event?h('div',{key:'vsb-'+(event.kind||'')+'-'+String(data&&data.balls),className:'ev-banner show '+evCls,style:{position:'absolute',left:'50%',top:'50%',transform:'translate(-50%,-50%)',zIndex:40,minWidth:110,maxWidth:130}},(event.kind==='wicket'?('WICKET · '+wicketTypeFromData(data)):(event.text||event.kind||'')).toString())
-            :h('div',{className:'vs-label',style:{minHeight:28,display:'flex',alignItems:'center',justifyContent:'center'}},'VS')
+            h('div',{className:'vs-stack',style:{position:'relative',minHeight:36,display:'flex',alignItems:'center',justifyContent:'center'}},
+              h('div',{className:'vs-label',style:{minHeight:28,display:'flex',alignItems:'center',justifyContent:'center',opacity:event?0.25:1}},'VS'),
+              event?h('div',{key:'vsb-'+(event.kind||'')+'-'+String(data&&data.balls),className:'ev-banner show float-up '+evCls,style:{position:'absolute',left:'50%',bottom:'100%',transform:'translate(-50%,0)',zIndex:40,minWidth:120,maxWidth:150,pointerEvents:'none'}},(event.kind==='wicket'?('WICKET · '+wicketTypeFromData(data)):(event.text||event.kind||'')).toString()):null
+            )
           ),
           h('div',{className:'side side-right'},
             h('div',{className:'tname'+(celebSide==='B'?' team-celebrate sky-shot-out':'')},
@@ -2010,13 +2049,13 @@ function excitingHindi(d, ev){
             }
             if(!list.length)return h('div',{className:'muted'},'No squad data from scorer yet');
             return h('table',null,
-              h('thead',null,h('tr',null,h('th',null,'#'),h('th',null,'Player'),h('th',null,'R'),h('th',null,'B'),h('th',null,''))),
+              h('thead',null,h('tr',null,h('th',null,'#'),h('th',null,'Player'),h('th',null,'Role'),h('th',null,'C'),h('th',null,'WK'),h('th',null,'Arm'),h('th',null,''))),
               h('tbody',null,list.map(function(p,i){
                 var name=typeof p==='string'?p:(p.name||'-');
                 var runs=typeof p==='object'?n(p.runs):0;
                 var balls=typeof p==='object'?n(p.balls):0;
                 var out=typeof p==='object'&&p.isOut?'out':'';
-                return h('tr',{key:i},h('td',null,i+1),h('td',null,name),h('td',null,runs),h('td',null,balls),h('td',null,out));
+                return h('tr',{key:i},h('td',null,i+1),h('td',null,(typeof p==='string'?p:(p.name||'-'))),h('td',null,(function(){ if(typeof p==='string')return '-'; var r=(p.role||'').toLowerCase(); if(r.indexOf('all')>=0)return 'All-rounder'; if(r.indexOf('bowl')>=0)return 'Bowler'; if(r.indexOf('bat')>=0)return 'Batsman'; return p.role||'-'; })()),h('td',null,(typeof p==='object'&&(p.captain||p.isCaptain))?'C':''),h('td',null,(typeof p==='object'&&(p.keeper||p.isKeeper||p.wicketKeeper))?'WK':''),h('td',null,(function(){ if(typeof p!=='object')return ''; var a=(p.arm||p.bowlingArm||'').toLowerCase(); if(a.indexOf('left')>=0)return 'Left'; if(a.indexOf('right')>=0)return 'Right'; return a||''; })()),h('td',null,out));
               }))
             );
           })()

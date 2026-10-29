@@ -2245,7 +2245,7 @@ button, [role="button"], input[type="button"], input[type="submit"], .btn, .cup-
 }
 
 /* 3. Button labels: smaller, kept inside the button */
-.cup-subtab, button.cup-subtab, #cup-subtab-create, #cup-subtab-settings, #cup-subtab-ui {
+.cup-subtab, button.cup-subtab, #cup-subtab-teams, #cup-subtab-create, #cup-subtab-settings, #cup-subtab-ui {
     font-size: 9.5px !important;
     line-height: 1.15 !important;
     letter-spacing: 0.02em !important;
@@ -2447,30 +2447,29 @@ body[data-theme="dark"] #cup-sub-create h3 {
                 <p class="text-xs text-white/90 leading-relaxed">Add teams, then create a match: Group Match, Knockout, Quarter, Semi or Final.</p>
             </div>
             <div class="theme-panel border theme-border rounded-xl p-4 space-y-3">
-                <h3 class="text-sm font-black theme-text uppercase tracking-wider border-b theme-border pb-2">Teams & Squad</h3>
-                <div class="flex gap-2">
-                    <input type="text" id="cup-new-team" placeholder="New team name" class="flex-1 border theme-border theme-card theme-text p-2 rounded text-sm font-bold" onkeydown="if(event.key==='Enter')cupAddTeam()">
-                    <button onclick="try{(window.cupAddTeam||cupAddTeam)()}catch(e){console.log(e)}" class="px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-sm">+ Add</button>
-                </div>
-                <div>
-                    <label class="text-xs theme-muted font-semibold block mb-1">Players for new team <span class="font-normal">(comma-separated)</span></label>
-                    <input type="text" id="cup-new-players" placeholder="e.g. Rahul (C), Virat, Rohit, Bumrah" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm">
-                </div>
-                <div id="cup-teams-list" class="space-y-2 max-h-72 overflow-y-auto">
-                    <p class="text-xs italic theme-muted text-center py-3">No teams yet. Add at least 2 teams with members.</p>
-                </div>
-            </div>
-
-            <div class="theme-panel border theme-border rounded-xl p-4 space-y-3">
                 
                 
                 
                 <div class="cup-subtab-bar">
-                    <button type="button" id="cup-subtab-create" onclick="try{(window.setCupSubTab||setCupSubTab)('create')}catch(e){console.log(e)}" class="cup-subtab is-active">Create Match</button>
+                    <button type="button" id="cup-subtab-teams" onclick="try{(window.setCupSubTab||setCupSubTab)('teams')}catch(e){console.log(e)}" class="cup-subtab is-active">Create Team</button>
+                    <button type="button" id="cup-subtab-create" onclick="try{(window.setCupSubTab||setCupSubTab)('create')}catch(e){console.log(e)}" class="cup-subtab">Create Match</button>
                     <button type="button" id="cup-subtab-ui" onclick="try{(window.setCupSubTab||setCupSubTab)('ui')}catch(e){console.log(e)}" class="cup-subtab">Advertise UI</button>
                     <button type="button" id="cup-subtab-tournament" onclick="try{(window.setCupSubTab||setCupSubTab)('tournament')}catch(e){console.log(e)}" class="cup-subtab">Tournament</button>
                 </div>
-                <div id="cup-sub-create" class="space-y-3">
+                <div id="cup-sub-teams" class="space-y-3">
+                    <h3 class="text-sm font-black theme-text uppercase tracking-wider">Create Team</h3>
+                    <p class="text-[10px] theme-muted">1) Enter team name → Add team · 2) Open Edit Players to add/edit the squad list</p>
+                    <div class="flex gap-2">
+                        <input type="text" id="cup-new-team" placeholder="Team name first" class="flex-1 border theme-border theme-card theme-text p-2 rounded text-sm font-bold" onkeydown="if(event.key==='Enter'){event.preventDefault();try{cupAddTeam()}catch(e){}}">
+                        <button type="button" onclick="try{(window.cupAddTeam||cupAddTeam)()}catch(e){console.log(e)}" class="px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-sm">+ Add team</button>
+                    </div>
+                    <input type="hidden" id="cup-new-players" value="">
+                    <div id="cup-new-players-list" class="hidden"></div>
+                    <div id="cup-teams-list" class="space-y-2 max-h-72 overflow-y-auto">
+                        <p class="text-xs italic theme-muted text-center py-3">No teams yet. Add a team name, then Edit Players.</p>
+                    </div>
+                </div>
+                <div id="cup-sub-create" class="space-y-3 hidden" style="display:none">
                 <h3 class="text-sm font-black theme-text uppercase tracking-wider">Create Match</h3>
                 <div>
                     <label class="text-xs theme-muted font-semibold block mb-1">Match Name</label>
@@ -2693,6 +2692,11 @@ body[data-theme="dark"] #cup-sub-create h3 {
                           <input id="scoreboard-bg-overlay" type="range" min="15" max="90" step="5" value="55" class="w-full" oninput="saveAdSettings(); var l=document.getElementById('scoreboard-bg-overlay-label'); if(l)l.textContent=this.value+'%';"/>
                           <div class="flex justify-between text-[10px] theme-muted"><span>clear (photo)</span><span id="scoreboard-bg-overlay-label">55%</span><span>solid</span></div>
                         </div>
+                        <label class="text-[10px] theme-muted font-semibold block">Display mode</label>
+                        <select id="ad-float-display-mode" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
+                            <option value="event">On events (over / boundary / wicket)</option>
+                            <option value="panel">Always fill panel below scoreboard</option>
+                        </select>
                         <select id="ad-float-trigger" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
                             <option value="over">After each over</option>
                             <option value="innings">After innings</option>
@@ -2739,18 +2743,19 @@ body[data-theme="dark"] #cup-sub-create h3 {
                     
                     <div id="sponsor-names-settings" class="border theme-border rounded-xl p-3 space-y-2 mt-3 theme-card">
                       <div class="text-sm font-black theme-text">Scoreboard sponsors</div>
-                      <div class="text-[10px] theme-muted">One name per line (all rotate on live)</div>
-                      <textarea id="sponsor-names-list" rows="3" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" placeholder=""></textarea>
-                      <div class="text-[10px] theme-muted">Logo URLs (same order, optional)</div>
-                      <textarea id="sponsor-logos-list" rows="3" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" placeholder=""></textarea>
+                      <div class="text-[10px] theme-muted mb-1">Pick colour, font &amp; animation per sponsor</div>
+                      <div id="sponsor-rows" class="space-y-2"></div>
+                      <button type="button" class="w-full border theme-border rounded-lg py-1.5 text-xs font-bold theme-text" onclick="addSponsorRow()">+ Add sponsor</button>
+                      <div class="text-[10px] theme-muted">Logo URLs (optional, same order)</div>
+                      <textarea id="sponsor-logos-list" rows="2" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" placeholder="https://logo1.png"></textarea>
                       <label class="flex items-center gap-2 text-sm theme-text"><input type="checkbox" id="sponsor-names-enabled" checked/> Enable sponsor flash</label>
                       <div class="grid grid-cols-2 gap-2 mt-1">
                         <div>
-                          <div class="text-[10px] theme-muted">Sponsor colour</div>
+                          <div class="text-[10px] theme-muted">Default colour</div>
                           <input type="color" id="sponsor-color" value="#fbbf24" class="w-full h-9 rounded border theme-border"/>
                         </div>
                         <div>
-                          <div class="text-[10px] theme-muted">Font size</div>
+                          <div class="text-[10px] theme-muted">Default size</div>
                           <select id="sponsor-font-size" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm">
                             <option value="12">12</option>
                             <option value="14" selected>14</option>
@@ -2760,7 +2765,7 @@ body[data-theme="dark"] #cup-sub-create h3 {
                           </select>
                         </div>
                         <div>
-                          <div class="text-[10px] theme-muted">Font</div>
+                          <div class="text-[10px] theme-muted">Default font</div>
                           <select id="sponsor-font-family" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm">
                             <option value="Montserrat,sans-serif">Montserrat</option>
                             <option value="Georgia,serif">Georgia</option>
@@ -2769,7 +2774,7 @@ body[data-theme="dark"] #cup-sub-create h3 {
                           </select>
                         </div>
                         <div>
-                          <div class="text-[10px] theme-muted">Animation</div>
+                          <div class="text-[10px] theme-muted">Default animation</div>
                           <select id="sponsor-anim" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm">
                             <option value="blink">Blink</option>
                             <option value="pulse">Pulse</option>
@@ -2778,7 +2783,16 @@ body[data-theme="dark"] #cup-sub-create h3 {
                           </select>
                         </div>
                       </div>
-                      <button type="button" id="btn-save-sponsors" class="w-full bg-amber-600 text-white rounded-lg py-2 font-bold text-sm">Save sponsors</button>
+                      <!-- hidden legacy textarea kept for compatibility -->
+                      <textarea id="sponsor-names-list" class="hidden" rows="1"></textarea>
+
+                      <div class="mt-4 p-3 rounded-xl border-2 border-blue-500/50 bg-blue-500/5" id="squad-role-editor-adv">
+                        <div class="text-sm font-black theme-text">Squad roles</div>
+                        <div class="text-[10px] theme-muted mb-1">Format: Name|role|C|WK|arm — role = batsman / bowler / allrounder</div>
+                        <textarea id="squad-roles-list" rows="4" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" placeholder="Rohit|batsman|C||right&#10;Bumrah|bowler|||right&#10;Pant|batsman||WK|right"></textarea>
+                        <button type="button" class="mt-2 w-full bg-blue-600 text-white rounded-lg py-2 font-bold text-sm" onclick="applySquadRoles()">Apply squad roles</button>
+                      </div>
+                      <button type="button" id="btn-save-sponsors" onclick="saveSponsorNames()" class="w-full bg-amber-600 text-white rounded-lg py-2 font-bold text-sm">Save sponsors</button>
                     </div>
 
                 <!-- /cup-ui-settings-wrap -->
@@ -3498,7 +3512,7 @@ body[data-theme="dark"] #cup-sub-create h3 {
                 <div class="flex justify-between items-center">
                     <div>
                         <h2 class="text-base font-black uppercase tracking-widest">👥 Players - All Cards</h2>
-                        <p id="players-total-count" class="text-xs opacity-70 mt-1">0 PLAYERS</p>
+                        <p id="players-total-count-anchor" class="text-xs opacity-70 mt-1">0 PLAYERS</p>
                     </div>
                     <span id="players-count-badge" class="text-xs bg-white/10 px-3 py-1 rounded-full font-bold">0 Players</span>
                 </div>
@@ -3507,6 +3521,13 @@ body[data-theme="dark"] #cup-sub-create h3 {
                         <p class="text-[10px] uppercase opacity-70 tracking-widest">Orange Cap Leader</p>
                         <p id="players-orange-leader" class="font-bold text-sm mt-0.5">—</p>
                     </div>
+                    <div class="mt-3 p-3 rounded-xl border-2 border-blue-500/40" id="squad-role-editor">
+                      <div class="text-xs font-black theme-text mb-1">Squad roles</div>
+                      <div class="text-[10px] theme-muted mb-1">One line per player: Name|role|C|WK|arm — role=batsman/bowler/allrounder, C=captain, WK=keeper, arm=left/right</div>
+                      <textarea id="squad-roles-list" rows="4" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" placeholder="Rohit|batsman|C||right&#10;Bumrah|bowler|||right&#10;Pant|batsman||WK|right"></textarea>
+                      <button type="button" class="mt-1 px-3 py-1.5 rounded text-xs font-bold bg-blue-600 text-white" onclick="applySquadRoles()">Apply roles to squad</button>
+                    </div>
+
                     <div class="bg-violet-500/20 border border-violet-400/30 rounded-lg p-2">
                         <p class="text-[10px] uppercase opacity-70 tracking-widest">Purple Cap Leader</p>
                         <p id="players-purple-leader" class="font-bold text-sm mt-0.5">—</p>
@@ -4252,8 +4273,8 @@ body[data-theme="dark"] #cup-sub-create h3 {
             var b = (document.getElementById('cup-team-b')||{}).value || '';
             var tA = findCupTeam(a);
             var tB = findCupTeam(b);
-            var namesA = (tA && tA.players) ? tA.players.filter(function(n){ return String(n||'').trim() && !/^Player\s*\d+/i.test(String(n)); }) : [];
-            var namesB = (tB && tB.players) ? tB.players.filter(function(n){ return String(n||'').trim() && !/^Player\s*\d+/i.test(String(n)); }) : [];
+            var namesA = (tA && tA.players) ? tA.players.map(function(n){ return typeof normalizeCupPlayer==='function'?normalizeCupPlayer(n):n; }).filter(function(n){ var nm=typeof n==='object'?String(n.name||'').trim():String(n||'').trim(); return nm && !isDefaultPlayerName(nm); }) : [];
+            var namesB = (tB && tB.players) ? tB.players.map(function(n){ return typeof normalizeCupPlayer==='function'?normalizeCupPlayer(n):n; }).filter(function(n){ var nm=typeof n==='object'?String(n.name||'').trim():String(n||'').trim(); return nm && !isDefaultPlayerName(nm); }) : [];
             // Default 12 empty slots if squad empty
             var countElA = document.getElementById('cup-cfg-teamA-count');
             var countElB = document.getElementById('cup-cfg-teamB-count');
@@ -4281,6 +4302,61 @@ body[data-theme="dark"] #cup-sub-create h3 {
         if (t) { ensureTeamLogo(t); return teamLogoSvg(t.logo, size || 20); }
         return teamLogoSvg(generateTeamLogo(name || '?'), size || 20);
     }
+    
+    var __cupNewPlayers = [];
+    function normalizeCupPlayer(p) {
+        if (p == null) return { name: '', role: 'allrounder', arm: 'right' };
+        if (typeof p === 'string') return { name: String(p).trim(), role: 'allrounder', arm: 'right' };
+        return {
+            name: String(p.name || '').trim(),
+            role: String(p.role || 'allrounder').toLowerCase() || 'allrounder',
+            arm: String(p.arm || 'right').toLowerCase() || 'right'
+        };
+    }
+    function cupPlayersToNames(arr) {
+        return (arr || []).map(function(p){ return typeof p === 'string' ? p : (p && p.name) || ''; }).filter(Boolean);
+    }
+    function cupRenderNewPlayersList() {
+        var box = document.getElementById('cup-new-players-list');
+        if (!box) return;
+        box.innerHTML = (__cupNewPlayers || []).map(function(p, i) {
+            p = normalizeCupPlayer(p);
+            return '<div class="flex items-center gap-2 text-xs theme-text">' +
+                '<span class="flex-1 font-semibold truncate">' + (p.name || '') + '</span>' +
+                '<span class="theme-muted">' + (p.role || '') + '</span>' +
+                '<span class="theme-muted">' + (p.arm === 'left' ? 'Left' : 'Right') + '</span>' +
+                '<button type="button" class="text-red-500 font-bold px-1" onclick="cupRemoveNewPlayerRow(' + i + ')">&times;</button></div>';
+        }).join('');
+        var hidden = document.getElementById('cup-new-players');
+        if (hidden) hidden.value = (__cupNewPlayers || []).map(function(p){ return normalizeCupPlayer(p).name; }).join(', ');
+    }
+    function cupAddNewPlayerRow() {
+        var nameEl = document.getElementById('cup-new-player-name');
+        var roleEl = document.getElementById('cup-new-player-role');
+        var armEl = document.getElementById('cup-new-player-arm');
+        var name = ((nameEl && nameEl.value) || '').trim();
+        if (!name) { try { nameEl && nameEl.focus(); } catch (e) {} return; }
+        __cupNewPlayers.push({
+            name: name,
+            role: (roleEl && roleEl.value) || 'allrounder',
+            arm: (armEl && armEl.value) || 'right'
+        });
+        if (nameEl) nameEl.value = '';
+        if (roleEl) roleEl.value = 'allrounder';
+        if (armEl) armEl.value = 'right';
+        cupRenderNewPlayersList();
+        try { nameEl.focus(); } catch (e) {}
+    }
+    function cupRemoveNewPlayerRow(i) {
+        __cupNewPlayers.splice(i, 1);
+        cupRenderNewPlayersList();
+    }
+    try {
+        window.cupAddNewPlayerRow = cupAddNewPlayerRow;
+        window.cupRemoveNewPlayerRow = cupRemoveNewPlayerRow;
+        window.normalizeCupPlayer = normalizeCupPlayer;
+    } catch (e) {}
+
     function parsePlayerList(str) {
         if (!str) return [];
         return String(str).split(/[,\n;]+/).map(function(s){ return s.trim(); }).filter(Boolean);
@@ -4320,12 +4396,15 @@ body[data-theme="dark"] #cup-sub-create h3 {
     
     function setCupSubTab(which){
         try{
-            which = which || 'create';
+            which = which || 'teams';
+            try { window.setCupSubTab = setCupSubTab; } catch (eW) {}
             try{ var sp=document.getElementById('sponsor-names-settings'); if(sp){ sp.style.display = (which==='ui')?'block':'none'; } }catch(eSp){}
+            var teams = document.getElementById('cup-sub-teams');
             var create = document.getElementById('cup-sub-create');
             var settings = document.getElementById('cup-match-settings-wrap');
             var ui = document.getElementById('cup-ui-settings-wrap');
             var tour = document.getElementById('cup-tournament-wrap');
+            var btnTeams = document.getElementById('cup-subtab-teams');
             var btnC = document.getElementById('cup-subtab-create');
             var btnS = document.getElementById('cup-subtab-settings');
             var btnU = document.getElementById('cup-subtab-ui');
@@ -4341,10 +4420,14 @@ body[data-theme="dark"] #cup-sub-create h3 {
                 el.classList.remove('hidden');
                 el.style.display = '';
             }
-            hideEl(create); hideEl(settings); hideEl(ui); hideEl(tour);
+            hideEl(teams); hideEl(create); hideEl(settings); hideEl(ui); hideEl(tour);
             if(startBtn){ startBtn.classList.add('hidden'); startBtn.style.display = 'none'; }
-            [btnC,btnS,btnU,btnT].forEach(function(b){ if(b) b.className = 'cup-subtab'; });
-            if(which === 'settings'){
+            [btnTeams,btnC,btnS,btnU,btnT].forEach(function(b){ if(b) b.className = 'cup-subtab'; });
+            if(which === 'teams'){
+                showEl(teams);
+                if(btnTeams) btnTeams.className = 'cup-subtab is-active';
+                try { renderCupUI(); } catch(eTm) {}
+            } else if(which === 'settings'){
                 showEl(settings);
                 if(btnS) btnS.className = 'cup-subtab is-active';
             } else if(which === 'ui'){
@@ -4440,8 +4523,9 @@ body[data-theme="dark"] #cup-sub-create h3 {
         var name = (input && input.value) ? input.value.trim() : '';
         if (!name) { showModal({ title: 'Team Name', message: 'Enter a team name.', icon: 'ℹ️' }); return; }
         if (findCupTeam(name)) { showModal({ title: 'Duplicate', message: 'That team already exists.', icon: 'ℹ️' }); return; }
-        var playersStr = (document.getElementById('cup-new-players') || {}).value || '';
-        var players = parsePlayerList(playersStr);
+        var players = (__cupNewPlayers && __cupNewPlayers.length)
+          ? __cupNewPlayers.map(normalizeCupPlayer)
+          : parsePlayerList((document.getElementById('cup-new-players') || {}).value || '').map(function(n){ return normalizeCupPlayer(n); });
         if (!players.length) {
             for (var i = 1; i <= 11; i++) players.push('');
         }
@@ -4450,6 +4534,7 @@ body[data-theme="dark"] #cup-sub-create h3 {
         saveCupTeams();
         if (input) input.value = '';
         var pIn = document.getElementById('cup-new-players'); if (pIn) pIn.value = '';
+        __cupNewPlayers = []; try { cupRenderNewPlayersList(); } catch (eN) {}
         renderCupUI();
         try { cupLoadSelectedRosters(); } catch(e){}
     }
@@ -4556,57 +4641,77 @@ function cupRenameTeam(idx) {
     function cupEditTeamPlayers(idx) {
         var t = cupTeams[idx];
         if (!t) return;
-        var current = (t.players || []).join(', ');
+        var list = (t.players || []).map(function(p) {
+            if (typeof normalizeCupPlayer === 'function') return normalizeCupPlayer(p);
+            if (typeof p === 'string') return { name: p, role: 'allrounder', arm: 'right' };
+            return { name: (p && p.name) || '', role: (p && p.role) || 'allrounder', arm: (p && p.arm) || 'right' };
+        }).filter(function(p) {
+            var n = (p.name || '').trim();
+            if (!n) return false;
+            if (/^Player\s*\d+/i.test(n)) return false;
+            return true;
+        });
+        function rowHtml(p) {
+            var role = p.role || 'allrounder';
+            var arm = p.arm || 'right';
+            return '<div class="cup-p-row grid grid-cols-12 gap-1 items-center mb-1">' +
+                '<input type="text" class="cp-name col-span-5 border border-slate-200 p-1.5 rounded text-sm" value="' + String(p.name || '').replace(/"/g, '&quot;') + '" placeholder="Player name"/>' +
+                '<select class="cp-role col-span-3 border border-slate-200 p-1.5 rounded text-xs">' +
+                '<option value="batsman"' + (role === 'batsman' ? ' selected' : '') + '>Batsman</option>' +
+                '<option value="bowler"' + (role === 'bowler' ? ' selected' : '') + '>Bowler</option>' +
+                '<option value="allrounder"' + (role === 'allrounder' || !role ? ' selected' : '') + '>All-rounder</option>' +
+                '</select>' +
+                '<select class="cp-arm col-span-3 border border-slate-200 p-1.5 rounded text-xs">' +
+                '<option value="right"' + (arm !== 'left' ? ' selected' : '') + '>Right arm</option>' +
+                '<option value="left"' + (arm === 'left' ? ' selected' : '') + '>Left arm</option>' +
+                '</select>' +
+                '<button type="button" class="col-span-1 text-red-500 font-bold" onclick="this.parentNode.remove()">&times;</button></div>';
+        }
+        var body = '<div class="text-left text-xs text-slate-500 mb-2">Add, edit or remove players. Defaults: All-rounder, Right arm.</div>' +
+            '<div id="cup-edit-players-box" class="max-h-56 overflow-y-auto text-left">' + list.map(rowHtml).join('') + '</div>' +
+            '<button type="button" id="cup-add-player-row" class="mt-2 w-full border border-slate-200 rounded py-1.5 text-xs font-bold">+ Add player</button>';
         showModal({
-            type: 'prompt',
-            title: 'Edit Squad — ' + t.name,
-            message: 'Enter player names, comma-separated. First player is captain.',
-            defaultValue: current,
+            type: 'confirm',
+            title: 'Edit Players — ' + t.name,
+            icon: '👥',
+            html: body,
+            message: body,
             confirmText: 'Save',
             cancelText: 'Cancel',
-            onConfirm: function(val) {
-                var list = parsePlayerList(val || '');
-                if (!list.length) {
-                    showModal({ title: 'Empty Squad', message: 'Add at least one player.', icon: '⚠️' });
-                    return;
-                }
-                t.players = list;
+            onConfirm: function() {
+                var box = document.getElementById('cup-edit-players-box');
+                if (!box) return;
+                var out = [];
+                box.querySelectorAll('.cup-p-row').forEach(function(row) {
+                    var name = ((row.querySelector('.cp-name') || {}).value || '').trim();
+                    if (!name || /^Player\s*\d+/i.test(name)) return;
+                    out.push({
+                        name: name,
+                        role: ((row.querySelector('.cp-role') || {}).value || 'allrounder'),
+                        arm: ((row.querySelector('.cp-arm') || {}).value || 'right')
+                    });
+                });
+                t.players = out;
                 saveCupTeams();
                 renderCupUI();
-                cupLoadSelectedRosters();
-                // If this team is currently Team A/B on scoreboard, update names in place (no defaults)
-                try {
-                    var aName = (document.getElementById('cup-team-a') || {}).value || teamConfig.A.name;
-                    var bName = (document.getElementById('cup-team-b') || {}).value || teamConfig.B.name;
-                    if (t.name === aName || t.name === bName) {
-                        var side = (t.name === aName) ? 'A' : 'B';
-                        var sidePlayers = (players || []).filter(function(p){ return p.team === side; });
-                        for (var i = 0; i < list.length; i++) {
-                            if (sidePlayers[i]) sidePlayers[i].name = list[i];
-                            else {
-                                players.push({
-                                    id: side + '-' + (i + 1), name: list[i], team: side,
-                                    runs: 0, balls: 0, fours: 0, sixes: 0, bowlBalls: 0, bowlRuns: 0, wickets: 0, dots: 0, isOut: false,
-                                    entryRank: null, entryScore: null, entryWickets: null, entryOvers: null, entryInnings: null
-                                });
-                            }
-                        }
-                        // Trim extras only if more scoreboard slots than list (do not add Player N)
-                        if (sidePlayers.length > list.length) {
-                            players = players.filter(function(p) {
-                                if (p.team !== side) return true;
-                                var ix = sidePlayers.indexOf(p);
-                                return ix >= 0 && ix < list.length;
-                            });
-                        }
-                        teamConfig[side].count = list.length;
-                        try { buildPlayerEditorFields(); initSelectors(); } catch(e2){}
-                        try { saveMatchState(); } catch(e3){}
-                    }
-                } catch(eSync) { console.log('cup edit sync', eSync); }
+                try { cupLoadSelectedRosters(); } catch (e) {}
             }
         });
+        setTimeout(function() {
+            var btn = document.getElementById('cup-add-player-row');
+            var box = document.getElementById('cup-edit-players-box');
+            if (btn) btn.onclick = function() {
+                if (!box) box = document.getElementById('cup-edit-players-box');
+                if (!box) return;
+                var d = document.createElement('div');
+                d.innerHTML = rowHtml({ name: '', role: 'allrounder', arm: 'right' });
+                while (d.firstChild) box.appendChild(d.firstChild);
+                try { box.lastChild.querySelector('.cp-name').focus(); } catch (e) {}
+            };
+            if (box && !box.children.length && btn) btn.click();
+        }, 100);
     }
+
     function renderCupUI() {
         try { fillFixtureTeamSelects(); } catch(eF) {}
         var list = document.getElementById('cup-teams-list');
@@ -4617,7 +4722,7 @@ function cupRenameTeam(idx) {
                 list.innerHTML = cupTeams.map(function(t, i) {
                     ensureTeamLogo(t);
                     var n = (t.players || []).length;
-                    var preview = (t.players || []).slice(0, 4).join(', ') + (n > 4 ? '…' : '');
+                    var preview = (typeof cupPlayersToNames === 'function' ? cupPlayersToNames(t.players) : (t.players || [])).slice(0, 4).join(', ') + (n > 4 ? '…' : '');
                     var colorDot = (t.logo && t.logo.color) ? t.logo.color : '#64748b';
                     return '<div class="theme-card border theme-border rounded-lg px-3 py-2 space-y-1" style="border-left:4px solid ' + colorDot + '">' +
                         '<div class="flex items-center justify-between gap-2">' +
@@ -4666,10 +4771,12 @@ function cupRenameTeam(idx) {
         var countEl = document.getElementById(side === 'A' ? 'cup-cfg-teamA-count' : 'cup-cfg-teamB-count');
         var countLabel = document.getElementById(side === 'A' ? 'cup-count-A' : 'cup-count-B');
         // Only real names — never invent Player 1 / Player 7
-        var names = (playerNames || []).filter(function(n) {
-            n = String(n || '').trim();
-            if (!n) return false;
-            if (/^Player\s*\d+/i.test(n)) return false;
+        var names = (playerNames || []).map(function(n){
+            return (typeof normalizeCupPlayer==='function') ? normalizeCupPlayer(n) : n;
+        }).filter(function(n) {
+            var nm = typeof n === 'object' ? String(n.name || '').trim() : String(n || '').trim();
+            if (!nm) return false;
+            if (/^Player\s*\d+/i.test(nm)) return false;
             return true;
         });
         if (names.length > 20) names = names.slice(0, 20);
@@ -4688,7 +4795,7 @@ function cupRenameTeam(idx) {
         var html = '';
         for (var i = 0; i < showCount; i++) {
             var val = names[i] || '';
-            html += '<input type="text" data-cup-side="' + side + '" data-cup-idx="' + i + '" value="' + String(val).replace(/"/g, '&quot;') + '" placeholder="Player ' + (i + 1) + ' name" class="w-full border theme-border theme-card theme-text p-2 rounded-lg text-sm mb-1.5" onchange="cupOnPlayerNameEdit(\'' + side + '\',' + i + ', this.value)">';
+            html += '<input type="text" data-cup-side="' + side + '" data-cup-idx="' + i + '" value="' + String(val).replace(/"/g, '&quot;') + '" placeholder="Player name" class="w-full border theme-border theme-card theme-text p-2 rounded-lg text-sm mb-1.5" onchange="cupOnPlayerNameEdit(\'' + side + '\',' + i + ', this.value)">';
         }
         box.innerHTML = html;
     }
@@ -4744,7 +4851,9 @@ function cupRenameTeam(idx) {
         names = names.filter(function(n){ return String(n||'').trim() && !/^Player\s*\d+/i.test(String(n)); }).slice(0, 20);
         while (names.length < count && names.length < 20) names.push('');
         names = names.slice(0, Math.min(20, Math.max(count, names.length)));
-        if (t) { t.players = names; saveCupTeams(); }
+        if (t) { t.players = sidePlayers.filter(function(p){ return (p.name||'').trim() && !isDefaultPlayerName(p.name); }).map(function(p){
+                    return { name: (p.name||'').trim(), role: p.role||'allrounder', arm: p.arm||'right' };
+                }); saveCupTeams(); }
         cupRenderPlayerInputs(side, names);
         syncCupToScoreboardSettings();
         syncCupPlayersToScoreboard();
@@ -4777,14 +4886,10 @@ function cupRenameTeam(idx) {
             var tA = findCupTeam(aName);
             var tB = findCupTeam(bName);
             // Cup roster is source of truth — never fall back to previous scoreboard names
-            var aNames = (tA && Array.isArray(tA.players) && tA.players.length) ? tA.players.slice() : [];
-            var bNames = (tB && Array.isArray(tB.players) && tB.players.length) ? tB.players.slice() : [];
-            if (!aNames.length) {
-                for (var ia = 1; ia <= 11; ia++) aNames.push(ia === 1 ? 'Player 1 (C)' : ('Player ' + ia));
-            }
-            if (!bNames.length) {
-                for (var ib = 1; ib <= 11; ib++) bNames.push(ib === 1 ? 'Player 1 (C)' : ('Player ' + ib));
-            }
+            var aNames = (tA && Array.isArray(tA.players) && tA.players.length) ? tA.players.map(function(p){ return typeof normalizeCupPlayer==='function'?normalizeCupPlayer(p):p; }).filter(function(p){ var n=typeof p==='object'?p.name:p; return n && !isDefaultPlayerName(n); }) : [];
+            var bNames = (tB && Array.isArray(tB.players) && tB.players.length) ? tB.players.map(function(p){ return typeof normalizeCupPlayer==='function'?normalizeCupPlayer(p):p; }).filter(function(p){ var n=typeof p==='object'?p.name:p; return n && !isDefaultPlayerName(n); }) : [];
+            if (!aNames.length) { aNames = []; }
+            if (!bNames.length) { bNames = []; }
             if (aNames.length > 20) aNames = aNames.slice(0, 20);
             if (bNames.length > 20) bNames = bNames.slice(0, 20);
             if (document.getElementById('cfg-teamA-count')) {
@@ -4800,15 +4905,21 @@ function cupRenameTeam(idx) {
             // Fresh player objects from cup roster (no merge with old match names)
             players = [];
             for (var i = 0; i < aNames.length; i++) {
+                var _na = (typeof normalizeCupPlayer==='function') ? normalizeCupPlayer(aNames[i]) : aNames[i];
+                var _nName = typeof _na==='object' ? String(_na.name||'').trim() : String(_na||'').trim();
+                if (!_nName || isDefaultPlayerName(_nName)) continue;
                 players.push({
-                    id: 'A-' + (i + 1), name: aNames[i], team: 'A', runs: 0, balls: 0, fours: 0, sixes: 0,
+                    id: 'A-' + (players.filter(function(x){return x.team==='A';}).length + 1), name: _nName, team: 'A', role: (typeof _na==='object'?(_na.role||'allrounder'):'allrounder'), arm: (typeof _na==='object'?(_na.arm||'right'):'right'), runs: 0, balls: 0, fours: 0, sixes: 0,
                     bowlBalls: 0, bowlRuns: 0, wickets: 0, dots: 0, isOut: false,
                     entryRank: null, entryScore: null, entryWickets: null, entryOvers: null, entryInnings: null
                 });
             }
             for (var j = 0; j < bNames.length; j++) {
+                var _nb = (typeof normalizeCupPlayer==='function') ? normalizeCupPlayer(bNames[j]) : bNames[j];
+                var _bName = typeof _nb==='object' ? String(_nb.name||'').trim() : String(_nb||'').trim();
+                if (!_bName || isDefaultPlayerName(_bName)) continue;
                 players.push({
-                    id: 'B-' + (j + 1), name: bNames[j], team: 'B', runs: 0, balls: 0, fours: 0, sixes: 0,
+                    id: 'B-' + (players.filter(function(x){return x.team==='B';}).length + 1), name: _bName, team: 'B', role: (typeof _nb==='object'?(_nb.role||'allrounder'):'allrounder'), arm: (typeof _nb==='object'?(_nb.arm||'right'):'right'), runs: 0, balls: 0, fours: 0, sixes: 0,
                     bowlBalls: 0, bowlRuns: 0, wickets: 0, dots: 0, isOut: false,
                     entryRank: null, entryScore: null, entryWickets: null, entryOvers: null, entryInnings: null
                 });
@@ -4997,13 +5108,13 @@ function cupRenameTeam(idx) {
                 if (!p) return;
                 if (p.team !== team) return;
                 if (role !== 'bowler' && p.isOut) return;
-                opts.push({ value: p.id, label: (p.name || 'Player') + ' (' + p.team + ')' });
+                opts.push({ value: p.id, label: (p.name || '-') });
             });
             if (!opts.length && players && players.length) {
                 (players || []).forEach(function(p) {
                     if (!p) return;
                     if (role !== 'bowler' && p.isOut) return;
-                    opts.push({ value: p.id, label: (p.name || 'Player') + ' (' + (p.team||'?') + ')' });
+                    opts.push({ value: p.id, label: (p.name || '-') });
                 });
             }
             if (!opts.length) {
@@ -5039,7 +5150,7 @@ function cupRenameTeam(idx) {
                         for (var i=0;i<el.options.length;i++) if (el.options[i].value === val) found = true;
                         if (!found) {
                             var p = (players||[]).find(function(x){ return x.id === val; });
-                            if (p) el.insertAdjacentHTML('beforeend', '<option value="'+p.id+'">'+p.name+' ('+p.team+')</option>');
+                            if (p) el.insertAdjacentHTML('beforeend', '<option value="'+p.id+'">'+p.name+'</option>');
                         }
                         el.value = val;
                         try { el.blur(); } catch(eB){}
@@ -5157,11 +5268,13 @@ function cupRenameTeam(idx) {
         try { document.getElementById('modal-title').style.color = '#0f172a'; document.getElementById('modal-message').style.color = '#475569'; } catch(e){}
         var msgEl = document.getElementById('modal-message');
         var msg = opts.message || '';
-        // Allow HTML content for direction wheels / rich stats
-        if (opts.html || (typeof msg === 'string' && msg.indexOf('<') !== -1)) {
+        // Allow HTML content for direction wheels / rich stats / edit players
+        if (opts.html) {
+            msgEl.innerHTML = opts.html;
+        } else if (typeof msg === 'string' && msg.indexOf('<') !== -1) {
             msgEl.innerHTML = msg;
         } else {
-            msgEl.innerText = msg;
+            msgEl.innerText = msg || '';
         }
         document.getElementById('modal-icon').innerText = opts.icon || (opts.type === 'confirm' ? '⚠️' : 'ℹ️');
 
@@ -5615,6 +5728,7 @@ function switchTab(tabId) {
         if (tabBtn){ tabBtn.className = "flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-active transition-all"; tabBtn.style.pointerEvents="auto"; }
         try {
             if (tabId === 'tournament') {
+                try { setTimeout(function(){ setCupSubTab('teams'); }, 20); } catch (eTeams0) {}
                 try { var _sp=document.getElementById('cfg-share-poster'); var _sd=document.getElementById('cfg-share-desc'); if(_sp)_sp.value=localStorage.getItem('cricket_share_poster_url')||''; if(_sd)_sd.value=localStorage.getItem('cricket_share_desc')||''; } catch(eShareCfg){}
                 if (typeof setCupSubTab === 'function') setCupSubTab('create');
                 else if (window.setCupSubTab) window.setCupSubTab('create');
@@ -5809,8 +5923,11 @@ function switchTab(tabId) {
 
     // Bi-directional: scoreboard player names/counts ↔ Cup team rosters (matched by team name).
     function isDefaultPlayerName(n) {
+        if (n && typeof n === 'object') n = n.name || n.player || '';
         n = String(n || '').trim();
-        return !n || /^Player\s*\d+/i.test(n) || /^Player\s*\d+\s*\(C\)$/i.test(n);
+        if (!n) return true;
+        if (/^Player$/i.test(n)) return true;
+        return /^Player\s*\d+/i.test(n) || /^Player\s*\d+\s*\(C\)$/i.test(n);
     }
     function rosterLooksDefault(names) {
         if (!names || !names.length) return true;
@@ -5825,8 +5942,9 @@ function switchTab(tabId) {
             function pushSide(side, teamName) {
                 if (!teamName) return;
                 var t = findCupTeam(teamName);
-                var names = (players || []).filter(function(p){ return p.team === side; }).map(function(p){ return (p.name || '').trim() || 'Player'; });
-                if (!names.length) return;
+                var sidePlayers = (players || []).filter(function(p){ return p.team === side; });
+                var names = sidePlayers.map(function(p){ return (p.name || '').trim(); }).filter(function(n){ return n && !isDefaultPlayerName(n); });
+                if (!names.length) return; // do not write empty/Player defaults back to cup
                 var sbDefault = rosterLooksDefault(names);
                 // Never wipe a saved cup squad with generic Player 1/2/3 defaults
                 if (t && t.players && t.players.length) {
@@ -6217,7 +6335,7 @@ function switchTab(tabId) {
         if (ns) ns.innerHTML = '<option value="">Non-striker</option>';
         for (var i=0;i<players.length;i++){
             var p = players[i];
-            var opt = '<option value="' + p.id + '">' + p.name + ' (' + p.team + ')</option>';
+            var opt = '<option value="' + p.id + '">' + p.name + '</option>';
             if(p.team === batT && !p.isOut) {
                 ss.insertAdjacentHTML('beforeend', opt);
                 if (ns) ns.insertAdjacentHTML('beforeend', opt);
@@ -7367,8 +7485,8 @@ function placeBoundaryAnimationOnStriker(toast){
                   return '🇦🇺';
                 } catch(e){ return '🇦🇺'; }
               })(),
-            squadA: (players || []).filter(function(p){ return p.team === 'A'; }).map(function(p){ return { name: p.name, team: 'A', runs: p.runs|0, balls: p.balls|0, isOut: !!p.isOut }; }),
-            squadB: (players || []).filter(function(p){ return p.team === 'B'; }).map(function(p){ return { name: p.name, team: 'B', runs: p.runs|0, balls: p.balls|0, isOut: !!p.isOut }; }),
+            squadA: (players || []).filter(function(p){ return p.team === 'A'; }).map(function(p){ return { name: p.name, team: 'A', runs: p.runs|0, balls: p.balls|0, isOut: !!p.isOut, role: p.role||p.playerRole||'', captain: !!(p.captain||p.isCaptain), keeper: !!(p.keeper||p.isKeeper||p.wicketKeeper), arm: p.arm||p.bowlingArm||'', batting: p.batting||p.battingStyle||'' }; }),
+            squadB: (players || []).filter(function(p){ return p.team === 'B'; }).map(function(p){ return { name: p.name, team: 'B', runs: p.runs|0, balls: p.balls|0, isOut: !!p.isOut, role: p.role||p.playerRole||'', captain: !!(p.captain||p.isCaptain), keeper: !!(p.keeper||p.isKeeper||p.wicketKeeper), arm: p.arm||p.bowlingArm||'', batting: p.batting||p.battingStyle||'' }; }),
             tossText: (function(){
                 try {
                     if (!tossWinnerTeam) return '';
@@ -7725,6 +7843,7 @@ function placeBoundaryAnimationOnStriker(toast){
                       if(bgEl) o.scoreboardBg = (bgEl.value||'').trim();
                       if(ovEl) o.scoreboardOverlay = (parseInt(ovEl.value,10)||55)/100;
                       var szEl=document.getElementById('ad-float-size'); if(szEl) o.size=szEl.value||o.size||'m';
+                      var dmEl=document.getElementById('ad-float-display-mode'); if(dmEl) o.displayMode=dmEl.value||o.displayMode||'event';
                     }catch(eBg2){}
                     // Normalize aliases for live page
                     o.enabled = !!o.enabled;
@@ -16598,7 +16717,7 @@ body:not(.scoring-active) #scoring-controls-panel {
       var t = ev.target;
       if (!t || !t.closest) return;
       // Cup sub-tabs
-      var sub = t.closest('#cup-subtab-create, #cup-subtab-settings, #cup-subtab-ui, #cup-subtab-tournament');
+      var sub = t.closest('#cup-subtab-teams, #cup-subtab-create, #cup-subtab-settings, #cup-subtab-ui, #cup-subtab-tournament');
       if (sub) {
         var map = {
           'cup-subtab-create': 'create',
@@ -16688,7 +16807,7 @@ body[data-theme="dark"] .espn-tabbar {
 body[data-theme="dark"] .espn-tab-active { background: #009270 !important; color: #fff !important; }
 
 /* Cup subtabs: equal size, readable labels */
-#cup-subtab-create, #cup-subtab-settings, #cup-subtab-ui, #cup-subtab-tournament,
+#cup-subtab-teams, #cup-subtab-create, #cup-subtab-settings, #cup-subtab-ui, #cup-subtab-tournament,
 button.cup-subtab {
   flex: 1 1 0 !important;
   min-width: 0 !important;
@@ -18971,6 +19090,7 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
       o.trigger = tr ? tr.value : (o.trigger||'over');
       o.shape = sh ? sh.value : (o.shape||'rect');
       var sz=document.getElementById('ad-float-size'); o.size = sz ? sz.value : (o.size||'m');
+      var dm=document.getElementById('ad-float-display-mode'); if(dm) o.displayMode = dm.value || o.displayMode || 'event';
       var bg=document.getElementById('scoreboard-bg-image'); if(bg) o.scoreboardBg = (bg.value||'').trim();
       var ov=document.getElementById('scoreboard-bg-overlay'); if(ov) o.scoreboardOverlay = (parseInt(ov.value,10)||55)/100;
       var pm=document.getElementById('ad-float-playmode'); o.playMode = pm ? pm.value : (o.playMode||'trigger');
@@ -19039,6 +19159,60 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
     try { return JSON.parse(localStorage.getItem(SK) || localStorage.getItem("cricket_sponsors") || "{}") || {}; }
     catch(e){ return {}; }
   }
+  
+  function sponsorFontOptions(selected){
+    var fonts=[['Montserrat,sans-serif','Montserrat'],['Georgia,serif','Georgia'],['Impact,sans-serif','Impact'],['system-ui,sans-serif','System']];
+    return fonts.map(function(f){ return '<option value="'+f[0]+'"'+(selected===f[0]?' selected':'')+'>'+f[1]+'</option>'; }).join('');
+  }
+  function sponsorAnimOptions(selected){
+    var anims=[['blink','Blink'],['pulse','Pulse'],['slide','Slide'],['glow','Neon glow']];
+    return anims.map(function(a){ return '<option value="'+a[0]+'"'+(selected===a[0]?' selected':'')+'>'+a[1]+'</option>'; }).join('');
+  }
+  function addSponsorRow(data){
+    data = data || {};
+    var box = document.getElementById('sponsor-rows');
+    if(!box) return;
+    var defCol = (document.getElementById('sponsor-color')||{}).value || '#fbbf24';
+    var defFf = (document.getElementById('sponsor-font-family')||{}).value || 'Montserrat,sans-serif';
+    var defAn = (document.getElementById('sponsor-anim')||{}).value || 'blink';
+    var row = document.createElement('div');
+    row.className = 'sponsor-row grid grid-cols-12 gap-1 items-center p-2 rounded border theme-border';
+    row.innerHTML =
+      '<input type="text" class="sp-name col-span-12 sm:col-span-4 border theme-border theme-card theme-text p-1.5 rounded text-sm" placeholder="Sponsor name" value="'+(data.name||'').replace(/"/g,'&quot;')+'"/>' +
+      '<input type="color" class="sp-color col-span-3 sm:col-span-2 h-9 w-full rounded border theme-border" value="'+(data.color||defCol)+'"/>' +
+      '<select class="sp-font col-span-5 sm:col-span-3 border theme-border theme-card theme-text p-1.5 rounded text-xs">'+sponsorFontOptions(data.fontFamily||defFf)+'</select>' +
+      '<select class="sp-anim col-span-3 sm:col-span-2 border theme-border theme-card theme-text p-1.5 rounded text-xs">'+sponsorAnimOptions(data.anim||defAn)+'</select>' +
+      '<button type="button" class="col-span-1 text-red-500 font-bold text-lg leading-none" title="Remove" onclick="this.parentNode.remove()">&times;</button>';
+    box.appendChild(row);
+  }
+  function loadSponsorRowsFromConfig(o){
+    try{
+      var box=document.getElementById('sponsor-rows');
+      if(!box) return;
+      box.innerHTML='';
+      var items=(o && o.items && o.items.length) ? o.items : ((o&&o.names)||[]).map(function(n){return {name:n};});
+      if(!items.length){ addSponsorRow({}); return; }
+      items.forEach(function(it){ addSponsorRow(it||{}); });
+      var colEl=document.getElementById('sponsor-color'); if(colEl&&o.color)colEl.value=o.color;
+      var fsEl=document.getElementById('sponsor-font-size'); if(fsEl&&o.fontSize)fsEl.value=String(o.fontSize);
+      var ffEl=document.getElementById('sponsor-font-family'); if(ffEl&&o.fontFamily)ffEl.value=o.fontFamily;
+      var anEl=document.getElementById('sponsor-anim'); if(anEl&&o.anim)anEl.value=o.anim;
+      var en=document.getElementById('sponsor-names-enabled'); if(en) en.checked = o.enabled !== false;
+      var lg=document.getElementById('sponsor-logos-list');
+      if(lg && o.items){ lg.value = o.items.map(function(it){ return (it&&it.logo)||''; }).join('\n'); }
+    }catch(e){ console.log(e); }
+  }
+  window.addSponsorRow = addSponsorRow;
+  window.loadSponsorRowsFromConfig = loadSponsorRowsFromConfig;
+  function initSponsorRows(){
+    try{
+      var o = (typeof getSponsorsConfig==='function') ? getSponsorsConfig() : {};
+      loadSponsorRowsFromConfig(o||{});
+    }catch(e){ addSponsorRow({}); }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', initSponsorRows);
+  else setTimeout(initSponsorRows, 50);
+
   function getSponsorsConfig(){
     try {
       if (window.__sponsorsConfig && window.__sponsorsConfig.names) return window.__sponsorsConfig;
@@ -19046,41 +19220,75 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
       return o;
     } catch(e){ return {}; }
   }
+  function applySquadRoles(){
+    try{
+      var ta=document.querySelector('#squad-role-editor-adv #squad-roles-list')||document.getElementById('squad-roles-list');
+      if(!ta||typeof players==='undefined') return;
+      var lines=String(ta.value||'').split(/\n/).map(function(s){return s.trim();}).filter(Boolean);
+      var map={};
+      lines.forEach(function(line){
+        var p=line.split('|').map(function(x){return String(x||'').trim();});
+        var name=p[0]; if(!name) return;
+        var role=(p[1]||'').toLowerCase();
+        var cap=/^(c|captain|yes|1)$/i.test(p[2]||'');
+        var wk=/^(wk|keeper|yes|1)$/i.test(p[3]||'');
+        var arm=(p[4]||'').toLowerCase();
+        map[name.toLowerCase()]={ role:role, captain:cap, keeper:wk, arm:arm };
+      });
+      (players||[]).forEach(function(pl){
+        var m=map[String(pl.name||'').toLowerCase()];
+        if(!m) return;
+        if(m.role) pl.role=m.role;
+        pl.captain=!!m.captain; pl.isCaptain=!!m.captain;
+        pl.keeper=!!m.keeper; pl.isKeeper=!!m.keeper; pl.wicketKeeper=!!m.keeper;
+        if(m.arm){ pl.arm=m.arm; pl.bowlingArm=m.arm; }
+      });
+      try{ if(typeof saveState==='function') saveState(); }catch(e1){}
+      try{ if(typeof publish==='function') publish(); else if(typeof publishLive==='function') publishLive(); }catch(e2){}
+      alert('Squad roles applied for '+Object.keys(map).length+' names');
+    }catch(e){ alert('Role apply failed'); }
+  }
   function saveSponsorNames(){
     try {
-      var ta = document.getElementById("sponsor-names-list");
+      var rows = document.querySelectorAll('#sponsor-rows .sponsor-row');
       var lg = document.getElementById("sponsor-logos-list");
       var en = document.getElementById("sponsor-names-enabled");
-      var names = nlSplit(ta && ta.value).map(function(s){ return s.trim(); }).filter(Boolean).slice(0, 20);
-      var logos = nlSplit(lg && lg.value).map(function(s){ return s.trim(); });
-      var items = names.map(function(n, i){ return { name: n, logo: logos[i] || "" }; });
-      var colEl=document.getElementById("sponsor-color");
-      var fsEl=document.getElementById("sponsor-font-size");
-      var ffEl=document.getElementById("sponsor-font-family");
-      var anEl=document.getElementById("sponsor-anim");
+      var logos = (lg && lg.value ? String(lg.value).split(/\n/) : []).map(function(s){ return s.trim(); });
+      var defCol = (document.getElementById("sponsor-color")||{}).value || "#fbbf24";
+      var defFs = parseInt((document.getElementById("sponsor-font-size")||{}).value,10)||14;
+      var defFf = (document.getElementById("sponsor-font-family")||{}).value || "Montserrat,sans-serif";
+      var defAn = (document.getElementById("sponsor-anim")||{}).value || "blink";
+      var items = [];
+      rows.forEach(function(row, i){
+        var name = ((row.querySelector('.sp-name')||{}).value||'').trim();
+        if(!name) return;
+        items.push({
+          name: name,
+          logo: logos[i] || "",
+          color: (row.querySelector('.sp-color')||{}).value || defCol,
+          fontFamily: (row.querySelector('.sp-font')||{}).value || defFf,
+          anim: (row.querySelector('.sp-anim')||{}).value || defAn,
+          fontSize: defFs
+        });
+      });
+      var names = items.map(function(it){ return it.name; });
       var o = { enabled: en ? !!en.checked : true, names: names, items: items,
-        color: colEl?colEl.value:"#fbbf24",
-        fontSize: fsEl?parseInt(fsEl.value,10)||14:14,
-        fontFamily: ffEl?ffEl.value:"Montserrat,sans-serif",
-        anim: anEl?anEl.value:"blink"
+        color: defCol, fontSize: defFs, fontFamily: defFf, anim: defAn
       };
-      localStorage.setItem(SK, JSON.stringify(o));
+      var sk = (typeof SK!=='undefined'?SK:'cricket_sponsors_v1');
+      localStorage.setItem(sk, JSON.stringify(o));
       try { localStorage.setItem("cricket_sponsors", JSON.stringify(o)); } catch(e2){}
       window.__sponsorsConfig = o;
       try { localStorage.setItem("live_sponsors_cache", JSON.stringify(o)); } catch(eC){}
-      alert("Saved " + names.length + " sponsors" + (names.length ? (": " + names.join(", ")) : ""));
-      return o;
-    } catch(err) {
-      alert("Save failed: " + err);
-      return null;
-    }
+      try {
+        var ta=document.getElementById('sponsor-names-list');
+        if(ta) ta.value = items.map(function(it){ return [it.name,it.color,it.fontFamily,it.anim].join('|'); }).join('\n');
+      } catch(eT){}
+      try{ if(typeof publish==='function') publish(); else if(typeof publishLive==='function') publishLive(); }catch(eP){}
+      alert("Saved " + names.length + " sponsors");
+    } catch(e){ alert("Save failed: "+e.message); }
   }
-  window.saveSponsorNames = saveSponsorNames;
-  window.getSponsorsConfig = function(){
-    var o = window.__sponsorsConfig || loadSponsors();
-    if (o.names && !o.items) o.items = o.names.map(function(n){ return { name: n, logo: "" }; });
-    return o || { enabled: false, names: [], items: [] };
-  };
+
   function bind(){
     var btn = document.getElementById("btn-save-sponsors");
     if (btn) {
