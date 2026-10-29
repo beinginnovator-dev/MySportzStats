@@ -439,6 +439,51 @@ body.theme-dark .broadcast .tname{text-shadow:0 1px 2px rgba(0,0,0,.45)}
   75%{opacity:1;transform:translate(-50%,-6px) scale(1)}
   100%{opacity:0;transform:translate(-50%,-14px) scale(.96)}
 }
+
+/* sky-shot-v248 */
+.team-celebrate.sky-shot{
+  animation: skyShotPop 1.4s ease-out !important;
+  position:relative;
+}
+.team-celebrate.sky-shot::after{
+  content:"🎆";
+  position:absolute;
+  left:50%;
+  top:-18px;
+  transform:translateX(-50%);
+  font-size:22px;
+  animation: skyBurst 1.4s ease-out forwards;
+  pointer-events:none;
+}
+@keyframes skyShotPop{
+  0%{transform:scale(1);filter:brightness(1);text-shadow:none}
+  25%{transform:scale(1.12);filter:brightness(1.5);text-shadow:0 0 20px #fde68a,0 0 30px #38bdf8}
+  100%{transform:scale(1);filter:brightness(1);text-shadow:none}
+}
+@keyframes skyBurst{
+  0%{opacity:0;transform:translateX(-50%) translateY(8px) scale(.5)}
+  30%{opacity:1;transform:translateX(-50%) translateY(-6px) scale(1.2)}
+  100%{opacity:0;transform:translateX(-50%) translateY(-28px) scale(.8)}
+}
+.result-banner{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  z-index:50;min-width:220px;max-width:92%;
+  background:linear-gradient(135deg,#0f172aee,#1e293bee);
+  border:2px solid #fbbf24;border-radius:16px;padding:14px 16px;
+  text-align:center;color:#fff;box-shadow:0 16px 40px rgba(0,0,0,.45);
+  animation:resultIn .45s ease-out;
+}
+.result-banner .rb-title{font-size:11px;letter-spacing:.12em;color:#fde68a;font-weight:800;margin-bottom:4px}
+.result-banner .rb-main{font-size:16px;font-weight:900;line-height:1.25}
+.result-banner .rb-sub{font-size:12px;color:#cbd5e1;margin-top:4px}
+@keyframes resultIn{from{opacity:0;transform:translate(-50%,-40%) scale(.9)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.tour-card{display:block;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.12);background:#0f172a;margin-bottom:10px;text-decoration:none;color:inherit}
+.tour-card img{width:100%;height:120px;object-fit:cover;display:block;background:#1e293b}
+.tour-card .body{padding:10px 12px}
+.tour-card .badge{display:inline-block;font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;margin-bottom:6px}
+.tour-card .badge.up{background:#065f46;color:#a7f3d0}
+.tour-card .badge.today{background:#1e3a8a;color:#bfdbfe}
+.tour-card .badge.live{background:#7f1d1d;color:#fecaca}
 </style>
 </head>
 <body class="theme-dark">
@@ -1583,6 +1628,16 @@ function excitingHindi(d, ev){
         endedFired.current=true;
         setShowFw(true);
         try{stadiumMatchEnd();}catch(e){}
+        try{
+          var res = String((data&&(data.matchResult||data.resultText||data.winnerText))||'Match completed');
+          if(window.speechSynthesis){
+            var u = new SpeechSynthesisUtterance('Match conclusion. '+res);
+            u.rate = 1.02; u.pitch = 1;
+            try{ window.speechSynthesis.cancel(); }catch(eC){}
+            window.speechSynthesis.speak(u);
+          }
+        }catch(eTts){}
+        try{ setCelebSide('A'); setTimeout(function(){ setCelebSide('B'); setTimeout(function(){ setCelebSide(null); }, 900); }, 900); }catch(eCel){}
         setTimeout(function(){setShowFw(false);},2800);
       }
       if(!ended)endedFired.current=false;
@@ -1840,7 +1895,12 @@ function excitingHindi(d, ev){
           ),
           h('div',{className:'match-center'},
             h('div',{className:'vs-stack',style:{position:'relative',minHeight:36,display:'flex',alignItems:'center',justifyContent:'center'}},
-              h('div',{className:'vs-label',style:{minHeight:28,display:'flex',alignItems:'center',justifyContent:'center',opacity:event?0.25:1}},'VS'),
+              h('div',{className:'vs-label',style:{minHeight:28,display:'flex',alignItems:'center',justifyContent:'center',opacity:(event||(data&&(data.matchEnded||data.matchResult)))?0.2:1}},'VS'),
+              (data&&(data.matchEnded||data.matchResult))?h('div',{className:'result-banner'},
+                h('div',{className:'rb-title'},'MATCH RESULT'),
+                h('div',{className:'rb-main'}, String(data.matchResult||data.resultText||data.winnerText||'Match completed')),
+                h('div',{className:'rb-sub'}, (dual.nameA||'')+' · '+(dual.nameB||''))
+              ):null,
               event?h('div',{key:'vsb-'+lastEvKey.current,className:'ev-banner show float-up '+evCls,style:{position:'absolute',left:'50%',top:'100%',transform:'translate(-50%,6px)',zIndex:40,minWidth:120,maxWidth:150,pointerEvents:'none',marginTop:4}},(event.kind==='wicket'?('WICKET · '+wicketTypeFromData(data)):(event.text||event.kind||'')).toString()):null
             )
           ),
@@ -2099,7 +2159,7 @@ function excitingHindi(d, ev){
                 var runs=typeof p==='object'?n(p.runs):0;
                 var balls=typeof p==='object'?n(p.balls):0;
                 var out=typeof p==='object'&&p.isOut?'out':'';
-                return h('tr',{key:i},h('td',null,i+1),h('td',null,(typeof p==='string'?p:(p.name||'-'))),h('td',null,(function(){ if(typeof p==='string')return '-'; var r=(p.role||'').toLowerCase(); if(r.indexOf('all')>=0)return 'All-rounder'; if(r.indexOf('bowl')>=0)return 'Bowler'; if(r.indexOf('bat')>=0)return 'Batsman'; return p.role||'-'; })()),h('td',null,(function(){ if(typeof p!=='object')return ''; var a=(p.arm||p.bowlingArm||'').toLowerCase(); if(a.indexOf('left')>=0)return 'Left'; if(a.indexOf('right')>=0)return 'Right'; return a||''; })()),h('td',null,out));
+                return h('tr',{key:i},h('td',null,i+1),h('td',null,(typeof p==='string'?p:(p.name||'-'))),h('td',null,(function(){ if(typeof p==='string')return '-'; var r=String(p.role||p.playerRole||p.type||'').toLowerCase(); if(r.indexOf('all')>=0)return 'All-rounder'; if(r.indexOf('bowl')>=0)return 'Bowler'; if(r.indexOf('bat')>=0||r.indexOf('keep')>=0)return 'Batsman'; return p.role||p.playerRole||'-'; })()),h('td',null,(function(){ if(typeof p!=='object')return '-'; var a=String(p.arm||p.bowlingArm||p.bowling||'').toLowerCase(); if(a.indexOf('left')>=0)return 'Left'; if(a.indexOf('right')>=0)return 'Right'; return a||'-'; })()),h('td',null,out));
               }))
             );
           })()
@@ -2122,7 +2182,69 @@ function excitingHindi(d, ev){
           )
         ):null,
 
-        tab==='matches'?h('div',{className:'card'},
+        tab==='matches'?h('div',null,
+          h('div',{className:'card'},
+            h('h3',null,'Tournament / Upcoming'),
+            (function(){
+              var tour = (data&&data.tournament)||null;
+              var fx = [];
+              try{
+                if(tour&&Array.isArray(tour.fixtures)) fx=fx.concat(tour.fixtures);
+                if(data&&Array.isArray(data.fixtures)) fx=fx.concat(data.fixtures);
+              }catch(e){}
+              var img = (tour&&tour.image)||(data&&data.tournamentImage)||'';
+              var liveLink = (tour&&(tour.liveLink||tour.link))||(location.origin+location.pathname);
+              function dayStatus(f){
+                var ds = String(f.date||f.start||'').slice(0,10);
+                if(!ds) return {kind:'up',label:'Upcoming'};
+                var today = new Date(); var tISO = today.toISOString().slice(0,10);
+                // support dd/mm/yyyy
+                var norm=ds;
+                if(/^\d{2}\/\d{2}\/\d{4}/.test(ds)){ var p=ds.split('/'); norm=p[2]+'-'+p[1]+'-'+p[0]; }
+                if(f.status==='live') return {kind:'live',label:'Live'};
+                if(norm>tISO) return {kind:'up',label:'Upcoming'};
+                if(norm===tISO){
+                  var tm=String(f.time||'00:00');
+                  return {kind:'today',label:'Today · '+tm};
+                }
+                return {kind:'up',label:'Scheduled'};
+              }
+              if(!fx.length && !img) return h('div',{className:'muted'},'No tournament schedule from scorer yet');
+              return h('div',null,
+                img?h('div',{className:'tour-card'},
+                  h('img',{src:img,alt:'Tournament'}),
+                  h('div',{className:'body'},
+                    h('div',{style:{fontWeight:800}}, (tour&&tour.name)||'Tournament'),
+                    h('div',{className:'muted'}, ((tour&&tour.start)||'')+' — '+((tour&&tour.end)||'')),
+                    h('div',{className:'row',style:{marginTop:8,gap:8}},
+                      h('a',{className:'badge today',href:liveLink,target:'_blank',rel:'noopener'},'Open live'),
+                      h('button',{className:'badge up',onClick:function(){
+                        try{
+                          var text = ((tour&&tour.name)||'Match')+' — '+liveLink;
+                          if(navigator.share){ navigator.share({title:(tour&&tour.name)||'Match invite', text:text, url:liveLink}); }
+                          else if(navigator.clipboard){ navigator.clipboard.writeText(text); alert('Invite link copied'); }
+                          else { prompt('Copy link', liveLink); }
+                        }catch(e){ prompt('Copy link', liveLink); }
+                      }},'Share invite')
+                    )
+                  )
+                ):null,
+                fx.slice(0,12).map(function(f,i){
+                  var st=dayStatus(f);
+                  var label=(f.teamA||'?')+' vs '+(f.teamB||'?');
+                  var href=f.liveLink||liveLink;
+                  return h('a',{key:'fx'+i,className:'tour-card',href:href},
+                    h('div',{className:'body'},
+                      h('span',{className:'badge '+(st.kind==='live'?'live':st.kind==='today'?'today':'up')}, st.label),
+                      h('div',{style:{fontWeight:800}}, label),
+                      h('div',{className:'muted'}, [f.date,f.time,f.type||f.stage,f.venue].filter(Boolean).join(' · '))
+                    )
+                  );
+                })
+              );
+            })()
+          ),
+          h('div',{className:'card'},
           h('h3',null,'Matches · last 2 days'),
           h('div',{className:'match-cards'},
             (matchCardsFromData(data)||[]).length? (matchCardsFromData(data)||[]).map(function(m){
@@ -2149,6 +2271,7 @@ function excitingHindi(d, ev){
                 h('div',{className:'mc-meta'}, m.when? new Date(m.when).toLocaleString():'')
               );
             }) : h('div',{className:'muted'},'No matches in the last 2 days')
+          )
           )
         ):null,
 

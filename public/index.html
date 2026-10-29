@@ -2521,6 +2521,9 @@ body[data-theme="dark"] #cup-sub-create h3 {
                     <div class="space-y-1 mb-2">
                         <label class="text-[10px] font-black theme-text uppercase">Tournament poster / image URL</label>
                         <input type="url" id="tour-image" placeholder="https://.../tournament.png" class="w-full border theme-border theme-card theme-text p-2 rounded-xl text-sm" onchange="saveTournamentImage()"/>
+
+                        <label class="text-xs theme-muted font-semibold block mb-1 mt-2">Live page link (for invite / cards)</label>
+                        <input type="url" id="tour-live-link" placeholder="https://your-worker.workers.dev/live-react" class="w-full border theme-border theme-card theme-text p-2 rounded-xl text-sm" onchange="saveTournamentMeta()"/>
                         <div id="tour-image-preview" class="hidden mt-1"><img alt="Tournament" class="max-h-28 rounded-xl border theme-border mx-auto"/></div>
                     </div>
                     <h3 class="text-sm font-black theme-text uppercase tracking-wider">Tournament schedule</h3>
@@ -2561,7 +2564,12 @@ body[data-theme="dark"] #cup-sub-create h3 {
                     </div>
                     <div>
                         <p class="text-[10px] font-black theme-text uppercase mb-1">Fixtures</p>
-                        <div id="tour-fixtures-list" class="space-y-2"></div>
+                        <div id="tour-actions-bar"></div>
+                    <div class="flex gap-2 mb-2">
+                      <button type="button" onclick="updateTournamentMeta()" class="flex-1 px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold">Update tournament</button>
+                      <button type="button" onclick="deleteTournamentAll()" class="flex-1 px-3 py-2 rounded-lg bg-red-600 text-white text-xs font-bold">Delete tournament</button>
+                    </div>
+                    <div id="tour-fixtures-list" class="space-y-2"></div>
                     <button type="button" onclick="shareTournamentSchedule()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase shadow mt-1">📤 Share Schedule</button>
                     </div>
                 </div>
@@ -4051,6 +4059,34 @@ body[data-theme="dark"] #cup-sub-create h3 {
             return o;
         } catch(e) { return { name: '', start: '', end: '', fixtures: [] }; }
     }
+    
+    function saveTournamentMeta(){ try{ saveTournament(); }catch(e){} }
+    function deleteTournamentAll(){
+      try{
+        if(!confirm('Delete entire tournament and all fixtures?')) return;
+        var empty={name:'',start:'',end:'',image:'',liveLink:'',fixtures:[]};
+        localStorage.setItem('cricket_tournament_v1', JSON.stringify(empty));
+        try{ localStorage.removeItem('cup_tournament'); }catch(e0){}
+        var n=document.getElementById('tour-name'); if(n)n.value='';
+        var s=document.getElementById('tour-start'); if(s)s.value='';
+        var e=document.getElementById('tour-end'); if(e)e.value='';
+        var img=document.getElementById('tour-image'); if(img)img.value='';
+        var ll=document.getElementById('tour-live-link'); if(ll)ll.value='';
+        var prev=document.getElementById('tour-image-preview'); if(prev)prev.classList.add('hidden');
+        renderTournamentUI();
+        try{ if(typeof publish==='function') publish(); }catch(e1){}
+        showModal({title:'Deleted',message:'Tournament cleared.',icon:'✅'});
+      }catch(e){ alert('Delete failed'); }
+    }
+    function updateTournamentMeta(){
+      try{
+        saveTournament();
+        renderTournamentUI();
+        try{ if(typeof publish==='function') publish(); }catch(e1){}
+        showModal({title:'Updated',message:'Tournament details saved.',icon:'✅'});
+      }catch(e){ alert('Update failed'); }
+    }
+
     function saveTournament(data) {
         try { localStorage.setItem(TOURNAMENT_KEY, JSON.stringify(data || loadTournament())); } catch(e){}
     }
@@ -4223,6 +4259,8 @@ body[data-theme="dark"] #cup-sub-create h3 {
             try {
                 var imgEl = document.getElementById('tour-image');
                 if (imgEl) imgEl.value = d.image || '';
+                var llEl = document.getElementById('tour-live-link');
+                if (llEl) llEl.value = d.liveLink || '';
                 var prev = document.getElementById('tour-image-preview');
                 if (prev) {
                     if (d.image) { prev.classList.remove('hidden'); var im=prev.querySelector('img'); if(im) im.src=d.image; }
