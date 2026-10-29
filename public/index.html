@@ -2786,12 +2786,7 @@ body[data-theme="dark"] #cup-sub-create h3 {
                       <!-- hidden legacy textarea kept for compatibility -->
                       <textarea id="sponsor-names-list" class="hidden" rows="1"></textarea>
 
-                      <div class="mt-4 p-3 rounded-xl border-2 border-blue-500/50 bg-blue-500/5" id="squad-role-editor-adv">
-                        <div class="text-sm font-black theme-text">Squad roles</div>
-                        <div class="text-[10px] theme-muted mb-1">Format: Name|role|C|WK|arm — role = batsman / bowler / allrounder</div>
-                        <textarea id="squad-roles-list" rows="4" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" placeholder="Rohit|batsman|C||right&#10;Bumrah|bowler|||right&#10;Pant|batsman||WK|right"></textarea>
-                        <button type="button" class="mt-2 w-full bg-blue-600 text-white rounded-lg py-2 font-bold text-sm" onclick="applySquadRoles()">Apply squad roles</button>
-                      </div>
+                      
                       <button type="button" id="btn-save-sponsors" onclick="saveSponsorNames()" class="w-full bg-amber-600 text-white rounded-lg py-2 font-bold text-sm">Save sponsors</button>
                     </div>
 
@@ -3521,12 +3516,7 @@ body[data-theme="dark"] #cup-sub-create h3 {
                         <p class="text-[10px] uppercase opacity-70 tracking-widest">Orange Cap Leader</p>
                         <p id="players-orange-leader" class="font-bold text-sm mt-0.5">—</p>
                     </div>
-                    <div class="mt-3 p-3 rounded-xl border-2 border-blue-500/40" id="squad-role-editor">
-                      <div class="text-xs font-black theme-text mb-1">Squad roles</div>
-                      <div class="text-[10px] theme-muted mb-1">One line per player: Name|role|C|WK|arm — role=batsman/bowler/allrounder, C=captain, WK=keeper, arm=left/right</div>
-                      <textarea id="squad-roles-list" rows="4" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" placeholder="Rohit|batsman|C||right&#10;Bumrah|bowler|||right&#10;Pant|batsman||WK|right"></textarea>
-                      <button type="button" class="mt-1 px-3 py-1.5 rounded text-xs font-bold bg-blue-600 text-white" onclick="applySquadRoles()">Apply roles to squad</button>
-                    </div>
+                    
 
                     <div class="bg-violet-500/20 border border-violet-400/30 rounded-lg p-2">
                         <p class="text-[10px] uppercase opacity-70 tracking-widest">Purple Cap Leader</p>
@@ -19219,34 +19209,6 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
       var o = JSON.parse(localStorage.getItem(typeof SK!=='undefined'?SK:'cricket_sponsors_v1')||localStorage.getItem('cricket_sponsors')||localStorage.getItem('live_sponsors_cache')||'{}')||{};
       return o;
     } catch(e){ return {}; }
-  }
-  function applySquadRoles(){
-    try{
-      var ta=document.querySelector('#squad-role-editor-adv #squad-roles-list')||document.getElementById('squad-roles-list');
-      if(!ta||typeof players==='undefined') return;
-      var lines=String(ta.value||'').split(/\n/).map(function(s){return s.trim();}).filter(Boolean);
-      var map={};
-      lines.forEach(function(line){
-        var p=line.split('|').map(function(x){return String(x||'').trim();});
-        var name=p[0]; if(!name) return;
-        var role=(p[1]||'').toLowerCase();
-        var cap=/^(c|captain|yes|1)$/i.test(p[2]||'');
-        var wk=/^(wk|keeper|yes|1)$/i.test(p[3]||'');
-        var arm=(p[4]||'').toLowerCase();
-        map[name.toLowerCase()]={ role:role, captain:cap, keeper:wk, arm:arm };
-      });
-      (players||[]).forEach(function(pl){
-        var m=map[String(pl.name||'').toLowerCase()];
-        if(!m) return;
-        if(m.role) pl.role=m.role;
-        pl.captain=!!m.captain; pl.isCaptain=!!m.captain;
-        pl.keeper=!!m.keeper; pl.isKeeper=!!m.keeper; pl.wicketKeeper=!!m.keeper;
-        if(m.arm){ pl.arm=m.arm; pl.bowlingArm=m.arm; }
-      });
-      try{ if(typeof saveState==='function') saveState(); }catch(e1){}
-      try{ if(typeof publish==='function') publish(); else if(typeof publishLive==='function') publishLive(); }catch(e2){}
-      alert('Squad roles applied for '+Object.keys(map).length+' names');
-    }catch(e){ alert('Role apply failed'); }
   }
   function saveSponsorNames(){
     try {
