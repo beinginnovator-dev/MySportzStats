@@ -194,7 +194,8 @@ td{padding:6px 4px;border-bottom:1px solid var(--line)}
 #error{display:none;padding:12px;color:#fecaca;background:#450a0a;font-size:13px}
 
 .sponsor-flash{text-align:center;font-size:14px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;
-  min-height:22px;margin:0 0 4px;animation:sponsorBlink 1.6s ease-in-out infinite;display:flex;align-items:center;justify-content:center;gap:8px}
+  min-height:22px;margin:0 0 4px;display:flex;align-items:center;justify-content:center;gap:8px}
+.sponsor-flash.anim-blink{animation:sponsorBlink 1.6s ease-in-out infinite}
 .sponsor-flash img{width:22px;height:22px;border-radius:6px;object-fit:contain;background:#fff;flex-shrink:0}
 @keyframes sponsorBlink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(1.03)}}
 .ad-overlay{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;
@@ -202,6 +203,12 @@ td{padding:6px 4px;border-bottom:1px solid var(--line)}
 .ad-overlay.show{display:flex}
 .ad-card{background:#0f172a;color:#fff;border-radius:16px;padding:14px;max-width:340px;width:100%;
   box-shadow:0 20px 50px rgba(0,0,0,.45);position:relative;text-align:center}
+.ad-overlay.panel-fill{align-items:stretch;justify-content:stretch;padding:0;top:auto;bottom:0;left:0;right:0;height:auto}
+.ad-card.size-xl,.ad-card.size-full,.ad-box.size-xl,.ad-box.size-full{
+  max-width:none!important;width:100%!important;max-height:none!important;
+  border-radius:0;min-height:50vh;display:flex;flex-direction:column;justify-content:center;
+}
+.ad-card.size-xl img,.ad-card.size-full img,.ad-box.size-xl img,.ad-box.size-full img{max-height:70vh;width:100%;object-fit:contain}
 .ad-card img{max-width:100%;max-height:200px;border-radius:10px;margin:8px auto;display:block}
 .ad-card .ad-text{font-weight:800;font-size:15px;margin:6px 0}
 .ad-card .ad-close{position:absolute;top:8px;right:10px;border:0;background:rgba(255,255,255,.15);color:#fff;
@@ -1041,6 +1048,15 @@ function excitingHindi(d, ev){
       });
       if(Array.isArray(d.viewers)) setViewers(d.viewers);
       else if(d.viewersCount!=null){ /* keep */ }
+      // merge match history into shared store for Matches tab on all links
+      try{
+        if(Array.isArray(d.matchHistory)||Array.isArray(d.matchHistorySummary)){
+          var prev=JSON.parse(localStorage.getItem('mysportz_all_matches_v1')||'[]')||[];
+          var add=[].concat(d.matchHistory||[], d.matchHistorySummary||[]);
+          var map={}; prev.concat(add).forEach(function(m,i){ if(m) map[(m.matchId||m.id||'')+'|'+(m.teamA||m.nameA||'')+'|'+(m.ts||m.when||i)]=m; });
+          localStorage.setItem('mysportz_all_matches_v1', JSON.stringify(Object.keys(map).map(function(k){return map[k];}).slice(0,40)));
+        }
+      }catch(eMH){}
     },[]);
     useEffect(function(){
       var match=new URLSearchParams(location.search).get('match')||'current';
@@ -1221,6 +1237,10 @@ function excitingHindi(d, ev){
         var local = JSON.parse(localStorage.getItem('cricket_match_history')||'[]');
         if(Array.isArray(local)) src = src.concat(local);
       }catch(eL){}
+      try{
+        var shared = JSON.parse(localStorage.getItem('mysportz_all_matches_v1')||'[]');
+        if(Array.isArray(shared)) src = src.concat(shared);
+      }catch(eS){}
       var cutoff = Date.now() - 2*24*60*60*1000;
       var seen = {};
       src.forEach(function(m){
@@ -1262,6 +1282,11 @@ function excitingHindi(d, ev){
         }
       }
       list.sort(function(x,y){ return (y.when||0)-(x.when||0); });
+      try{
+        var cutoff = Date.now() - 2*24*60*60*1000;
+        var toStore = list.filter(function(m){ return !m.when || m.when >= cutoff; }).slice(0,40);
+        localStorage.setItem('mysportz_all_matches_v1', JSON.stringify(toStore));
+      }catch(eStore){}
     }catch(e){}
     return list;
   }
@@ -1305,25 +1330,34 @@ function excitingHindi(d, ev){
     var prevRef=useRef(null);
     // Apply scoreboard background image from scorer Advertise UI
     useEffect(function(){
-      try{
-        var fa=(data&&data.floatAd)||{};
-        var url=(fa.scoreboardBg||fa.backgroundImage||'').trim();
-        var ov=fa.scoreboardOverlay;
-        if(ov==null||isNaN(Number(ov))) ov=0.55;
-        ov=Math.max(0.15, Math.min(0.9, Number(ov)));
-        var el=document.querySelector('.broadcast');
-        if(!el) return;
-        if(url){
-          el.classList.add('has-scorer-bg');
-          el.style.setProperty('--scorer-bg-image', 'url("'+url.replace(/"/g,'')+'")');
-          el.style.setProperty('--scorer-bg-overlay', String(ov));
-          document.body.style.setProperty('--scorer-bg-overlay', String(ov));
-        } else {
-          el.classList.remove('has-scorer-bg');
-          el.style.removeProperty('--scorer-bg-image');
-        }
-      }catch(eBg){}
-    },[data&&data.floatAd&&data.floatAd.scoreboardBg, data&&data.floatAd&&data.floatAd.scoreboardOverlay, data&&data.floatAd]);
+      function applyBg(){
+        try{
+          var fa=(data&&data.floatAd)||{};
+          var url=(fa.scoreboardBg||fa.backgroundImage||(data&&data.scoreboardBg)||'').trim();
+          var ov=fa.scoreboardOverlay!=null?fa.scoreboardOverlay:(data&&data.scoreboardOverlay);
+          if(ov==null||isNaN(Number(ov))) ov=0.55;
+          ov=Math.max(0.15, Math.min(0.9, Number(ov)));
+          var el=document.querySelector('.broadcast');
+          if(!el) return false;
+          if(url){
+            el.classList.add('has-scorer-bg');
+            var safe=url.replace(/\\/g,'/').replace(/"/g,'');
+            el.style.setProperty('--scorer-bg-image', 'url("'+safe+'")');
+            el.style.setProperty('--scorer-bg-overlay', String(ov));
+            // also direct background as fallback
+            el.style.backgroundImage='linear-gradient(180deg,rgba(2,6,23,'+ov+'),rgba(15,23,42,'+(ov+0.08)+')),url("'+safe+'")';
+            el.style.backgroundSize='cover';
+            el.style.backgroundPosition='center';
+          } else {
+            el.classList.remove('has-scorer-bg');
+            el.style.removeProperty('--scorer-bg-image');
+            el.style.backgroundImage='';
+          }
+          return true;
+        }catch(eBg){ return false; }
+      }
+      if(!applyBg()){ var t=setTimeout(applyBg, 300); return function(){ clearTimeout(t); }; }
+    },[data, data&&data.floatAd, data&&data.floatAd&&data.floatAd.scoreboardBg, data&&data.floatAd&&data.floatAd.scoreboardOverlay]);
     // Soft distant whistle + neon sponsor at start of each over (vanilla live.html parity)
     useEffect(function(){
       if(!data || data.matchEnded) return;
@@ -1604,7 +1638,7 @@ function excitingHindi(d, ev){
         )
       ):null,
 
-      adShow?h('div',{className:'ad-overlay show',onClick:function(){setAdShow(null);}},
+      adShow?h('div',{className:'ad-overlay show'+((((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='xl'||((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='full')?' panel-fill':''),onClick:function(){setAdShow(null);}},
           h('div',{className:'ad-card ad-box size-'+((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'m'),onClick:function(e){e.stopPropagation();}},
             h('button',{className:'ad-close',type:'button',onClick:function(){setAdShow(null);}},'\u00d7'),
             adShow.image?h('img',{src:adShow.image,alt:'Ad'}):null,
@@ -1711,9 +1745,9 @@ function excitingHindi(d, ev){
             var colors=['#fbbf24','#38bdf8','#f472b6','#4ade80','#a78bfa','#fb7185','#f97316'];
             var col=colors[idx % colors.length];
             return h('div',{
-              className:'sponsor-flash anim-'+((data&&data.sponsors&&data.sponsors.anim)||'blink')+(sponsorNeon?' neon-glow':''),
+              className:'sponsor-flash anim-'+((function(){ var s=(data&&data.sponsors)||{}; return s.anim||s.animation||'blink'; })())+(sponsorNeon?' neon-glow':''),
               key:'sp-'+idx+'-'+name,
-              style:{color:(data&&data.sponsors&&data.sponsors.color)||col,fontSize:(data&&data.sponsors&&data.sponsors.fontSize)?(data.sponsors.fontSize+'px'):undefined,fontFamily:(data&&data.sponsors&&data.sponsors.fontFamily)||undefined},
+              style:(function(){ var s=(data&&data.sponsors)||{}; return {color:s.color||col||'#fbbf24',fontSize:(s.fontSize?s.fontSize:14)+'px',fontFamily:s.fontFamily||'Montserrat,sans-serif'}; })(),
               title: name
             },
               logo?h('img',{src:logo,alt:''}):null,

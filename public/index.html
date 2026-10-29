@@ -7724,6 +7724,7 @@ function placeBoundaryAnimationOnStriker(toast){
                       var ovEl=document.getElementById('scoreboard-bg-overlay');
                       if(bgEl) o.scoreboardBg = (bgEl.value||'').trim();
                       if(ovEl) o.scoreboardOverlay = (parseInt(ovEl.value,10)||55)/100;
+                      var szEl=document.getElementById('ad-float-size'); if(szEl) o.size=szEl.value||o.size||'m';
                     }catch(eBg2){}
                     // Normalize aliases for live page
                     o.enabled = !!o.enabled;
@@ -7752,7 +7753,8 @@ function placeBoundaryAnimationOnStriker(toast){
               }
               return window.__lastBallEvent || null;
             } catch(e){ return null; } })(),
-            sponsors: (function(){ try { var o = (typeof getSponsorsConfig==='function') ? getSponsorsConfig() : JSON.parse(localStorage.getItem('cricket_sponsors_v1')||localStorage.getItem('cricket_sponsors')||localStorage.getItem('live_sponsors_cache')||'{}'); o=o||{}; var names=(o.names||[]).map(function(n){return String(n||'').trim();}).filter(Boolean); if((!names.length)&&o.items) names=(o.items||[]).map(function(x){return x&&x.name;}).filter(Boolean); var items=(o.items&&o.items.length)?o.items.slice():names.map(function(n){return {name:n,logo:''};}); if(names.length && items.length!==names.length){ items=names.map(function(n,i){ return items[i]&&items[i].name===n?items[i]:{name:n,logo:(items[i]&&items[i].logo)||''}; }); } return {enabled:o.enabled!==false, names:names, items:items, list:names}; } catch(e){ return {enabled:false,names:[],items:[],list:[]}; } })(),
+            sponsors: (function(){ try { var o = (typeof getSponsorsConfig==='function') ? getSponsorsConfig() : JSON.parse(localStorage.getItem('cricket_sponsors_v1')||localStorage.getItem('cricket_sponsors')||localStorage.getItem('live_sponsors_cache')||'{}'); o=o||{}; var names=(o.names||[]).map(function(n){return String(n||'').trim();}).filter(Boolean);
+                      /* keep style */ o.color=o.color||'#fbbf24'; o.fontSize=o.fontSize||14; o.fontFamily=o.fontFamily||'Montserrat,sans-serif'; o.anim=o.anim||'blink'; if((!names.length)&&o.items) names=(o.items||[]).map(function(x){return x&&x.name;}).filter(Boolean); var items=(o.items&&o.items.length)?o.items.slice():names.map(function(n){return {name:n,logo:''};}); if(names.length && items.length!==names.length){ items=names.map(function(n,i){ return items[i]&&items[i].name===n?items[i]:{name:n,logo:(items[i]&&items[i].logo)||''}; }); } return {enabled:o.enabled!==false, names:names, items:items, list:names}; } catch(e){ return {enabled:false,names:[],items:[],list:[]}; } })(),
             fixtures: (function(){
                 try {
                     var d = (typeof loadTournament === 'function') ? loadTournament() : null;
@@ -19037,6 +19039,13 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
     try { return JSON.parse(localStorage.getItem(SK) || localStorage.getItem("cricket_sponsors") || "{}") || {}; }
     catch(e){ return {}; }
   }
+  function getSponsorsConfig(){
+    try {
+      if (window.__sponsorsConfig && window.__sponsorsConfig.names) return window.__sponsorsConfig;
+      var o = JSON.parse(localStorage.getItem(typeof SK!=='undefined'?SK:'cricket_sponsors_v1')||localStorage.getItem('cricket_sponsors')||localStorage.getItem('live_sponsors_cache')||'{}')||{};
+      return o;
+    } catch(e){ return {}; }
+  }
   function saveSponsorNames(){
     try {
       var ta = document.getElementById("sponsor-names-list");
@@ -19045,7 +19054,16 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
       var names = nlSplit(ta && ta.value).map(function(s){ return s.trim(); }).filter(Boolean).slice(0, 20);
       var logos = nlSplit(lg && lg.value).map(function(s){ return s.trim(); });
       var items = names.map(function(n, i){ return { name: n, logo: logos[i] || "" }; });
-      var o = { enabled: en ? !!en.checked : true, names: names, items: items };
+      var colEl=document.getElementById("sponsor-color");
+      var fsEl=document.getElementById("sponsor-font-size");
+      var ffEl=document.getElementById("sponsor-font-family");
+      var anEl=document.getElementById("sponsor-anim");
+      var o = { enabled: en ? !!en.checked : true, names: names, items: items,
+        color: colEl?colEl.value:"#fbbf24",
+        fontSize: fsEl?parseInt(fsEl.value,10)||14:14,
+        fontFamily: ffEl?ffEl.value:"Montserrat,sans-serif",
+        anim: anEl?anEl.value:"blink"
+      };
       localStorage.setItem(SK, JSON.stringify(o));
       try { localStorage.setItem("cricket_sponsors", JSON.stringify(o)); } catch(e2){}
       window.__sponsorsConfig = o;
