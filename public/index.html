@@ -2677,6 +2677,22 @@ body[data-theme="dark"] #cup-sub-create h3 {
                             <option value="sequence">Sequence all ads on trigger</option>
                             <option value="random">Random 1 ad on trigger</option>
                         </select>
+                        <label class="text-[10px] theme-muted font-semibold block">Ad display size</label>
+                        <select id="ad-float-size" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
+                            <option value="s">Small</option>
+                            <option value="m" selected>Medium</option>
+                            <option value="l">Large</option>
+                            <option value="xl">Extra large</option>
+                            <option value="full">Full width</option>
+                        </select>
+                        <div class="mt-3 p-2 rounded border theme-border">
+                          <div class="text-xs font-black theme-text mb-1">Scoreboard background image</div>
+                          <input id="scoreboard-bg-image" type="url" placeholder="https://… image link" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()" oninput="saveAdSettings()"/>
+                          <div class="text-[10px] theme-muted mt-1">Shown behind live scoreboard</div>
+                          <label class="text-[10px] theme-muted font-semibold block mt-2">Image transparency (overlay)</label>
+                          <input id="scoreboard-bg-overlay" type="range" min="15" max="90" step="5" value="55" class="w-full" oninput="saveAdSettings(); var l=document.getElementById('scoreboard-bg-overlay-label'); if(l)l.textContent=this.value+'%';"/>
+                          <div class="flex justify-between text-[10px] theme-muted"><span>clear (photo)</span><span id="scoreboard-bg-overlay-label">55%</span><span>solid</span></div>
+                        </div>
                         <select id="ad-float-trigger" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
                             <option value="over">After each over</option>
                             <option value="innings">After innings</option>
@@ -2728,6 +2744,40 @@ body[data-theme="dark"] #cup-sub-create h3 {
                       <div class="text-[10px] theme-muted">Logo URLs (same order, optional)</div>
                       <textarea id="sponsor-logos-list" rows="3" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" placeholder=""></textarea>
                       <label class="flex items-center gap-2 text-sm theme-text"><input type="checkbox" id="sponsor-names-enabled" checked/> Enable sponsor flash</label>
+                      <div class="grid grid-cols-2 gap-2 mt-1">
+                        <div>
+                          <div class="text-[10px] theme-muted">Sponsor colour</div>
+                          <input type="color" id="sponsor-color" value="#fbbf24" class="w-full h-9 rounded border theme-border"/>
+                        </div>
+                        <div>
+                          <div class="text-[10px] theme-muted">Font size</div>
+                          <select id="sponsor-font-size" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm">
+                            <option value="12">12</option>
+                            <option value="14" selected>14</option>
+                            <option value="16">16</option>
+                            <option value="18">18</option>
+                            <option value="20">20</option>
+                          </select>
+                        </div>
+                        <div>
+                          <div class="text-[10px] theme-muted">Font</div>
+                          <select id="sponsor-font-family" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm">
+                            <option value="Montserrat,sans-serif">Montserrat</option>
+                            <option value="Georgia,serif">Georgia</option>
+                            <option value="Impact,sans-serif">Impact</option>
+                            <option value="system-ui,sans-serif">System</option>
+                          </select>
+                        </div>
+                        <div>
+                          <div class="text-[10px] theme-muted">Animation</div>
+                          <select id="sponsor-anim" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm">
+                            <option value="blink">Blink</option>
+                            <option value="pulse">Pulse</option>
+                            <option value="slide">Slide</option>
+                            <option value="glow">Neon glow</option>
+                          </select>
+                        </div>
+                      </div>
                       <button type="button" id="btn-save-sponsors" class="w-full bg-amber-600 text-white rounded-lg py-2 font-bold text-sm">Save sponsors</button>
                     </div>
 
@@ -7669,6 +7719,12 @@ function placeBoundaryAnimationOnStriker(toast){
                     try { if (typeof getFloatAdConfig === 'function') o = getFloatAdConfig(); } catch(eG){}
                     if (!o) { try { o = JSON.parse(localStorage.getItem('cricket_float_ad_v1')||'null'); } catch(eL){} }
                     if (!o) o = {};
+                    try{
+                      var bgEl=document.getElementById('scoreboard-bg-image');
+                      var ovEl=document.getElementById('scoreboard-bg-overlay');
+                      if(bgEl) o.scoreboardBg = (bgEl.value||'').trim();
+                      if(ovEl) o.scoreboardOverlay = (parseInt(ovEl.value,10)||55)/100;
+                    }catch(eBg2){}
                     // Normalize aliases for live page
                     o.enabled = !!o.enabled;
                     o.image = o.image || o.imageUrl || '';
@@ -16999,6 +17055,8 @@ body[data-theme="dark"] button.cup-subtab.is-active {
       enabled: !!(document.getElementById('ad-float-enabled')||{}).checked,
       trigger: (document.getElementById('ad-float-trigger')||{}).value || 'over',
       shape: (document.getElementById('ad-float-shape')||{}).value || 'rect',
+      scoreboardBg: ((document.getElementById('scoreboard-bg-image')||{}).value || '').trim(),
+      scoreboardOverlay: (function(){ var el=document.getElementById('scoreboard-bg-overlay'); return el ? (parseInt(el.value,10)||55)/100 : 0.55; })(),
       image: ((document.getElementById('ad-float-image')||{}).value || '').trim(),
       text: ((document.getElementById('ad-float-text')||{}).value || '').trim(),
       ads: (function(){ try{ var ta=document.getElementById('ad-float-multi'); if(!ta) return []; return String(ta.value||'').split(/\n/).map(function(line){ line=line.trim(); if(!line)return null; var p=line.split('|'); return { image:(p[0]||'').trim(), text:(p[1]||p[0]||'').trim() }; }).filter(Boolean); }catch(e){ return []; } })(),
@@ -18910,6 +18968,9 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
       o.enabled = en ? !!en.checked : !!o.enabled;
       o.trigger = tr ? tr.value : (o.trigger||'over');
       o.shape = sh ? sh.value : (o.shape||'rect');
+      var sz=document.getElementById('ad-float-size'); o.size = sz ? sz.value : (o.size||'m');
+      var bg=document.getElementById('scoreboard-bg-image'); if(bg) o.scoreboardBg = (bg.value||'').trim();
+      var ov=document.getElementById('scoreboard-bg-overlay'); if(ov) o.scoreboardOverlay = (parseInt(ov.value,10)||55)/100;
       var pm=document.getElementById('ad-float-playmode'); o.playMode = pm ? pm.value : (o.playMode||'trigger');
       var ads = collectAdsFromSlots();
       if(ads.length){

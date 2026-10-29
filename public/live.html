@@ -342,6 +342,73 @@ body.theme-navy .live-stat-val,
 body.theme-navy .live-stat-name{color:#ffffff}
 body.theme-navy .live-stat-label{color:#93c5fd}
 
+
+.match-cards{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.match-card{display:block;text-decoration:none;color:inherit;padding:12px 14px;border-radius:14px;border:1px solid var(--line,rgba(148,163,184,.25));background:rgba(15,23,42,.35);transition:transform .15s,border-color .15s}
+.match-card:hover{transform:translateY(-1px);border-color:rgba(96,165,250,.55)}
+.match-card.is-live{border-color:rgba(248,113,113,.55);box-shadow:0 0 0 1px rgba(248,113,113,.2)}
+.mc-top{display:flex;justify-content:flex-end;margin-bottom:4px}
+.mc-live{font-size:10px;font-weight:900;color:#fecdd3;background:rgba(225,29,72,.25);padding:2px 8px;border-radius:999px}
+.mc-done{font-size:10px;font-weight:800;color:#94a3b8;background:rgba(148,163,184,.15);padding:2px 8px;border-radius:999px}
+.mc-teams{font-size:14px;font-weight:800;margin:2px 0}
+.mc-scores{font-size:16px;font-weight:900;margin:4px 0;font-variant-numeric:tabular-nums}
+.mc-meta{font-size:11px;opacity:.85;margin-top:2px}
+/* Sponsor animation variants */
+.sponsor-flash.anim-blink{animation:sponsorBlink 1.6s ease-in-out infinite}
+.sponsor-flash.anim-pulse{animation:spPulse 1.4s ease-in-out infinite}
+.sponsor-flash.anim-slide{animation:spSlide 2.4s ease-in-out infinite}
+.sponsor-flash.anim-glow{animation:spGlow 1.8s ease-in-out infinite}
+@keyframes spPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.92}}
+@keyframes spSlide{0%,100%{letter-spacing:.04em}50%{letter-spacing:.12em}}
+@keyframes spGlow{0%,100%{text-shadow:0 0 4px currentColor}50%{text-shadow:0 0 14px currentColor,0 0 28px currentColor}}
+/* Dark theme stadium background */
+body.theme-dark{
+  background-image:linear-gradient(180deg,rgba(2,6,23,.82),rgba(2,6,23,.9)),url('https://images.unsplash.com/photo-1531415076810-69f02e1c1f1c?auto=format&fit=crop&w=1600&q=60');
+  background-size:cover;
+  background-position:center;
+  background-attachment:fixed;
+}
+body.theme-dark .card{backdrop-filter:blur(6px)}
+
+.ad-overlay .ad-box{max-width:92vw}
+.ad-overlay .ad-box.size-s{width:min(220px,92vw)}
+.ad-overlay .ad-box.size-m{width:min(320px,92vw)}
+.ad-overlay .ad-box.size-l{width:min(420px,92vw)}
+.ad-overlay .ad-box.size-xl{width:min(520px,92vw)}
+.ad-overlay .ad-box.size-full{width:min(640px,96vw)}
+.ad-overlay .ad-box img{width:100%;height:auto;border-radius:12px;display:block}
+
+/* Dark theme — stadium photo on scoreboard; overlay opacity via --stad-overlay */
+body.theme-dark{
+  --stad-overlay: 0.55;
+}
+body.theme-dark .broadcast{
+  background-color:#0b1220 !important;
+  background-image:
+    linear-gradient(180deg, rgba(2,6,23,var(--stad-overlay)), rgba(15,23,42,calc(var(--stad-overlay) + 0.08))),
+    none !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+body.theme-dark .broadcast .score-num,
+body.theme-dark .broadcast .title,
+body.theme-dark .broadcast .tname{text-shadow:0 1px 2px rgba(0,0,0,.45)}
+
+
+/* scoreboard-bg-from-scorer */
+.broadcast.has-scorer-bg{
+  background-color:#0b1220 !important;
+  background-image:
+    linear-gradient(180deg, rgba(2,6,23,var(--scorer-bg-overlay,0.55)), rgba(15,23,42,calc(var(--scorer-bg-overlay, 0.55) + 0.08))),
+    var(--scorer-bg-image) !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+.broadcast.has-scorer-bg .score-num,
+.broadcast.has-scorer-bg .title,
+.broadcast.has-scorer-bg .tname{text-shadow:0 1px 2px rgba(0,0,0,.4)}
 </style>
 </head>
 <body class="theme-dark">
@@ -1143,6 +1210,61 @@ function excitingHindi(d, ev){
       return null;
     }catch(e){ return null; }
   }
+  function matchCardsFromData(d){
+    var list = [];
+    try{
+      var src = [];
+      if(d && Array.isArray(d.matchHistory)) src = src.concat(d.matchHistory);
+      if(d && Array.isArray(d.matchHistorySummary)) src = src.concat(d.matchHistorySummary);
+      if(d && Array.isArray(d.fixtures)) src = src.concat(d.fixtures);
+      try{
+        var local = JSON.parse(localStorage.getItem('cricket_match_history')||'[]');
+        if(Array.isArray(local)) src = src.concat(local);
+      }catch(eL){}
+      var cutoff = Date.now() - 2*24*60*60*1000;
+      var seen = {};
+      src.forEach(function(m){
+        if(!m || typeof m!=='object') return;
+        var ts = m.endTime || m.endedAt || m.finishedAt || m.ts || m.when || m.date || m.startTime || 0;
+        var tnum = typeof ts==='number' ? ts : Date.parse(ts);
+        if(tnum && tnum < cutoff) return; // vanish after 2 days
+        var a = m.teamA || m.nameA || m.team1 || (m.teams&&m.teams[0]) || 'Team A';
+        var b = m.teamB || m.nameB || m.team2 || (m.teams&&m.teams[1]) || 'Team B';
+        var scoreA = m.scoreA!=null?m.scoreA:(m.runsA!=null?(m.runsA+'/'+(m.wicketsA!=null?m.wicketsA:'-')):'-');
+        var scoreB = m.scoreB!=null?m.scoreB:(m.runsB!=null?(m.runsB+'/'+(m.wicketsB!=null?m.wicketsB:'-')):'-');
+        var venue = m.venue || m.location || '';
+        var result = m.result || m.matchResult || m.winner || '';
+        var matchId = m.matchId || m.id || m.match || '';
+        var key = matchId || (a+'|'+b+'|'+tnum);
+        if(seen[key]) return;
+        seen[key]=1;
+        list.push({
+          key:key, matchId:matchId, teamA:a, teamB:b, scoreA:String(scoreA), scoreB:String(scoreB),
+          venue:venue, result:result, when:tnum||0,
+          live: !!(m.live || m.isLive || (m.status&&String(m.status).toLowerCase()==='live'))
+        });
+      });
+      // current match card if scoring
+      if(d && (d.teamAName||d.teamA||d.nameA)){
+        var ca = d.teamAName||d.teamA||d.nameA||'Team A';
+        var cb = d.teamBName||d.teamB||d.nameB||'Team B';
+        var ckey = 'current|'+(d.matchId||'')+'|'+ca+'|'+cb;
+        if(!seen[ckey]){
+          list.unshift({
+            key:ckey, matchId:d.matchId||d.match||'current',
+            teamA:ca, teamB:cb,
+            scoreA:(d.innings===2?(d.teamAScore||d.scoreA||'-'):(d.runs!=null?d.runs+'/'+d.wickets:'-')),
+            scoreB:(d.innings===1?(d.teamBScore||d.scoreB||'-'):(d.runs!=null?d.runs+'/'+d.wickets:'-')),
+            venue:d.venue||d.location||'',
+            result:d.matchEnded?(d.matchResult||d.result||'Completed'):'Live',
+            when:Date.now(), live:!d.matchEnded
+          });
+        }
+      }
+      list.sort(function(x,y){ return (y.when||0)-(x.when||0); });
+    }catch(e){}
+    return list;
+  }
   function App(){
     var live=useLiveMatch();
     var data=live.data,viewers=live.viewers,connected=live.connected;
@@ -1181,6 +1303,27 @@ function excitingHindi(d, ev){
     var _fw=useState(false),showFw=_fw[0],setShowFw=_fw[1];
     var _now=useState(Date.now()),nowTick=_now[0],setNowTick=_now[1];
     var prevRef=useRef(null);
+    // Apply scoreboard background image from scorer Advertise UI
+    useEffect(function(){
+      try{
+        var fa=(data&&data.floatAd)||{};
+        var url=(fa.scoreboardBg||fa.backgroundImage||'').trim();
+        var ov=fa.scoreboardOverlay;
+        if(ov==null||isNaN(Number(ov))) ov=0.55;
+        ov=Math.max(0.15, Math.min(0.9, Number(ov)));
+        var el=document.querySelector('.broadcast');
+        if(!el) return;
+        if(url){
+          el.classList.add('has-scorer-bg');
+          el.style.setProperty('--scorer-bg-image', 'url("'+url.replace(/"/g,'')+'")');
+          el.style.setProperty('--scorer-bg-overlay', String(ov));
+          document.body.style.setProperty('--scorer-bg-overlay', String(ov));
+        } else {
+          el.classList.remove('has-scorer-bg');
+          el.style.removeProperty('--scorer-bg-image');
+        }
+      }catch(eBg){}
+    },[data&&data.floatAd&&data.floatAd.scoreboardBg, data&&data.floatAd&&data.floatAd.scoreboardOverlay, data&&data.floatAd]);
     // Soft distant whistle + neon sponsor at start of each over (vanilla live.html parity)
     useEffect(function(){
       if(!data || data.matchEnded) return;
@@ -1271,13 +1414,13 @@ function excitingHindi(d, ev){
           function next(){
             if(i>=ads.length){ setAdShow(null); return; }
             var a=ads[i++];
-            setAdShow({image:a.image||'',text:a.text||'',link:a.link||'',shape:fa.shape||'rect'});
+            setAdShow({image:a.image||'',text:a.text||'',link:a.link||'',shape:fa.shape||'rect',size:fa.size||'m'});
             setTimeout(function(){ setAdShow(null); setTimeout(next, 400); }, 5000);
           }
           next();
         } else {
           var a = mode==='random' ? ads[Math.floor(Math.random()*ads.length)] : ads[0];
-          setAdShow({image:a.image||'',text:a.text||'',link:a.link||'',shape:fa.shape||'rect'});
+          setAdShow({image:a.image||'',text:a.text||'',link:a.link||'',shape:fa.shape||'rect',size:fa.size||'m'});
           setTimeout(function(){ setAdShow(null); }, 5000);
         }
       }, 3000);
@@ -1293,6 +1436,7 @@ function excitingHindi(d, ev){
       } else {
         document.body.classList.add('theme-'+theme);
       }
+      
     },[theme]);
     useEffect(function(){
       var id=setInterval(function(){setNowTick(Date.now());},1000);
@@ -1408,7 +1552,7 @@ function excitingHindi(d, ev){
       return list;
     },[viewers,data]);
 
-    var tabs=[['live','LIVE'],['scorecard','SCORECARD'],['commentary','COMMENTARY'],['fow','FOW'],['caps','CAPS'],['info','INFO'],['players','SQUAD'],['history','HISTORY'],['viewers','VIEWERS']];
+    var tabs=[['live','LIVE'],['scorecard','SCORECARD'],['commentary','COMMENTARY'],['fow','FOW'],['caps','CAPS'],['info','INFO'],['players','SQUAD'],['history','HISTORY'],['viewers','VIEWERS'],['matches','MATCHES']];
 
     var strikerStats={
       runs:data&&data.strikerRuns, balls:data&&data.strikerBalls,
@@ -1461,7 +1605,7 @@ function excitingHindi(d, ev){
       ):null,
 
       adShow?h('div',{className:'ad-overlay show',onClick:function(){setAdShow(null);}},
-          h('div',{className:'ad-card',onClick:function(e){e.stopPropagation();}},
+          h('div',{className:'ad-card ad-box size-'+((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'m'),onClick:function(e){e.stopPropagation();}},
             h('button',{className:'ad-close',type:'button',onClick:function(){setAdShow(null);}},'\u00d7'),
             adShow.image?h('img',{src:adShow.image,alt:'Ad'}):null,
             adShow.text?h('div',{className:'ad-text'},adShow.text):null
@@ -1567,9 +1711,9 @@ function excitingHindi(d, ev){
             var colors=['#fbbf24','#38bdf8','#f472b6','#4ade80','#a78bfa','#fb7185','#f97316'];
             var col=colors[idx % colors.length];
             return h('div',{
-              className:'sponsor-flash'+(sponsorNeon?' neon-glow':''),
+              className:'sponsor-flash anim-'+((data&&data.sponsors&&data.sponsors.anim)||'blink')+(sponsorNeon?' neon-glow':''),
               key:'sp-'+idx+'-'+name,
-              style:{color:col},
+              style:{color:(data&&data.sponsors&&data.sponsors.color)||col,fontSize:(data&&data.sponsors&&data.sponsors.fontSize)?(data.sponsors.fontSize+'px'):undefined,fontFamily:(data&&data.sponsors&&data.sponsors.fontFamily)||undefined},
               title: name
             },
               logo?h('img',{src:logo,alt:''}):null,
@@ -1731,6 +1875,7 @@ function excitingHindi(d, ev){
               else speakMale('Four runs! Brilliant timing into the gap.');
             }},'Test voice')
           ),
+          
           (function(){
             var lang=commLang||lsGet('react_comm_lang','en');
             var items=buildOverSummaries(data).reverse().slice(0,60);
@@ -1857,6 +2002,36 @@ function excitingHindi(d, ev){
               }),
               !history.length?h('tr',null,h('td',{colSpan:3,className:'muted'},'No finished matches in payload')):null
             )
+          )
+        ):null,
+
+        tab==='matches'?h('div',{className:'card'},
+          h('h3',null,'Matches · last 2 days'),
+          h('div',{className:'match-cards'},
+            (matchCardsFromData(data)||[]).length? (matchCardsFromData(data)||[]).map(function(m){
+              var href = location.pathname + '?match=' + encodeURIComponent(m.matchId||'current');
+              return h('a',{
+                key:m.key,
+                className:'match-card'+(m.live?' is-live':''),
+                href:href,
+                onClick:function(e){
+                  try{
+                    e.preventDefault();
+                    var url = location.pathname + '?match=' + encodeURIComponent(m.matchId||'current');
+                    location.href = url;
+                  }catch(ex){ location.search = '?match='+encodeURIComponent(m.matchId||'current'); }
+                }
+              },
+                h('div',{className:'mc-top'},
+                  m.live?h('span',{className:'mc-live'},'LIVE'):h('span',{className:'mc-done'},'RESULT')
+                ),
+                h('div',{className:'mc-teams'}, m.teamA+' vs '+m.teamB),
+                h('div',{className:'mc-scores'}, m.scoreA+'  ·  '+m.scoreB),
+                m.venue?h('div',{className:'mc-meta'}, m.venue):null,
+                h('div',{className:'mc-meta'}, m.result||''),
+                h('div',{className:'mc-meta'}, m.when? new Date(m.when).toLocaleString():'')
+              );
+            }) : h('div',{className:'muted'},'No matches in the last 2 days')
           )
         ):null,
 
