@@ -7513,8 +7513,24 @@ function placeBoundaryAnimationOnStriker(toast){
                   return '🇦🇺';
                 } catch(e){ return '🇦🇺'; }
               })(),
-            squadA: (players || []).filter(function(p){ return p.team === 'A'; }).map(function(p){ return { name: p.name, team: 'A', runs: p.runs|0, balls: p.balls|0, isOut: !!p.isOut, role: p.role||p.playerRole||'', captain: !!(p.captain||p.isCaptain), keeper: !!(p.keeper||p.isKeeper||p.wicketKeeper), arm: p.arm||p.bowlingArm||'', batting: p.batting||p.battingStyle||'' }; }),
-            squadB: (players || []).filter(function(p){ return p.team === 'B'; }).map(function(p){ return { name: p.name, team: 'B', runs: p.runs|0, balls: p.balls|0, isOut: !!p.isOut, role: p.role||p.playerRole||'', captain: !!(p.captain||p.isCaptain), keeper: !!(p.keeper||p.isKeeper||p.wicketKeeper), arm: p.arm||p.bowlingArm||'', batting: p.batting||p.battingStyle||'' }; }),
+            cupRosterA: (function(){ try{ var a=(teamConfig&&teamConfig.A&&teamConfig.A.name)||''; var teams=JSON.parse(localStorage.getItem('cricket_cup_teams_v1')||'[]')||[]; var t=teams.find(function(x){return x.name===a;}); return (t&&t.players)||[]; }catch(e){return [];} })(),
+            cupRosterB: (function(){ try{ var b=(teamConfig&&teamConfig.B&&teamConfig.B.name)||''; var teams=JSON.parse(localStorage.getItem('cricket_cup_teams_v1')||'[]')||[]; var t=teams.find(function(x){return x.name===b;}); return (t&&t.players)||[]; }catch(e){return [];} })(),
+            squadA: (players || []).filter(function(p){ return p.team === 'A'; }).map(function(p){
+              var meta={};
+              try{
+                var teams=JSON.parse(localStorage.getItem('cricket_cup_teams_v1')||'[]')||[];
+                teams.forEach(function(t){ (t.players||[]).forEach(function(x){ var o=typeof x==='object'?x:{name:x}; if(String(o.name||'').toLowerCase()===String(p.name||'').toLowerCase()) meta=o; }); });
+              }catch(eM){}
+              return { name: p.name, team: 'A', runs: p.runs|0, balls: p.balls|0, isOut: !!p.isOut, role: p.role||p.playerRole||meta.role||'allrounder', arm: p.arm||p.bowlingArm||meta.arm||'right', captain: !!(p.captain||p.isCaptain||meta.captain), keeper: !!(p.keeper||p.isKeeper||meta.keeper) };
+            }),
+            squadB: (players || []).filter(function(p){ return p.team === 'B'; }).map(function(p){
+              var meta={};
+              try{
+                var teams=JSON.parse(localStorage.getItem('cricket_cup_teams_v1')||'[]')||[];
+                teams.forEach(function(t){ (t.players||[]).forEach(function(x){ var o=typeof x==='object'?x:{name:x}; if(String(o.name||'').toLowerCase()===String(p.name||'').toLowerCase()) meta=o; }); });
+              }catch(eM){}
+              return { name: p.name, team: 'B', runs: p.runs|0, balls: p.balls|0, isOut: !!p.isOut, role: p.role||p.playerRole||meta.role||'allrounder', arm: p.arm||p.bowlingArm||meta.arm||'right', captain: !!(p.captain||p.isCaptain||meta.captain), keeper: !!(p.keeper||p.isKeeper||meta.keeper) };
+            }),
             tossText: (function(){
                 try {
                     if (!tossWinnerTeam) return '';
@@ -7793,6 +7809,8 @@ function placeBoundaryAnimationOnStriker(toast){
                 try { return (players||[]).filter(function(p){ return p.team==='B'; }).map(function(p){ return p.name; }).filter(Boolean); }
                 catch(e8){ return []; }
             })(),
+            cupRosterA: (function(){ try{ var a=(teamConfig&&teamConfig.A&&teamConfig.A.name)||''; var teams=JSON.parse(localStorage.getItem('cricket_cup_teams_v1')||'[]')||[]; var t=teams.find(function(x){return x.name===a;}); return (t&&t.players)||[]; }catch(e){return [];} })(),
+            cupRosterB: (function(){ try{ var b=(teamConfig&&teamConfig.B&&teamConfig.B.name)||''; var teams=JSON.parse(localStorage.getItem('cricket_cup_teams_v1')||'[]')||[]; var t=teams.find(function(x){return x.name===b;}); return (t&&t.players)||[]; }catch(e){return [];} })(),
             squadA: (function(){
                 try { return (players||[]).filter(function(p){ return p.team==='A'; }).map(function(p){ return p.name; }).filter(Boolean); }
                 catch(e){ return []; }

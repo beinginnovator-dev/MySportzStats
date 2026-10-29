@@ -1153,6 +1153,7 @@ function excitingHindi(d, ev){
     },[]);
     useEffect(function(){
       var match=new URLSearchParams(location.search).get('match')||'current';
+      if(!match || match==='undefined' || match==='null' || match==='0') match='current';
       var dead=false,retry=0,pollTimer;
       function connect(){
         if(dead)return;
@@ -1327,6 +1328,14 @@ function excitingHindi(d, ev){
       }
       return null;
     }catch(e){ return null; }
+  }
+  function liveScoringUrl(matchId){
+    var id = matchId || 'current';
+    if(!id || id==='undefined' || id==='null' || id==='0') id = 'current';
+    // Prefer same live-react page so scores stay on this viewer
+    var path = location.pathname.indexOf('live-react')>=0 ? location.pathname : (location.pathname.replace(/\/[^\/]*$/,'/') + 'live-react.html');
+    if(location.pathname.indexOf('live-react')>=0) path = location.pathname;
+    return path + '?match=' + encodeURIComponent(id);
   }
   function matchCardsFromData(d){
     var list = [];
@@ -2147,10 +2156,22 @@ function excitingHindi(d, ev){
           (function(){
             var list=[];
             if(scTeam==='B'){
-              list=(data&&data.squadB&&data.squadB.length)?data.squadB:(data&&data.teamBPlayers)||lines.batB||[];
+              list=(data&&data.cupRosterB&&data.cupRosterB.length)?data.cupRosterB:((data&&data.squadB&&data.squadB.length)?data.squadB:(data&&data.teamBPlayers)||lines.batB||[]);
             }else{
-              list=(data&&data.squadA&&data.squadA.length)?data.squadA:(data&&data.teamAPlayers)||lines.batA||[];
+              list=(data&&data.cupRosterA&&data.cupRosterA.length)?data.cupRosterA:((data&&data.squadA&&data.squadA.length)?data.squadA:(data&&data.teamAPlayers)||lines.batA||[]);
             }
+            // merge role/arm from squadA/B stats onto roster names
+            try{
+              var stats = scTeam==='B'?(data&&data.squadB)||[]:(data&&data.squadA)||[];
+              var sm={};
+              (stats||[]).forEach(function(p){ if(p&&p.name) sm[String(p.name).toLowerCase()]=p; });
+              list = (list||[]).map(function(p){
+                var o = typeof p==='object'?Object.assign({},p):{name:p};
+                var st = sm[String(o.name||'').toLowerCase()];
+                if(st){ o.role=o.role||st.role; o.arm=o.arm||st.arm; o.runs=st.runs; o.balls=st.balls; o.isOut=st.isOut; }
+                return o;
+              });
+            }catch(eM){}
             if(!list.length)return h('div',{className:'muted'},'No squad data from scorer yet');
             return h('table',null,
               h('thead',null,h('tr',null,h('th',null,'#'),h('th',null,'Player'),h('th',null,'Role'),h('th',null,'Arm'))),
@@ -2193,7 +2214,8 @@ function excitingHindi(d, ev){
                 if(data&&Array.isArray(data.fixtures)) fx=fx.concat(data.fixtures);
               }catch(e){}
               var img = (tour&&tour.image)||(data&&data.tournamentImage)||'';
-              var liveLink = (tour&&(tour.liveLink||tour.link))||(location.origin+location.pathname);
+              var liveLink = (tour&&(tour.liveLink||tour.link))|| (location.origin + (location.pathname.indexOf('live-react')>=0?location.pathname:'/live-react.html'));
+              if(liveLink.indexOf('match=')<0){ liveLink += (liveLink.indexOf('?')>=0?'&':'?') + 'match=current'; }
               function dayStatus(f){
                 var ds = String(f.date||f.start||'').slice(0,10);
                 if(!ds) return {kind:'up',label:'Upcoming'};
@@ -2217,14 +2239,34 @@ function excitingHindi(d, ev){
                     h('div',{style:{fontWeight:800}}, (tour&&tour.name)||'Tournament'),
                     h('div',{className:'muted'}, ((tour&&tour.start)||'')+' — '+((tour&&tour.end)||'')),
                     h('div',{className:'row',style:{marginTop:8,gap:8}},
-                      h('a',{className:'badge today',href:liveLink,target:'_blank',rel:'noopener'},'Open live'),
+                      h('a',{className:'badge today',href:liveScoringUrl('current'),target:'_blank',rel:'noopener noreferrer'},'Open live'),
                       h('button',{className:'badge up',onClick:function(){
                         try{
-                          var text = ((tour&&tour.name)||'Match')+' — '+liveLink;
-                          if(navigator.share){ navigator.share({title:(tour&&tour.name)||'Match invite', text:text, url:liveLink}); }
-                          else if(navigator.clipboard){ navigator.clipboard.writeText(text); alert('Invite link copied'); }
-                          else { prompt('Copy link', liveLink); }
-                        }catch(e){ prompt('Copy link', liveLink); }
+                          var title = (tour&&tour.name)||'Tournament invite';
+                          var fx0 = (fx&&fx[0])||{};
+                          var body = {
+                            match: 'current',
+                            matchId: 'current',
+                            title: title,
+                            teamA: fx0.teamA||((data&&data.teamA)||'Team A'),
+                            teamB: fx0.teamB||((data&&data.teamB)||'Team B'),
+                            desc: title+' — live scores & schedule. Open for ball-by-ball.',
+                            imageUrl: img||'',
+                            image: img||''
+                          };
+                          fetch('/api/short',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+                            .then(function(r){return r.json();})
+                            .then(function(j){
+                              var shareUrl = (j&&(j.shortUrl||j.url))||liveLink;
+                              // WhatsApp: share short URL so OG image card appears
+                              var wa = 'https://wa.me/?text='+encodeURIComponent(title+'\n'+shareUrl);
+                              window.open(wa, '_blank', 'noopener,noreferrer');
+                            })
+                            .catch(function(){
+                              var wa = 'https://wa.me/?text='+encodeURIComponent(title+'\n'+liveLink);
+                              window.open(wa, '_blank', 'noopener,noreferrer');
+                            });
+                        }catch(e){ window.open(liveLink,'_blank'); }
                       }},'Share invite')
                     )
                   )
@@ -2233,7 +2275,8 @@ function excitingHindi(d, ev){
                   var st=dayStatus(f);
                   var label=(f.teamA||'?')+' vs '+(f.teamB||'?');
                   var href=f.liveLink||liveLink;
-                  return h('a',{key:'fx'+i,className:'tour-card',href:href},
+                  return h('a',{key:'fx'+i,className:'tour-card',href:liveScoringUrl('current'),target:'_blank',rel:'noopener noreferrer',
+                    onClick:function(e){ e.preventDefault(); window.open(liveScoringUrl('current'),'_blank','noopener,noreferrer'); }},
                     h('div',{className:'body'},
                       h('span',{className:'badge '+(st.kind==='live'?'live':st.kind==='today'?'today':'up')}, st.label),
                       h('div',{style:{fontWeight:800}}, label),
@@ -2252,13 +2295,16 @@ function excitingHindi(d, ev){
               return h('a',{
                 key:m.key,
                 className:'match-card'+(m.live?' is-live':''),
-                href:href,
+                href: liveScoringUrl(m.matchId||'current'),
+                target:'_blank',
+                rel:'noopener noreferrer',
                 onClick:function(e){
+                  // open live scoring for this match in a new tab (do not replace current feed with empty id)
                   try{
                     e.preventDefault();
-                    var url = location.pathname + '?match=' + encodeURIComponent(m.matchId||'current');
-                    location.href = url;
-                  }catch(ex){ location.search = '?match='+encodeURIComponent(m.matchId||'current'); }
+                    var url = liveScoringUrl(m.live ? 'current' : (m.matchId||'current'));
+                    window.open(url, '_blank', 'noopener,noreferrer');
+                  }catch(ex){ window.open(liveScoringUrl('current'), '_blank'); }
                 }
               },
                 h('div',{className:'mc-top'},
