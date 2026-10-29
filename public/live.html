@@ -429,6 +429,16 @@ body.theme-dark .broadcast .tname{text-shadow:0 1px 2px rgba(0,0,0,.45)}
 .panel-ad-strip{width:100%;padding:8px 10px;box-sizing:border-box;background:rgba(2,6,23,.35);border-bottom:1px solid rgba(148,163,184,.15)}
 .panel-ad-strip img{width:100%;max-height:160px;object-fit:contain;border-radius:10px;display:block;margin:0 auto}
 .panel-ad-strip .ad-txt{text-align:center;font-size:12px;font-weight:700;margin-top:4px}
+
+/* ev-below-vs-v247 */
+.vs-stack{position:relative;overflow:visible!important}
+.ev-banner.float-up{animation:evBelow 2.6s ease-out forwards!important}
+@keyframes evBelow{
+  0%{opacity:0;transform:translate(-50%,8px) scale(.9)}
+  15%{opacity:1;transform:translate(-50%,0) scale(1.05)}
+  75%{opacity:1;transform:translate(-50%,-6px) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-14px) scale(.96)}
+}
 </style>
 </head>
 <body class="theme-dark">
@@ -1059,7 +1069,29 @@ function excitingHindi(d, ev){
       window.__forceLiveApply=false;
       lastSig.current=sig;
       setData(function(prev){
-        var merged = (prev && typeof prev==='object') ? Object.assign({}, prev, d) : d;
+        if(!prev || typeof prev!=='object') return d;
+        // Reject clearly older payloads (stops score oscillating between prev/current ball)
+        var pts=Number(prev.ts)||0, dts=Number(d.ts)||0;
+        if(pts && dts && dts + 50 < pts && !force) return prev;
+        var pr=Number(prev.runs), pw=Number(prev.wickets), pb=Number(prev.balls);
+        var nr=d.runs!=null?Number(d.runs):pr, nw=d.wickets!=null?Number(d.wickets):pw, nb=d.balls!=null?Number(d.balls):pb;
+        var pi=Number(prev.innings)||1, ni=d.innings!=null?Number(d.innings):pi;
+        // Same innings: never allow score to go backwards from a stale snapshot
+        if(ni===pi && !d.matchEnded && !force){
+          if(nr<pr || nw<pw || (nb<pb && nr<=pr && nw<=pw)){
+            d = Object.assign({}, d, { runs:pr, wickets:pw, balls:pb, overs: prev.overs });
+          }
+        }
+        var merged = Object.assign({}, prev, d);
+        // Keep thisOver only if same length or longer (avoid chip flicker backward)
+        try{
+          var pa=(prev.thisOver&&prev.thisOver.balls)||prev.currentOverBalls||[];
+          var na=(d.thisOver&&d.thisOver.balls)||d.currentOverBalls||[];
+          if(Array.isArray(pa) && Array.isArray(na) && na.length < pa.length && ni===pi && !force){
+            if(merged.thisOver) merged.thisOver = prev.thisOver;
+            if(merged.currentOverBalls) merged.currentOverBalls = prev.currentOverBalls;
+          }
+        }catch(eOver){}
         return merged;
       });
       if(Array.isArray(d.viewers)) setViewers(d.viewers);
@@ -1518,7 +1550,8 @@ function excitingHindi(d, ev){
         else if(le==='noball'||le==='no ball') ev={kind:'extra',text:'NO BALL'};
         else if(le==='1'||le==='2'||le==='3') ev={kind:'runs',text:le+' RUN'+(le==='1'?'':'S')};
       }
-      var key = ev ? (String(data.balls)+'|'+String(data.runs)+'|'+String(data.wickets)+'|'+ev.kind+'|'+(data.lastEvent||'')+'|'+(ev.text||'')) : '';
+      // Fire animation once per scoreboard progress (not on lastEvent text flicker)
+      var key = ev ? (String(data.innings||1)+'|'+String(data.balls)+'|'+String(data.runs)+'|'+String(data.wickets)+'|'+ev.kind+'|'+(ev.text||'')) : '';
       if(ev && key && key !== lastEvKey.current){
         lastEvKey.current = key;
         if(ev.kind==='wicket'){ var _wt = wicketTypeFromData(data); ev = Object.assign({}, ev, { text: _wt || 'WICKET' }); }
@@ -1808,7 +1841,7 @@ function excitingHindi(d, ev){
           h('div',{className:'match-center'},
             h('div',{className:'vs-stack',style:{position:'relative',minHeight:36,display:'flex',alignItems:'center',justifyContent:'center'}},
               h('div',{className:'vs-label',style:{minHeight:28,display:'flex',alignItems:'center',justifyContent:'center',opacity:event?0.25:1}},'VS'),
-              event?h('div',{key:'vsb-'+(event.kind||'')+'-'+String(data&&data.balls),className:'ev-banner show float-up '+evCls,style:{position:'absolute',left:'50%',bottom:'100%',transform:'translate(-50%,0)',zIndex:40,minWidth:120,maxWidth:150,pointerEvents:'none'}},(event.kind==='wicket'?('WICKET · '+wicketTypeFromData(data)):(event.text||event.kind||'')).toString()):null
+              event?h('div',{key:'vsb-'+lastEvKey.current,className:'ev-banner show float-up '+evCls,style:{position:'absolute',left:'50%',top:'100%',transform:'translate(-50%,6px)',zIndex:40,minWidth:120,maxWidth:150,pointerEvents:'none',marginTop:4}},(event.kind==='wicket'?('WICKET · '+wicketTypeFromData(data)):(event.text||event.kind||'')).toString()):null
             )
           ),
           h('div',{className:'side side-right'},
@@ -2028,7 +2061,18 @@ function excitingHindi(d, ev){
             h('div',{className:'item'},h('div',{className:'k'},'Match'),h('div',{className:'v'},meta.name||'-')),
             h('div',{className:'item'},h('div',{className:'k'},'Type'),h('div',{className:'v'},meta.type||'-')),
             h('div',{className:'item'},h('div',{className:'k'},'Venue'),h('div',{className:'v'},meta.venue||'-')),
-            h('div',{className:'item'},h('div',{className:'k'},'Toss'),h('div',{className:'v'},(data&&(data.tossText||data.toss))||'-')),
+            h('div',{className:'item'},h('div',{className:'k'},'Toss'),h('div',{className:'v'},(function(){
+              if(!data) return '-';
+              var t = data.tossText || data.toss || data.tossResult || '';
+              if(t && typeof t==='object') t = (t.winner||t.team||'') + (t.decision?(' chose to '+t.decision):'');
+              if(!t){
+                var w = data.tossWinner || data.tossWinTeam || (data.toss&&data.toss.winner) || '';
+                var dec = data.tossDecision || data.tossChose || (data.toss&&data.toss.decision) || '';
+                if(w && dec) t = w + ' won the toss and chose to ' + dec;
+                else if(w) t = w + ' won the toss';
+              }
+              return t || '-';
+            })())),
             h('div',{className:'item'},h('div',{className:'k'},'Overs'),h('div',{className:'v'},(data&&(data.maxOvers||data.totalOvers))||'-')),
             h('div',{className:'item'},h('div',{className:'k'},'Target'),h('div',{className:'v'},(data&&(data.target||data.targetScore))||'-'))
           )
@@ -2049,13 +2093,13 @@ function excitingHindi(d, ev){
             }
             if(!list.length)return h('div',{className:'muted'},'No squad data from scorer yet');
             return h('table',null,
-              h('thead',null,h('tr',null,h('th',null,'#'),h('th',null,'Player'),h('th',null,'Role'),h('th',null,'C'),h('th',null,'WK'),h('th',null,'Arm'),h('th',null,''))),
+              h('thead',null,h('tr',null,h('th',null,'#'),h('th',null,'Player'),h('th',null,'Role'),h('th',null,'Arm'))),
               h('tbody',null,list.map(function(p,i){
                 var name=typeof p==='string'?p:(p.name||'-');
                 var runs=typeof p==='object'?n(p.runs):0;
                 var balls=typeof p==='object'?n(p.balls):0;
                 var out=typeof p==='object'&&p.isOut?'out':'';
-                return h('tr',{key:i},h('td',null,i+1),h('td',null,(typeof p==='string'?p:(p.name||'-'))),h('td',null,(function(){ if(typeof p==='string')return '-'; var r=(p.role||'').toLowerCase(); if(r.indexOf('all')>=0)return 'All-rounder'; if(r.indexOf('bowl')>=0)return 'Bowler'; if(r.indexOf('bat')>=0)return 'Batsman'; return p.role||'-'; })()),h('td',null,(typeof p==='object'&&(p.captain||p.isCaptain))?'C':''),h('td',null,(typeof p==='object'&&(p.keeper||p.isKeeper||p.wicketKeeper))?'WK':''),h('td',null,(function(){ if(typeof p!=='object')return ''; var a=(p.arm||p.bowlingArm||'').toLowerCase(); if(a.indexOf('left')>=0)return 'Left'; if(a.indexOf('right')>=0)return 'Right'; return a||''; })()),h('td',null,out));
+                return h('tr',{key:i},h('td',null,i+1),h('td',null,(typeof p==='string'?p:(p.name||'-'))),h('td',null,(function(){ if(typeof p==='string')return '-'; var r=(p.role||'').toLowerCase(); if(r.indexOf('all')>=0)return 'All-rounder'; if(r.indexOf('bowl')>=0)return 'Bowler'; if(r.indexOf('bat')>=0)return 'Batsman'; return p.role||'-'; })()),h('td',null,(function(){ if(typeof p!=='object')return ''; var a=(p.arm||p.bowlingArm||'').toLowerCase(); if(a.indexOf('left')>=0)return 'Left'; if(a.indexOf('right')>=0)return 'Right'; return a||''; })()),h('td',null,out));
               }))
             );
           })()
