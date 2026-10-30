@@ -2720,6 +2720,9 @@ body[data-theme="dark"] #cup-sub-create h3 {
                         </select>
                         <label class="text-[10px] theme-muted font-semibold block">Direct image URL (png/jpg — not gallery page)</label>
                         <input type="url" id="ad-float-image" placeholder="https://.../banner.png" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
+                        <label class="text-[10px] theme-muted font-semibold block mt-2">Ad video URL (optional, mp4/webm)</label>
+                        <input id="ad-float-video" type="url" placeholder="https://…/ad.mp4" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()" oninput="saveAdSettings()"/>
+                        <div class="text-[10px] theme-muted">If set, video plays in the panel (cover fit). Image used as fallback.</div>
                         <input type="text" id="ad-float-text" placeholder="Ad headline / sponsor" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
                         <input type="url" id="ad-float-link" placeholder="https://click-through-link" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
                         <label class="text-[10px] theme-muted font-semibold block mt-2">Ad sound URL (plays with ad on events)</label>
@@ -7519,6 +7522,7 @@ function placeBoundaryAnimationOnStriker(toast){
                   return '🇦🇺';
                 } catch(e){ return '🇦🇺'; }
               })(),
+            cupTeams: (function(){ try { return JSON.parse(localStorage.getItem('cricket_cup_teams_v1')||'[]')||[]; } catch(e){ return []; } })(),
             cupRosterA: (function(){ try{ var a=(teamConfig&&teamConfig.A&&teamConfig.A.name)||''; var teams=JSON.parse(localStorage.getItem('cricket_cup_teams_v1')||'[]')||[]; var t=teams.find(function(x){return x.name===a;}); return (t&&t.players)||[]; }catch(e){return [];} })(),
             cupRosterB: (function(){ try{ var b=(teamConfig&&teamConfig.B&&teamConfig.B.name)||''; var teams=JSON.parse(localStorage.getItem('cricket_cup_teams_v1')||'[]')||[]; var t=teams.find(function(x){return x.name===b;}); return (t&&t.players)||[]; }catch(e){return [];} })(),
             squadA: (players || []).filter(function(p){ return p.team === 'A'; }).map(function(p){
@@ -7815,6 +7819,7 @@ function placeBoundaryAnimationOnStriker(toast){
                 try { return (players||[]).filter(function(p){ return p.team==='B'; }).map(function(p){ return p.name; }).filter(Boolean); }
                 catch(e8){ return []; }
             })(),
+            cupTeams: (function(){ try { return JSON.parse(localStorage.getItem('cricket_cup_teams_v1')||'[]')||[]; } catch(e){ return []; } })(),
             cupRosterA: (function(){ try{ var a=(teamConfig&&teamConfig.A&&teamConfig.A.name)||''; var teams=JSON.parse(localStorage.getItem('cricket_cup_teams_v1')||'[]')||[]; var t=teams.find(function(x){return x.name===a;}); return (t&&t.players)||[]; }catch(e){return [];} })(),
             cupRosterB: (function(){ try{ var b=(teamConfig&&teamConfig.B&&teamConfig.B.name)||''; var teams=JSON.parse(localStorage.getItem('cricket_cup_teams_v1')||'[]')||[]; var t=teams.find(function(x){return x.name===b;}); return (t&&t.players)||[]; }catch(e){return [];} })(),
             squadA: (function(){
@@ -17231,6 +17236,7 @@ body[data-theme="dark"] button.cup-subtab.is-active {
       scoreboardBg: ((document.getElementById('scoreboard-bg-image')||{}).value || '').trim(),
       scoreboardOverlay: (function(){ var el=document.getElementById('scoreboard-bg-overlay'); return el ? (parseInt(el.value,10)||55)/100 : 0.55; })(),
       image: ((document.getElementById('ad-float-image')||{}).value || '').trim(),
+      video: ((document.getElementById('ad-float-video')||{}).value || '').trim(),
       text: ((document.getElementById('ad-float-text')||{}).value || '').trim(),
       ads: (function(){ try{ var ta=document.getElementById('ad-float-multi'); if(!ta) return []; return String(ta.value||'').split(/\n/).map(function(line){ line=line.trim(); if(!line)return null; var p=line.split('|'); return { image:(p[0]||'').trim(), text:(p[1]||p[0]||'').trim() }; }).filter(Boolean); }catch(e){ return []; } })(),
       link: ((document.getElementById('ad-float-link')||{}).value || '').trim(),
@@ -17373,6 +17379,7 @@ body[data-theme="dark"] button.cup-subtab.is-active {
       var tr = document.getElementById('ad-float-trigger'); if (tr && o.trigger) tr.value = o.trigger;
       var sh = document.getElementById('ad-float-shape'); if (sh && o.shape) sh.value = o.shape;
       var im = document.getElementById('ad-float-image'); if (im) im.value = o.image || '';
+      var vid = document.getElementById('ad-float-video'); if (vid) vid.value = o.video || '';
       var tx = document.getElementById('ad-float-text'); if (tx) tx.value = o.text || '';
       var lk = document.getElementById('ad-float-link'); if (lk) lk.value = o.link || '';
       var snd = document.getElementById('ad-float-sound'); if (snd) snd.value = o.sound || '';
