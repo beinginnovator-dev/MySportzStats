@@ -519,8 +519,8 @@ body.theme-dark .broadcast .tname{text-shadow:0 1px 2px rgba(0,0,0,.45)}
 .comm-mini-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
 .comm-mini{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:6px 8px;min-width:0}
 .comm-mini .lab{font-size:9px;font-weight:800;letter-spacing:.06em;opacity:.7;text-transform:uppercase}
-.comm-mini .name{font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.comm-mini .stat{font-size:11px;font-weight:700;opacity:.9;margin-top:2px}
+.comm-mini .name{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.comm-mini .stat{font-size:13px;font-weight:700;opacity:.9;margin-top:2px}
 .comm-over-sum{margin:10px 0;padding:10px 12px;border-radius:12px;border:1px solid rgba(251,191,36,.35);background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(56,189,248,.08));font-size:12px;font-weight:700;line-height:1.35}
 .comm-over-sum .ttl{font-size:10px;letter-spacing:.08em;color:#fbbf24;font-weight:900;margin-bottom:4px}
 body.theme-light .comm-sticky,body.theme-iccpro .comm-sticky{background:linear-gradient(180deg,#fff 75%,transparent)}
@@ -997,37 +997,67 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
   function toHindiComm(line){ return toFullHindiLine(line); }
   
   function hiDetail(kind, bw, st){
+    // Cricinfo-style descriptive Hindi (T20 / bilateral series tone)
     var tips = {
       four: [
-        'ऑफ स्टंप के बाहर गुड लेंथ गेंद को कवर की तरफ़ भेजा।',
-        'शानदार टाइमिंग — गेंद बाउंड्री से टकराई।',
-        'पॉवर से मारा और चौका निकाल लिया।'
+        'मध्यम लंबाई की गेंद को '+st+' ने कवर ड्राइव में भेजा, गेंद बाउंड्री से टकराई — चौका!',
+        'ऑफ स्टंप के बाहर की डिलीवरी पर टाइमिंग शानदार, स्क्वायर के पार चार रन।',
+        'पैर आगे बढ़ाकर ड्राइव, इनफ़ील्ड के ऊपर से गेंद रस्सी पार — चार रन।',
+        'छोटी गेंद को पुल शॉट में कंट्रोल के साथ मारा, मिडविकेट बाउंड्री।'
       ],
       six: [
-        'फुल टॉस को स्टेडियम के बाहर भेज दिया।',
-        'जबरदस्त प्रहार — छक्का!',
-        'लॉन्ग ऑन के ऊपर से गेंद बाहर।'
+        'फुल टॉस पर '+st+' रुके नहीं, सीधी बाँहों से लॉन्ग-ऑन के पार छक्का!',
+        'लंबी गेंद को हुक किया, दर्शक दीर्घा में गेंद — जबरदस्त छक्का!',
+        'स्पिनर की उछाल वाली गेंद को सीधा ऊपर उठाया, मैक्सimum — छह रन।',
+        'यॉर्कर की कोशिश अधूरी रही, '+st+' ने टॉस कर स्टेडियम के बाहर भेज दिया।'
       ],
-      one: ['गैप में गेंद घुसाई और एक रन लिया।','नरम हाथों से प्ले किया, सिंगल।'],
-      two: ['डीप में रखा और दो रन बनाए।','अच्छी दौड़ — दो रन।'],
-      three: ['तीन रन की अच्छी दौड़।'],
-      dot: ['बेहतरीन लाइन और लेंथ — कोई रन नहीं।','दबाव बनाए रखा गेंदबाज़ ने।'],
-      wicket: ['बड़ा विकेट! टीम को झटका।','शानदार गेंदबाजी का नतीजा।'],
-      wide: ['लाइन से बाहर — वाइड।'],
-      noball: ['नो बॉल! फ्री हिट आने वाली है।']
+      one: [
+        'नरम हाथों से गैप में गेंद घुसाई, आसानी से एक रन।',
+        'कवर की तरफ़ डिफेंड किया, तेज़ दौड़ में सिंगल पूरा।',
+        'मिड-ऑन के पास रखा, '+st+' और नॉन-स्ट्राइकर ने एक रन लिया।'
+      ],
+      two: [
+        'डीप स्क्वायर की तरफ़ रखा, अच्छी दौड़ — दो रन।',
+        'लंबी बाउंड्री का फ़ायदा उठाया, फ़ील्डर तक गेंद पहुँची और दो रन।'
+      ],
+      three: [
+        'गहराई में रखा, फ़ील्डर की थ्रो में देरी — तीन रन की शानदार दौड़।'
+      ],
+      dot: [
+        '+bw+ ने सही लाइन-लेंथ डाली, '+st+' सुरक्षित रक्षा — डॉट बॉल।',
+        'टाइट ऑफ-स्टंप लाइन, कोई रन नहीं मिला।',
+        'दबाव बनाए रखा गेंदबाज़ ने, बल्लेबाज़ रन नहीं निकाल पाए।'
+      ],
+      wicket: [
+        'बड़ा विकेट! '+bw+' की गेंद ने काम किया, '+st+' को वापस जाना पड़ा।',
+        'महत्वपूर्ण सफलता — टीम को ज़रूरी झटका।',
+        'शानदार गेंदबाजी का नतीजा, एक और विकेट गिर गया।'
+      ],
+      wide: [
+        'लाइन से काफी बाहर, अंपायर के हाथ ऊपर — वाइड।',
+        'लेग साइड की तरफ़ रुक गई गेंद, अतिरिक्त रन।'
+      ],
+      noball: [
+        'नो बॉल! फ़्री हिट आने वाली है, दबाव गेंदबाज़ पर।',
+        'फ़्रंट फ़ुट का उल्लंघन — नो बॉल पुकारा गया।'
+      ]
     };
     var arr = tips[kind] || [''];
-    // stable pick (no flicker on re-render)
     var seed = String(kind||'')+'|'+String(bw||'')+'|'+String(st||'');
     var h=0; for(var i=0;i<seed.length;i++){ h=((h<<5)-h)+seed.charCodeAt(i); h|=0; }
-    return arr[Math.abs(h)%arr.length] || '';
+    var t = arr[Math.abs(h)%arr.length] || '';
+    // expand +bw+ / name placeholders if any used without concat
+    t = String(t).split('+bw+').join(bw||'गेंदबाज़').split('+st+').join(st||'बल्लेबाज़');
+    return t;
   }
 function excitingHindi(d, ev){
-    var st=(d&&d.strikerName)||'बल्लेबाज';
-    var bw=(d&&d.bowlerName)||'गेंदबाज';
+    var st=(d&&d.strikerName)||'बल्लेबाज़';
+    var bw=(d&&d.bowlerName)||'गेंदबाज़';
     var over=(d&&d.overs)||'';
     var score=(d&&d.runs!=null?d.runs:'')+'/'+(d&&d.wickets!=null?d.wickets:'');
-    var tail=' स्कोर '+score+(over?(' ('+over+')'):'');
+    var sR=n(d&&d.strikerRuns), sB=n(d&&d.strikerBalls);
+    var batBit=(sB||sR)?(' '+st+' '+sR+' रन ('+sB+' गेंद)।'):'';
+    var tail=' मैच का स्कोर '+score+(over?(' ओवर '+over):'')+'।'+batBit;
     if(ev){
       var k=ev.kind;
       if(k==='six') return ciHiLine(bw,st,'छह रन', hiDetail('six',bw,st)+tail);
@@ -1898,11 +1928,7 @@ function excitingHindi(d, ev){
               var lang=lsGet('react_comm_lang','en');
               if(lang==='hi') speakMale('यह महिला आवाज़ है।','hi'); else speakMale('Female commentary voice.');
             }},'Female voice'),
-            h('button',{type:'button',onClick:function(){
-              var lang=lsGet('react_comm_lang','en');
-              if(lang==='hi') speakMale('शानदार चौका! बल्लेबाज ने चार रन बनाए।','hi');
-              else speakMale('Four runs! Brilliant timing into the gap.');
-            }},'Test TTS sound'),
+            
             h('button',{type:'button',className:stadiumOn?'on':'',onClick:function(){
               var next=!stadiumOn;setStadiumOn(next);lsSet('cricket_stadium_on',next?'1':'0');if(next)playSfx(0.12);
             }},stadiumOn?'Stadium ON':'Stadium OFF'),
@@ -2154,13 +2180,6 @@ function excitingHindi(d, ev){
 
         tab==='commentary'?h('div',{className:'card'},
           h('div',{className:'comm-sticky'},
-            h('div',{className:'row',style:{marginBottom:8}},
-              h('button',{className:'btn'+(ttsOn?' on':''),onClick:function(){
-                var next=!ttsOn;setTtsOn(next);lsSet('cricket_tts_on',next?'1':'0');lsSet('react_tts_on',next?'1':'0');
-                if(next){ try{ speakTts(data||{strikerName:'Batter',bowlerName:'Bowler',runs:0,wickets:0,overs:'0.0',balls:0},{kind:'runs',text:'1'}); }catch(e){try{speakMale('Commentary on');}catch(e2){}} }
-                else { try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e3){} }
-              }},'Voice '+(ttsOn?'ON':'OFF'))
-            ),
             h('div',{className:'comm-mini-row'},
               h('div',{className:'comm-mini'},
                 h('div',{className:'lab'},'Striker'),
@@ -2175,7 +2194,16 @@ function excitingHindi(d, ev){
               h('div',{className:'comm-mini'},
                 h('div',{className:'lab'},'Bowler'),
                 h('div',{className:'name'},(data&&data.bowlerName)||'-'),
-                h('div',{className:'stat'}, (function(){ var ov=data&&(data.bowlerOvers||data.bowlOvers); if(ov==null){ var bb=n(data&&data.bowlerBalls); ov=(Math.floor(bb/6)+'.'+(bb%6)); } var r=n(data&&(data.bowlerRuns!=null?data.bowlerRuns:data.bowlRuns)); var w=n(data&&(data.bowlerWickets!=null?data.bowlerWickets:data.bowlWkts)); return ov+'-'+r+'-'+w; })())
+                h('div',{className:'stat'}, (function(){
+                  var bb=n(data&&(data.bowlerBalls!=null?data.bowlerBalls:data.bowlBalls));
+                  var ov=data&&(data.bowlerOvers||data.bowlOvers);
+                  if(ov==null||ov===''){ ov=(Math.floor(bb/6)+'.'+(bb%6)); }
+                  var r=n(data&&(data.bowlerRuns!=null?data.bowlerRuns:data.bowlRuns));
+                  var w=n(data&&(data.bowlerWickets!=null?data.bowlerWickets:data.bowlWkts));
+                  var balls=bb; if(!balls){ var parts=String(ov).split('.'); balls=n(parts[0])*6+n(parts[1]); }
+                  var econ=balls?((r*6)/balls).toFixed(2):'0.00';
+                  return r+'('+ov+')/'+w+' · Econ '+econ;
+                })())
               )
             )
           ),
