@@ -1604,7 +1604,7 @@ function excitingHindi(d, ev){
           link:a.link||fa.link||'',
           shape:fa.shape||'rect',
           size:fa.size||'m',
-          displayMode:displayMode
+          displayMode: displayMode || fa.displayMode || 'event'
         });
         playAdSound();
       }
@@ -1815,7 +1815,7 @@ function excitingHindi(d, ev){
         )
       ):null,
 
-      (adShow&&(!data||!data.floatAd||data.floatAd.displayMode!=='panel'&&data.floatAd.displayMode!=='panel_event'))?h('div',{className:'ad-overlay show'+((((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='xl'||((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='full')?' panel-fill':''),onClick:function(){setAdShow(null);}},
+      (adShow&&(adShow.displayMode!=='panel'&&adShow.displayMode!=='panel_event'))?h('div',{className:'ad-overlay show'+((((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='xl'||((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='full')?' panel-fill':''),onClick:function(){setAdShow(null);}},
           h('div',{className:'ad-card ad-box size-'+((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'m'),onClick:function(e){e.stopPropagation();}},
             h('button',{className:'ad-close',type:'button',onClick:function(){setAdShow(null);}},'\u00d7'),
             adShow.image?h('img',{src:adShow.image,alt:'Ad'}):null,
@@ -2010,27 +2010,9 @@ function excitingHindi(d, ev){
         })
       ),
 
-      h('div',{className:'panel panel-wrap'+(adShow&&(adShow.displayMode==='panel_event'||adShow.displayMode==='panel')?' has-panel-ad':'')},
-        (adShow&&(adShow.displayMode==='panel_event'||adShow.displayMode==='panel'))?h('div',{
-          className:'panel-ad-cover',
-          onClick:function(){ if(adShow.link) try{ window.open(adShow.link,'_blank'); }catch(e){} }
-        },
-          h('button',{type:'button',className:'panel-ad-close',onClick:function(e){ e.stopPropagation(); setAdShow(null); try{ if(window.__adAudio) window.__adAudio.pause(); }catch(e2){} try{ var v=document.getElementById('panel-ad-video'); if(v){v.pause();} }catch(e3){} }},'✕'),
-          (function(){
-            var vid=(adShow.video||'').trim();
-            var img=(adShow.image||'').trim();
-            if(vid && /^https?:\/\//i.test(vid)){
-              return h('video',{id:'panel-ad-video',className:'panel-ad-media',src:vid,autoPlay:true,muted:true,playsInline:true,loop:true,controls:false});
-            }
-            if(img){
-              return h('img',{className:'panel-ad-media',src:img,alt:adShow.text||'Ad'});
-            }
-            return null;
-          })(),
-          (adShow.text)?h('div',{className:'panel-ad-caption'},adShow.text):null
-        ):null,
+      h('div',{className:'panel'},
+        
         // hide tab content while panel_event ad is up
-        (adShow&&adShow.displayMode==='panel_event')?null:null,
         tab==='live'?h(React.Fragment,null,
           h('div',{className:'card bb-card'+(adShow&&(adShow.displayMode==='panel_event'||adShow.displayMode==='panel')?' has-bb-ad':'')},
             h('h3',null,'Batsmen & bowler'),
@@ -2074,13 +2056,7 @@ function excitingHindi(d, ev){
                 return h('span',{key:i,className:chipClass(lab)},lab||'•');
               }),
               !(balls&&balls.length)?h('span',{className:'muted'},'No balls yet'):null
-            ),
-            (function(){
-              var link=(adShow&&adShow.link)||(data&&data.floatAd&&data.floatAd.link)||'';
-              var txt=(adShow&&adShow.text)||(data&&data.floatAd&&data.floatAd.text)||'Open link';
-              if(!link) return null;
-              return h('a',{className:'thisover-ad-link',href:link,target:'_blank',rel:'noopener noreferrer'},'🔗 '+txt);
-            })()
+            )
           )
         ):null,
 
