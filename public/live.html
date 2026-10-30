@@ -849,8 +849,11 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     if(!text)return;
     try{speechSynthesis.cancel();}catch(e){}
     var lang = forceLang || lsGet('react_comm_lang','en') || 'en';
+    // auto-detect Devanagari → Hindi voice
+    if(lang!=='hi' && /[\u0900-\u097F]/.test(text)) lang='hi';
     var u=new SpeechSynthesisUtterance(text);
     u.lang = lang==='hi' ? 'hi-IN' : 'en-IN';
+    if(lang==='hi'){ u.rate = 0.95; u.pitch = 1.0; }
     function go(){
       var v = getPreferredVoice(lang);
       if(v) u.voice = v;
@@ -1571,6 +1574,7 @@ function excitingHindi(d, ev){
     var _fw=useState(false),showFw=_fw[0],setShowFw=_fw[1];
     var _now=useState(Date.now()),nowTick=_now[0],setNowTick=_now[1];
     var prevRef=useRef(null);
+    var lastBowlRef=useRef({name:'',runs:0,balls:0,wickets:0,overs:''});
     // Apply scoreboard background image from scorer Advertise UI
     useEffect(function(){
       function applyBg(){
@@ -1818,14 +1822,7 @@ function excitingHindi(d, ev){
         lastComm.current=line;
         if(ttsOn){
           try{
-            if(lsGet('react_comm_lang','en')==='hi'){
-              var hiLine=excitingHindi(data, detectEvent(data, prevRef.current))||toFullHindiLine(line);
-              speakMale(hiLine);
-              // prefer Hindi voice
-              try{ speakTts(data, detectEvent(data, prevRef.current)); }catch(eH){}
-            } else {
-              speakTts(data, detectEvent(data, prevRef.current));
-            }
+            try{ speakTts(data, detectEvent(data, prevRef.current)); }catch(eH){}
           }catch(e){ try{ speakMale(line); }catch(e2){} }
         }
       }
@@ -1951,7 +1948,7 @@ function excitingHindi(d, ev){
             h('div',{className:'dd-title'},'Sound'),
             h('div',{className:'dd-title'},'Commentary language'),
             h('button',{type:'button',className:commLang==='en'?'on':'',onClick:function(){lsSet('react_comm_lang','en');setCommLangState('en');setCommLang('en');}},'English'),
-            h('button',{type:'button',className:commLang==='hi'?'on':'',onClick:function(){lsSet('react_comm_lang','hi');setCommLangState('hi');setCommLang('hi'); try{speakTts({strikerName:'अमेय',bowlerName:'मोहन',runs:12,wickets:0,overs:'1.2',balls:8},{kind:'four'});}catch(e){}}},'Hindi'),
+            h('button',{type:'button',className:commLang==='hi'?'on':'',onClick:function(){lsSet('react_comm_lang','hi');setCommLangState('hi');setCommLang('hi');lsSet('react_tts_on','1');lsSet('cricket_tts_on','1');setTtsOn(true); try{speakMale('हिंदी कमेंट्री चालू। शानदार चौका!','hi');}catch(e){ try{speakTts({strikerName:'अमेय',bowlerName:'मोहन',runs:12,wickets:0,overs:'1.2',balls:8},{kind:'four'});}catch(e2){} }}},'Hindi'),
             h('div',{className:'dd-title'},'TTS voice'),
             h('button',{type:'button',className:ttsOn?'on':'',onClick:function(){
               var next=!ttsOn;setTtsOn(next);lsSet('cricket_tts_on',next?'1':'0');lsSet('react_tts_on',next?'1':'0');
@@ -2228,17 +2225,14 @@ function excitingHindi(d, ev){
                 h('div',{className:'name'},(data&&data.strikerName)||'-'),
                 h('div',{className:'stat'}, (function(){
                   var r=n(data&&data.strikerRuns),b=n(data&&data.strikerBalls);
-                  var f4=n(data&&(data.strikerFours!=null?data.strikerFours:data.striker4s));
-                  var s6=n(data&&(data.strikerSixes!=null?data.strikerSixes:data.striker6s));
-                  var dots=n(data&&(data.strikerDots!=null?data.strikerDots:data.strikerDot));
-                  var sr=b?((r/b)*100).toFixed(0):'0';
-                  return r+'('+b+') · 4s '+f4+' · 6s '+s6;
+                  return r+'('+b+')';
                 })()),
                 h('div',{className:'stat'}, (function(){
+                  var f4=n(data&&(data.strikerFours!=null?data.strikerFours:data.striker4s));
+                  var s6=n(data&&(data.strikerSixes!=null?data.strikerSixes:data.striker6s));
                   var r=n(data&&data.strikerRuns),b=n(data&&data.strikerBalls);
-                  var dots=n(data&&(data.strikerDots!=null?data.strikerDots:data.strikerDot));
                   var sr=b?((r/b)*100).toFixed(0):'0';
-                  return 'Dots '+dots+' · SR '+sr;
+                  return '4s '+f4+'  ·  6s '+s6+'  ·  SR '+sr;
                 })())
               ),
               h('div',{className:'comm-mini'},
@@ -2247,38 +2241,64 @@ function excitingHindi(d, ev){
                 h('div',{className:'stat'}, (function(){
                   var r=n(data&&(data.nonStrikerRuns!=null?data.nonStrikerRuns:data.nonRuns));
                   var b=n(data&&(data.nonStrikerBalls!=null?data.nonStrikerBalls:data.nonBalls));
-                  var f4=n(data&&(data.nonStrikerFours!=null?data.nonStrikerFours:data.non4s));
-                  var s6=n(data&&(data.nonStrikerSixes!=null?data.nonStrikerSixes:data.non6s));
-                  return r+'('+b+') · 4s '+f4+' · 6s '+s6;
+                  return r+'('+b+')';
                 })()),
                 h('div',{className:'stat'}, (function(){
+                  var f4=n(data&&(data.nonStrikerFours!=null?data.nonStrikerFours:data.non4s));
+                  var s6=n(data&&(data.nonStrikerSixes!=null?data.nonStrikerSixes:data.non6s));
                   var r=n(data&&(data.nonStrikerRuns!=null?data.nonStrikerRuns:data.nonRuns));
                   var b=n(data&&(data.nonStrikerBalls!=null?data.nonStrikerBalls:data.nonBalls));
-                  var dots=n(data&&(data.nonStrikerDots!=null?data.nonStrikerDots:data.nonDots));
                   var sr=b?((r/b)*100).toFixed(0):'0';
-                  return 'Dots '+dots+' · SR '+sr;
+                  return '4s '+f4+'  ·  6s '+s6+'  ·  SR '+sr;
                 })())
               ),
               h('div',{className:'comm-mini'},
                 h('div',{className:'lab'},'Bowler'),
-                h('div',{className:'name'},(data&&data.bowlerName)||'-'),
+                h('div',{className:'name'}, (function(){
+                  var nm=(data&&data.bowlerName)||'';
+                  if(nm && String(nm).trim() && String(nm).trim()!=='-'){
+                    try{
+                      var bb=n(data&&(data.bowlerBalls!=null?data.bowlerBalls:data.bowlBalls));
+                      var ov=data&&(data.bowlerOvers||data.bowlOvers);
+                      if(ov==null||ov===''){ ov=(Math.floor(bb/6)+'.'+(bb%6)); }
+                      var r=n(data&&(data.bowlerRuns!=null?data.bowlerRuns:data.bowlRuns));
+                      var w=n(data&&(data.bowlerWickets!=null?data.bowlerWickets:data.bowlWkts));
+                      lastBowlRef.current={name:String(nm).trim(),runs:r,balls:bb,wickets:w,overs:String(ov)};
+                    }catch(e){}
+                    return String(nm).trim();
+                  }
+                  return (lastBowlRef.current&&lastBowlRef.current.name)||'-';
+                })()),
                 h('div',{className:'stat'}, (function(){
-                  var bb=n(data&&(data.bowlerBalls!=null?data.bowlerBalls:data.bowlBalls));
-                  var ov=data&&(data.bowlerOvers||data.bowlOvers);
-                  if(ov==null||ov===''){ ov=(Math.floor(bb/6)+'.'+(bb%6)); }
-                  var r=n(data&&(data.bowlerRuns!=null?data.bowlerRuns:data.bowlRuns));
-                  var w=n(data&&(data.bowlerWickets!=null?data.bowlerWickets:data.bowlWkts));
+                  var nm=(data&&data.bowlerName)||'';
+                  var r,bb,w,ov;
+                  if(nm && String(nm).trim() && String(nm).trim()!=='-'){
+                    bb=n(data&&(data.bowlerBalls!=null?data.bowlerBalls:data.bowlBalls));
+                    ov=data&&(data.bowlerOvers||data.bowlOvers);
+                    if(ov==null||ov===''){ ov=(Math.floor(bb/6)+'.'+(bb%6)); }
+                    r=n(data&&(data.bowlerRuns!=null?data.bowlerRuns:data.bowlRuns));
+                    w=n(data&&(data.bowlerWickets!=null?data.bowlerWickets:data.bowlWkts));
+                  } else {
+                    var lb=lastBowlRef.current||{};
+                    r=n(lb.runs); bb=n(lb.balls); w=n(lb.wickets); ov=lb.overs||(Math.floor(bb/6)+'.'+(bb%6));
+                  }
                   return r+'('+ov+')/'+w;
                 })()),
                 h('div',{className:'stat'}, (function(){
-                  var bb=n(data&&(data.bowlerBalls!=null?data.bowlerBalls:data.bowlBalls));
-                  var ov=data&&(data.bowlerOvers||data.bowlOvers);
-                  if(ov==null||ov===''){ ov=(Math.floor(bb/6)+'.'+(bb%6)); }
-                  var r=n(data&&(data.bowlerRuns!=null?data.bowlerRuns:data.bowlRuns));
+                  var nm=(data&&data.bowlerName)||'';
+                  var r,bb,ov;
+                  if(nm && String(nm).trim() && String(nm).trim()!=='-'){
+                    bb=n(data&&(data.bowlerBalls!=null?data.bowlerBalls:data.bowlBalls));
+                    ov=data&&(data.bowlerOvers||data.bowlOvers);
+                    if(ov==null||ov===''){ ov=(Math.floor(bb/6)+'.'+(bb%6)); }
+                    r=n(data&&(data.bowlerRuns!=null?data.bowlerRuns:data.bowlRuns));
+                  } else {
+                    var lb=lastBowlRef.current||{};
+                    r=n(lb.runs); bb=n(lb.balls); ov=lb.overs||'0.0';
+                  }
                   var balls=bb; if(!balls){ var parts=String(ov).split('.'); balls=n(parts[0])*6+n(parts[1]); }
                   var econ=balls?((r*6)/balls).toFixed(2):'0.00';
-                  var dots=n(data&&(data.bowlerDots!=null?data.bowlerDots:data.bowlDots));
-                  return 'Econ '+econ+' · Dots '+dots;
+                  return 'Econ '+econ;
                 })())
               )
             )
