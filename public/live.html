@@ -485,36 +485,33 @@ body.theme-dark .broadcast .tname{text-shadow:0 1px 2px rgba(0,0,0,.45)}
 .tour-card .badge.today{background:#1e3a8a;color:#bfdbfe}
 .tour-card .badge.live{background:#7f1d1d;color:#fecaca}
 
-/* panel-ad-cover-v251 */
-.panel-wrap{position:relative;min-height:220px}
-.panel-wrap.has-panel-ad{min-height:min(58vh,480px);max-height:min(62vh,520px)}
-.panel-ad-cover{
-  position:absolute;inset:0;z-index:25;
+/* bb-ad-cover-v252 — batsmen/bowler card only */
+.card.bb-card{position:relative;overflow:hidden}
+.card.bb-card.has-bb-ad{min-height:200px}
+.bb-ad-cover{
+  position:absolute;inset:0;z-index:8;
   background:#0b1220;
-  display:block;
-  animation:panelAdIn .35s ease-out;
-  border-radius:14px;overflow:hidden;
+  animation:panelAdIn .3s ease-out;
+  border-radius:inherit;overflow:hidden;
 }
-.panel-ad-cover .panel-ad-media{
+.bb-ad-cover .panel-ad-media{
   position:absolute;inset:0;width:100%;height:100%;
-  object-fit:cover;object-position:center center;
-  display:block;border:0;
+  object-fit:cover;object-position:center center;display:block;border:0;
 }
-.panel-ad-cover .panel-ad-caption{
+.bb-ad-cover .panel-ad-caption{
   position:absolute;left:0;right:0;bottom:0;z-index:2;
-  width:100%;padding:12px 14px;background:linear-gradient(transparent,rgba(0,0,0,.88));
-  color:#fff;font-weight:800;font-size:14px;text-align:center;
-  box-sizing:border-box;
+  padding:10px 12px;background:linear-gradient(transparent,rgba(0,0,0,.88));
+  color:#fff;font-weight:800;font-size:13px;text-align:center;
 }
-.panel-ad-cover .panel-ad-close{
-  position:absolute;top:8px;right:8px;z-index:3;border:0;border-radius:999px;
-  background:rgba(0,0,0,.55);color:#fff;font-weight:800;padding:6px 10px;cursor:pointer;
+.bb-ad-cover .panel-ad-close{
+  position:absolute;top:6px;right:6px;z-index:3;border:0;border-radius:999px;
+  background:rgba(0,0,0,.55);color:#fff;font-weight:800;padding:4px 9px;cursor:pointer;font-size:12px;
 }
-/* floating overlay also cover-fit */
-.ad-overlay.panel-fill .ad-card,
-.ad-overlay.panel-fill .ad-box{max-width:100%!important;width:100%!important;height:100%!important;margin:0!important;border-radius:14px!important;overflow:hidden!important}
-.ad-overlay.panel-fill img,
-.ad-overlay.panel-fill video{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center!important;display:block}
+.thisover-ad-link{
+  display:block;margin-top:8px;padding:8px 10px;border-radius:10px;
+  background:linear-gradient(90deg,#1d4ed8,#7c3aed);color:#fff!important;
+  font-weight:800;font-size:12px;text-align:center;text-decoration:none;
+}
 @keyframes panelAdIn{from{opacity:0}to{opacity:1}}
 </style>
 </head>
@@ -2035,9 +2032,9 @@ function excitingHindi(d, ev){
         // hide tab content while panel_event ad is up
         (adShow&&adShow.displayMode==='panel_event')?null:null,
         tab==='live'?h(React.Fragment,null,
-          h('div',{className:'card'},
+          h('div',{className:'card bb-card'+(adShow&&(adShow.displayMode==='panel_event'||adShow.displayMode==='panel')?' has-bb-ad':'')},
             h('h3',null,'Batsmen & bowler'),
-            h('div',{className:'players-row'},
+            h('div',{className:'players-row',style:(adShow&&(adShow.displayMode==='panel_event'||adShow.displayMode==='panel'))?{opacity:0.06}:null},
               h('div',{className:'pbox'},
                 h('div',{className:'k'},'Striker'),
                 h('div',{className:'v'},(data&&data.strikerName)||'-'),
@@ -2053,7 +2050,21 @@ function excitingHindi(d, ev){
                 h('div',{className:'v'},(data&&data.bowlerName)||'-'),
                 h(MiniBowlStats,{d:bowlStats})
               )
-            )
+            ),
+            (adShow&&(adShow.displayMode==='panel_event'||adShow.displayMode==='panel'))?h('div',{
+              className:'bb-ad-cover',
+              onClick:function(){ if(adShow.link) try{ window.open(adShow.link,'_blank'); }catch(e){} }
+            },
+              h('button',{type:'button',className:'panel-ad-close',onClick:function(e){ e.stopPropagation(); setAdShow(null); try{ if(window.__adAudio) window.__adAudio.pause(); }catch(e2){} }},'✕'),
+              (function(){
+                var vid=(adShow.video||'').trim();
+                var img=(adShow.image||'').trim();
+                if(vid && /^https?:\/\//i.test(vid)) return h('video',{className:'panel-ad-media',src:vid,autoPlay:true,muted:true,playsInline:true,loop:true});
+                if(img) return h('img',{className:'panel-ad-media',src:img,alt:adShow.text||'Ad'});
+                return null;
+              })(),
+              (adShow.text)?h('div',{className:'panel-ad-caption'},adShow.text):null
+            ):null
           ),
           h('div',{className:'card'},
             h('h3',null,'This over'),
@@ -2063,7 +2074,13 @@ function excitingHindi(d, ev){
                 return h('span',{key:i,className:chipClass(lab)},lab||'•');
               }),
               !(balls&&balls.length)?h('span',{className:'muted'},'No balls yet'):null
-            )
+            ),
+            (function(){
+              var link=(adShow&&adShow.link)||(data&&data.floatAd&&data.floatAd.link)||'';
+              var txt=(adShow&&adShow.text)||(data&&data.floatAd&&data.floatAd.text)||'Open link';
+              if(!link) return null;
+              return h('a',{className:'thisover-ad-link',href:link,target:'_blank',rel:'noopener noreferrer'},'🔗 '+txt);
+            })()
           )
         ):null,
 

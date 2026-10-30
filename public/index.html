@@ -2675,9 +2675,12 @@ body[data-theme="dark"] #cup-sub-create h3 {
 
                 
 <div class="border theme-border rounded-xl p-3 space-y-2 mt-2" id="float-ads-settings" style="background:rgba(15,23,42,0.04)">
-                        <label class="text-xs font-black theme-text uppercase tracking-wider block">📢 Floating Ads</label>
-                        <label class="flex items-center gap-2 text-sm theme-text"><input type="checkbox" id="ad-float-enabled" onchange="saveAdSettings()"/> Enable floating ads</label>
-                        <label class="text-[10px] theme-muted font-semibold block">Show when</label>
+                        <label class="text-xs font-black theme-text uppercase tracking-wider block">📢 Advertise panel</label>
+                        <label class="flex items-center gap-2 text-sm theme-text"><input type="checkbox" id="ad-float-enabled" onchange="saveAdSettings()"/> Enable advertise</label>
+
+                        <details class="mt-2 rounded-lg border theme-border p-2" open>
+                          <summary class="text-xs font-black theme-text cursor-pointer">1 · When & where</summary>
+                          <div class="mt-2 space-y-2">
                         <label class="text-[10px] theme-muted font-semibold block">Ad play mode</label>
                         <select id="ad-float-playmode" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
                             <option value="trigger">On trigger only (1 ad)</option>
@@ -2692,19 +2695,28 @@ body[data-theme="dark"] #cup-sub-create h3 {
                             <option value="xl">Extra large</option>
                             <option value="full">Full width</option>
                         </select>
-                        <div class="mt-3 p-2 rounded border theme-border">
+                        </div>
+                        </details>
+
+                        <details class="mt-2 rounded-lg border theme-border p-2">
+                          <summary class="text-xs font-black theme-text cursor-pointer">4 · Scoreboard background</summary>
+                          <div class="mt-2 space-y-2">
                           <div class="text-xs font-black theme-text mb-1">Scoreboard background image</div>
                           <input id="scoreboard-bg-image" type="url" placeholder="https://… image link" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()" oninput="saveAdSettings()"/>
                           <div class="text-[10px] theme-muted mt-1">Shown behind live scoreboard</div>
                           <label class="text-[10px] theme-muted font-semibold block mt-2">Image transparency (overlay)</label>
                           <input id="scoreboard-bg-overlay" type="range" min="15" max="90" step="5" value="55" class="w-full" oninput="saveAdSettings(); var l=document.getElementById('scoreboard-bg-overlay-label'); if(l)l.textContent=this.value+'%';"/>
                           <div class="flex justify-between text-[10px] theme-muted"><span>clear (photo)</span><span id="scoreboard-bg-overlay-label">55%</span><span>solid</span></div>
-                        </div>
+                          </div>
+                        </details>
+                        <details class="mt-2 rounded-lg border theme-border p-2" open>
+                          <summary class="text-xs font-black theme-text cursor-pointer">5 · Display target</summary>
+                          <div class="mt-2 space-y-2">
                         <label class="text-[10px] theme-muted font-semibold block">Display mode</label>
                         <select id="ad-float-display-mode" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
-                            <option value="event">Floating ad on events</option>
-                            <option value="panel_event">Panel background on events (hide stats)</option>
-                            <option value="panel">Always fill panel below scoreboard</option>
+                            <option value="event">Floating popup on events</option>
+                            <option value="panel_event">Batsman/Bowler panel on events</option>
+                            <option value="panel">Always fill Batsman/Bowler panel</option>
                         </select>
                         <select id="ad-float-trigger" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
                             <option value="over">After each over</option>
@@ -2713,11 +2725,19 @@ body[data-theme="dark"] #cup-sub-create h3 {
                             <option value="wicket">On wickets</option>
                             <option value="random">Random</option>
                         </select>
-                        <label class="text-[10px] theme-muted font-semibold block">Shape</label>
+                          </div>
+                        </details>
+                        <label class="text-[10px] theme-muted font-semibold block">Shape (floating popup)</label>
                         <select id="ad-float-shape" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
                             <option value="rect">Rectangular banner</option>
                             <option value="vertical">Vertical OOH</option>
                         </select>
+                          </div>
+                        </details>
+
+                        <details class="mt-2 rounded-lg border theme-border p-2">
+                          <summary class="text-xs font-black theme-text cursor-pointer">2 · Media (image / video / link)</summary>
+                          <div class="mt-2 space-y-2">
                         <label class="text-[10px] theme-muted font-semibold block">Direct image URL (png/jpg — not gallery page)</label>
                         <input type="url" id="ad-float-image" placeholder="https://.../banner.png" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
                         <label class="text-[10px] theme-muted font-semibold block mt-2">Ad video URL (optional, mp4/webm)</label>
@@ -2725,7 +2745,13 @@ body[data-theme="dark"] #cup-sub-create h3 {
                         <div class="text-[10px] theme-muted">If set, video plays in the panel (cover fit). Image used as fallback.</div>
                         <input type="text" id="ad-float-text" placeholder="Ad headline / sponsor" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
                         <input type="url" id="ad-float-link" placeholder="https://click-through-link" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
-                        <label class="text-[10px] theme-muted font-semibold block mt-2">Ad sound URL (plays with ad on events)</label>
+                        </div>
+                        </details>
+
+                        <details class="mt-2 rounded-lg border theme-border p-2">
+                          <summary class="text-xs font-black theme-text cursor-pointer">3 · Sound & duration</summary>
+                          <div class="mt-2 space-y-2">
+                        <label class="text-[10px] theme-muted font-semibold block">Ad sound URL (plays with ad on events)</label>
                         <input id="ad-float-sound" type="url" placeholder="https://…/ad-jingle.mp3" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()" oninput="saveAdSettings()"/>
                         <div class="text-[10px] theme-muted">Optional audio played when the ad appears.</div>
                         <label class="text-[10px] theme-muted font-semibold block mt-2">Ad duration (seconds)</label>
