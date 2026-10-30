@@ -485,23 +485,36 @@ body.theme-dark .broadcast .tname{text-shadow:0 1px 2px rgba(0,0,0,.45)}
 .tour-card .badge.today{background:#1e3a8a;color:#bfdbfe}
 .tour-card .badge.live{background:#7f1d1d;color:#fecaca}
 
-/* panel-ad-cover-v250 */
-.panel-wrap{position:relative;min-height:200px}
+/* panel-ad-cover-v251 */
+.panel-wrap{position:relative;min-height:220px}
+.panel-wrap.has-panel-ad{min-height:min(58vh,480px);max-height:min(62vh,520px)}
 .panel-ad-cover{
   position:absolute;inset:0;z-index:25;
-  background:#0b1220 center/cover no-repeat;
-  display:flex;align-items:flex-end;justify-content:center;
+  background:#0b1220;
+  display:block;
   animation:panelAdIn .35s ease-out;
-  border-radius:12px;overflow:hidden;
+  border-radius:14px;overflow:hidden;
+}
+.panel-ad-cover .panel-ad-media{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:center center;
+  display:block;border:0;
 }
 .panel-ad-cover .panel-ad-caption{
-  width:100%;padding:12px 14px;background:linear-gradient(transparent,rgba(0,0,0,.85));
+  position:absolute;left:0;right:0;bottom:0;z-index:2;
+  width:100%;padding:12px 14px;background:linear-gradient(transparent,rgba(0,0,0,.88));
   color:#fff;font-weight:800;font-size:14px;text-align:center;
+  box-sizing:border-box;
 }
 .panel-ad-cover .panel-ad-close{
-  position:absolute;top:8px;right:8px;border:0;border-radius:999px;
-  background:rgba(0,0,0,.55);color:#fff;font-weight:800;padding:6px 10px;cursor:pointer;z-index:2;
+  position:absolute;top:8px;right:8px;z-index:3;border:0;border-radius:999px;
+  background:rgba(0,0,0,.55);color:#fff;font-weight:800;padding:6px 10px;cursor:pointer;
 }
+/* floating overlay also cover-fit */
+.ad-overlay.panel-fill .ad-card,
+.ad-overlay.panel-fill .ad-box{max-width:100%!important;width:100%!important;height:100%!important;margin:0!important;border-radius:14px!important;overflow:hidden!important}
+.ad-overlay.panel-fill img,
+.ad-overlay.panel-fill video{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center!important;display:block}
 @keyframes panelAdIn{from{opacity:0}to{opacity:1}}
 </style>
 </head>
@@ -1569,7 +1582,7 @@ function excitingHindi(d, ev){
       if(window.__lastAdEv===sig) return;
       window.__lastAdEv=sig;
       var ads=(fa.ads&&fa.ads.length)?fa.ads.slice():[];
-      if(!ads.length && (fa.image||fa.text)) ads=[{image:fa.image||'',text:fa.text||'',link:fa.link||''}];
+      if(!ads.length && (fa.image||fa.video||fa.text)) ads=[{image:fa.image||'',video:fa.video||'',text:fa.text||'',link:fa.link||''}];
       if(!ads.length) return;
       var mode=fa.playMode||'trigger';
       var displayMode=fa.displayMode||'event';
@@ -1588,8 +1601,9 @@ function excitingHindi(d, ev){
       }
       function showOne(a){
         setAdShow({
-          image:a.image||'',
-          text:a.text||'',
+          image:a.image||fa.image||'',
+          video:a.video||fa.video||'',
+          text:a.text||fa.text||'',
           link:a.link||fa.link||'',
           shape:fa.shape||'rect',
           size:fa.size||'m',
@@ -2002,10 +2016,20 @@ function excitingHindi(d, ev){
       h('div',{className:'panel panel-wrap'+(adShow&&(adShow.displayMode==='panel_event'||adShow.displayMode==='panel')?' has-panel-ad':'')},
         (adShow&&(adShow.displayMode==='panel_event'||adShow.displayMode==='panel'))?h('div',{
           className:'panel-ad-cover',
-          style: adShow.image?{backgroundImage:'url('+adShow.image+')'}:null,
           onClick:function(){ if(adShow.link) try{ window.open(adShow.link,'_blank'); }catch(e){} }
         },
-          h('button',{type:'button',className:'panel-ad-close',onClick:function(e){ e.stopPropagation(); setAdShow(null); try{ if(window.__adAudio) window.__adAudio.pause(); }catch(e2){} }},'✕'),
+          h('button',{type:'button',className:'panel-ad-close',onClick:function(e){ e.stopPropagation(); setAdShow(null); try{ if(window.__adAudio) window.__adAudio.pause(); }catch(e2){} try{ var v=document.getElementById('panel-ad-video'); if(v){v.pause();} }catch(e3){} }},'✕'),
+          (function(){
+            var vid=(adShow.video||'').trim();
+            var img=(adShow.image||'').trim();
+            if(vid && /^https?:\/\//i.test(vid)){
+              return h('video',{id:'panel-ad-video',className:'panel-ad-media',src:vid,autoPlay:true,muted:true,playsInline:true,loop:true,controls:false});
+            }
+            if(img){
+              return h('img',{className:'panel-ad-media',src:img,alt:adShow.text||'Ad'});
+            }
+            return null;
+          })(),
           (adShow.text)?h('div',{className:'panel-ad-caption'},adShow.text):null
         ):null,
         // hide tab content while panel_event ad is up
@@ -2209,23 +2233,44 @@ function excitingHindi(d, ev){
           ),
           (function(){
             var list=[];
-            if(scTeam==='B'){
-              list=(data&&data.cupRosterB&&data.cupRosterB.length)?data.cupRosterB:((data&&data.squadB&&data.squadB.length)?data.squadB:(data&&data.teamBPlayers)||lines.batB||[]);
-            }else{
-              list=(data&&data.cupRosterA&&data.cupRosterA.length)?data.cupRosterA:((data&&data.squadA&&data.squadA.length)?data.squadA:(data&&data.teamAPlayers)||lines.batA||[]);
-            }
-            // merge role/arm from squadA/B stats onto roster names
-            try{
-              var stats = scTeam==='B'?(data&&data.squadB)||[]:(data&&data.squadA)||[];
-              var sm={};
-              (stats||[]).forEach(function(p){ if(p&&p.name) sm[String(p.name).toLowerCase()]=p; });
-              list = (list||[]).map(function(p){
-                var o = typeof p==='object'?Object.assign({},p):{name:p};
-                var st = sm[String(o.name||'').toLowerCase()];
-                if(st){ o.role=o.role||st.role; o.arm=o.arm||st.arm; o.runs=st.runs; o.balls=st.balls; o.isOut=st.isOut; }
-                return o;
-              });
-            }catch(eM){}
+            (function(){
+              var teamName = scTeam==='B' ? (lines.nameB|| (data&& (data.teamB||data.teamBName)) ||'') : (lines.nameA|| (data&& (data.teamA||data.teamAName)) ||'');
+              list = [];
+              // 1) cupTeams from scorer Create Team
+              try{
+                var cts = (data && data.cupTeams) || [];
+                if(Array.isArray(cts) && teamName){
+                  var ct = cts.find(function(t){ return String(t.name||'').toLowerCase()===String(teamName).toLowerCase(); });
+                  if(ct && Array.isArray(ct.players) && ct.players.length) list = ct.players.slice();
+                }
+              }catch(e0){}
+              // 2) cupRoster
+              if(!list.length){
+                list = scTeam==='B'
+                  ? ((data&&data.cupRosterB)||[])
+                  : ((data&&data.cupRosterA)||[]);
+              }
+              // 3) squad stats list
+              if(!list.length){
+                list = scTeam==='B'
+                  ? ((data&&data.squadB)||(data&&data.teamBPlayers)||lines.batB||[])
+                  : ((data&&data.squadA)||(data&&data.teamAPlayers)||lines.batA||[]);
+              }
+              // merge role/arm/runs
+              try{
+                var stats = scTeam==='B'?(data&&data.squadB)||[]:(data&&data.squadA)||[];
+                var sm={};
+                (stats||[]).forEach(function(p){ if(p&&p.name) sm[String(p.name).toLowerCase()]=p; });
+                list = (list||[]).map(function(p){
+                  var o = typeof p==='object'?Object.assign({},p):{name:String(p)};
+                  if(!o.role) o.role = o.playerRole || 'allrounder';
+                  if(!o.arm) o.arm = o.bowlingArm || 'right';
+                  var st = sm[String(o.name||'').toLowerCase()];
+                  if(st){ o.role=o.role||st.role||'allrounder'; o.arm=o.arm||st.arm||'right'; o.runs=st.runs; o.balls=st.balls; o.isOut=st.isOut; }
+                  return o;
+                });
+              }catch(eM){}
+            })();
             if(!list.length)return h('div',{className:'muted'},'No squad data from scorer yet');
             return h('table',null,
               h('thead',null,h('tr',null,h('th',null,'#'),h('th',null,'Player'),h('th',null,'Role'),h('th',null,'Arm'))),
