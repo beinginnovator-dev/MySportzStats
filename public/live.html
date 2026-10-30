@@ -535,6 +535,19 @@ body.theme-light .comm-mini,body.theme-iccpro .comm-mini{border-right-color:rgba
 .comm-over-sum{margin:10px 0;padding:10px 12px;border-radius:12px;border:1px solid rgba(251,191,36,.35);background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(56,189,248,.08));font-size:12px;font-weight:700;line-height:1.35}
 .comm-over-sum .ttl{font-size:10px;letter-spacing:.08em;color:#fbbf24;font-weight:900;margin-bottom:4px}
 body.theme-light .comm-sticky,body.theme-iccpro .comm-sticky{background:linear-gradient(180deg,#fff 75%,transparent)}
+
+/* sb-players-v261 */
+.sb-players{font-size:10px;font-weight:700;line-height:1.3;text-align:center;max-width:130px;margin:0 auto;max-height:72px;overflow:hidden;position:relative}
+.sb-players .sp-scroll{animation:none}
+.sb-players.sp-overflow .sp-scroll{animation:spScroll 6s linear infinite}
+@keyframes spScroll{
+  0%{transform:translateY(0)}
+  20%{transform:translateY(0)}
+  80%{transform:translateY(var(--sp-shift,-20px))}
+  100%{transform:translateY(var(--sp-shift,-20px))}
+}
+.sb-players .sp-row{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.95}
+.sb-players .sp-lab{font-size:8px;letter-spacing:.06em;opacity:.7;text-transform:uppercase;margin-bottom:2px}
 </style>
 </head>
 <body class="theme-dark">
@@ -1575,6 +1588,24 @@ function excitingHindi(d, ev){
     var _now=useState(Date.now()),nowTick=_now[0],setNowTick=_now[1];
     var prevRef=useRef(null);
     var lastBowlRef=useRef({name:'',runs:0,balls:0,wickets:0,overs:''});
+    var _oc=useState(null),overCard=_oc[0],setOverCard=_oc[1];
+    var overCardScoreRef=useRef('');
+    // overCard clear: timeout or score change
+    useEffect(function(){
+      if(!overCard) return;
+      var t=setInterval(function(){
+        try{
+          if(Date.now()>(overCard.until||0)){ setOverCard(null); return; }
+          if(data){
+            var d2=dualTeamScores(data);
+            var key=String(d2.aR)+'/'+String(d2.aW)+'|'+String(d2.bR)+'/'+String(d2.bW);
+            if(overCardScoreRef.current && key!==overCardScoreRef.current){ setOverCard(null); }
+          }
+        }catch(e){}
+      }, 300);
+      return function(){ clearInterval(t); };
+    },[overCard,data]);
+
     // Apply scoreboard background image from scorer Advertise UI
     useEffect(function(){
       function applyBg(){
@@ -1774,6 +1805,56 @@ function excitingHindi(d, ev){
         setEvent(ev);
         try{ stadiumForEvent(ev); }catch(e){}
         try{ if(ttsOn) speakTts(data, ev); }catch(eT){}
+        // After over ends: show both-team player stats on scoreboard for 6s
+        try{
+          var overEnd = !!(ev && (ev.kind==='over' || /over/i.test(ev.kind||'') || /over complete|end of over/i.test(String(ev.text||''))));
+          if(!overEnd) overEnd=/over complete|end of over|Over\s*\d+\s*end/i.test(String(data.lastEvent||''));
+          if(!overEnd && data && prevRef.current){
+            var po=String((prevRef.current.overs)||'');
+            var co=String(data.overs||'');
+            if(po && co && po!==co && /\.0$/.test(co)) overEnd=true;
+          }
+          if(overEnd && data){
+            var lines2=teamLines(data);
+            var d2s=dualTeamScores(data);
+            var pickBat=function(arr){
+              return (arr||[]).filter(function(p){ return p && p.name && (n(p.runs)>0||n(p.balls)>0); })
+                .map(function(p){ return {name:p.name, line: n(p.runs)+'('+n(p.balls)+')'}; });
+            };
+            var pickBowl=function(arr){
+              return (arr||[]).filter(function(p){
+                if(!p||!p.name) return false;
+                var bb=n(p.balls), ov=p.overs;
+                return n(p.runs)>0||n(p.wickets)>0||bb>0||(ov!=null&&String(ov)!==''&&String(ov)!=='0.0');
+              }).map(function(p){
+                var ov=p.overs!=null?p.overs:oversFromBalls(p.balls);
+                return {name:p.name, line: ov+'-'+n(p.runs)+'-'+n(p.wickets)};
+              });
+            };
+            // batting team batters + opposition bowlers
+            var aList = d2s.aBat ? pickBat(lines2.batA) : pickBowl(lines2.bowlA);
+            var bList = d2s.bBat ? pickBat(lines2.batB) : pickBowl(lines2.bowlB);
+            var scoreKey=String(d2s.aR)+'/'+String(d2s.aW)+'|'+String(d2s.bR)+'/'+String(d2s.bW);
+            overCardScoreRef.current=scoreKey;
+            setOverCard({
+              until:Date.now()+6000,
+              a:aList, b:bList,
+              aLabel: d2s.aBat ? 'Batting' : 'Bowling',
+              bLabel: d2s.bBat ? 'Batting' : 'Bowling',
+              nameA:lines2.nameA, nameB:lines2.nameB
+            });
+            try{
+              if(ttsOn){
+                var lang=lsGet('react_comm_lang','en');
+                var d2=dualTeamScores(data);
+                var sum = lang==='hi'
+                  ? ('ओवर समाप्त। स्कोर '+ (d2.aR!=null?d2.aR:'-')+'/'+(d2.aW!=null?d2.aW:'-')+' बनाम '+(d2.bR!=null?d2.bR:'-')+'/'+(d2.bW!=null?d2.bW:'-')+'।')
+                  : ('Over complete. Match summary: '+(d2.nameA||'Team A')+' '+(d2.aR!=null?d2.aR:'-')+'/'+(d2.aW!=null?d2.aW:0)+', '+(d2.nameB||'Team B')+' '+(d2.bR!=null?d2.bR:'-')+'/'+(d2.bW!=null?d2.bW:0)+'.');
+                speakMale(sum, lang==='hi'?'hi':'en');
+              }
+            }catch(eSum){}
+          }
+        }catch(eOc){}
         try{
           var batSide = (data.battingTeam==='B'||data.battingSide==='B') ? 'B' : 'A';
           var bowlSide = batSide==='A' ? 'B' : 'A';
@@ -1784,10 +1865,10 @@ function excitingHindi(d, ev){
           else if(ev.kind==='four'||ev.kind==='six'||ev.kind==='runs'||ev.kind==='extra') setScoreGlow('runs');
         }catch(eC){}
         var t = setTimeout(function(){ setEvent(null); }, 2500);
-        prevRef.current = {runs:data.runs, wickets:data.wickets, balls:data.balls, lastEvent:data.lastEvent};
+        prevRef.current = {runs:data.runs, wickets:data.wickets, balls:data.balls, overs:data.overs, lastEvent:data.lastEvent, bowlerName:data.bowlerName};
         return function(){ clearTimeout(t); };
       }
-      prevRef.current = {runs:data.runs, wickets:data.wickets, balls:data.balls, lastEvent:data.lastEvent};
+      prevRef.current = {runs:data.runs, wickets:data.wickets, balls:data.balls, overs:data.overs, lastEvent:data.lastEvent, bowlerName:data.bowlerName};
     },[data]);
 
     
@@ -2069,8 +2150,18 @@ function excitingHindi(d, ev){
               h('img',{className:dual.aBat&&!ended?'wave':'',src:FLAG_URL[flags.a]||FLAG_URL.in,alt:''}),
               h('span',null,dual.nameA)
             ),
-            h('div',{className:'score-num'+(scoreGlow==='runs'?' score-glow-runs':scoreGlow==='wkt'?' score-glow-wkt':'')+(scoreGlow==='runs'?' score-glow-runs':scoreGlow==='wkt'?' score-glow-wkt':'')},fa.main),
-            fa.sub?h('div',{className:'overs'},fa.sub):null,
+            (overCard&&Date.now()<(overCard.until||0))?h('div',{
+              className:'sb-players'+(((overCard.a||[]).length>3)?' sp-overflow':''),
+              ref:function(el){ try{ if(el&&(overCard.a||[]).length>3){ var sh=Math.min(48, Math.max(12,(overCard.a.length-3)*14)); el.style.setProperty('--sp-shift','-'+sh+'px'); } }catch(e){} }
+            },
+              h('div',{className:'sp-lab'}, overCard.aLabel||'Batting'),
+              h('div',{className:'sp-scroll'},
+                ((overCard.a&&overCard.a.length)?overCard.a:[{name:'—',line:'-'}]).map(function(p,i){ return h('div',{key:i,className:'sp-row'},(p.name||'')+' '+ (p.line||'')); })
+              )
+            ):h(React.Fragment,null,
+              h('div',{className:'score-num'+(scoreGlow==='runs'?' score-glow-runs':scoreGlow==='wkt'?' score-glow-wkt':'')},fa.main),
+              fa.sub?h('div',{className:'overs'},fa.sub):null
+            ),
             h('div',{className:'role'},dual.aBat&&!ended?'Batting':'Bowling')
           ),
           h('div',{className:'match-center'},
@@ -2089,8 +2180,18 @@ function excitingHindi(d, ev){
               h('span',null,dual.nameB),
               h('img',{className:dual.bBat&&!ended?'wave':'',src:FLAG_URL[flags.b]||FLAG_URL.au,alt:''})
             ),
-            h('div',{className:'score-num'+(scoreGlow==='runs'?' score-glow-runs':scoreGlow==='wkt'?' score-glow-wkt':'')+(scoreGlow==='runs'?' score-glow-runs':scoreGlow==='wkt'?' score-glow-wkt':'')},fb.main),
-            fb.sub?h('div',{className:'overs'},fb.sub):null,
+            (overCard&&Date.now()<(overCard.until||0))?h('div',{
+              className:'sb-players'+(((overCard.b||[]).length>3)?' sp-overflow':''),
+              ref:function(el){ try{ if(el&&(overCard.b||[]).length>3){ var sh=Math.min(48, Math.max(12,(overCard.b.length-3)*14)); el.style.setProperty('--sp-shift','-'+sh+'px'); } }catch(e){} }
+            },
+              h('div',{className:'sp-lab'}, overCard.bLabel||'Bowling'),
+              h('div',{className:'sp-scroll'},
+                ((overCard.b&&overCard.b.length)?overCard.b:[{name:'—',line:'-'}]).map(function(p,i){ return h('div',{key:i,className:'sp-row'},(p.name||'')+' '+ (p.line||'')); })
+              )
+            ):h(React.Fragment,null,
+              h('div',{className:'score-num'+(scoreGlow==='runs'?' score-glow-runs':scoreGlow==='wkt'?' score-glow-wkt':'')},fb.main),
+              fb.sub?h('div',{className:'overs'},fb.sub):null
+            ),
             h('div',{className:'role'},dual.bBat&&!ended?'Batting':'Bowling')
           )
         ),
@@ -2202,10 +2303,11 @@ function excitingHindi(d, ev){
               }))
             );
           })(),
-          h('h3',{style:{marginTop:14}},'Bowling'),
+          h('h3',{style:{marginTop:14}},'Bowling (opposition)'),
           (function(){
-            var list=scTeam==='B'?lines.bowlB:lines.bowlA;
-            if(!list.length)return h('div',{className:'muted'},'Yet to bowl');
+            // Show bowlers of the OPPONENT team for this innings view
+            var list=scTeam==='A'?lines.bowlB:lines.bowlA;
+            if(!list||!list.length)return h('div',{className:'muted'},'Yet to bowl');
             return h('table',null,
               h('thead',null,h('tr',null,h('th',null,'Bowler'),h('th',null,'O'),h('th',null,'R'),h('th',null,'W'),h('th',null,'Econ'))),
               h('tbody',null,list.map(function(p,i){
@@ -2230,9 +2332,12 @@ function excitingHindi(d, ev){
                 h('div',{className:'stat'}, (function(){
                   var f4=n(data&&(data.strikerFours!=null?data.strikerFours:data.striker4s));
                   var s6=n(data&&(data.strikerSixes!=null?data.strikerSixes:data.striker6s));
+                  return '4s '+f4+' · 6s '+s6;
+                })()),
+                h('div',{className:'stat'}, (function(){
                   var r=n(data&&data.strikerRuns),b=n(data&&data.strikerBalls);
                   var sr=b?((r/b)*100).toFixed(0):'0';
-                  return '4s '+f4+'  ·  6s '+s6+'  ·  SR '+sr;
+                  return 'SR '+sr;
                 })())
               ),
               h('div',{className:'comm-mini'},
@@ -2246,61 +2351,45 @@ function excitingHindi(d, ev){
                 h('div',{className:'stat'}, (function(){
                   var f4=n(data&&(data.nonStrikerFours!=null?data.nonStrikerFours:data.non4s));
                   var s6=n(data&&(data.nonStrikerSixes!=null?data.nonStrikerSixes:data.non6s));
+                  return '4s '+f4+' · 6s '+s6;
+                })()),
+                h('div',{className:'stat'}, (function(){
                   var r=n(data&&(data.nonStrikerRuns!=null?data.nonStrikerRuns:data.nonRuns));
                   var b=n(data&&(data.nonStrikerBalls!=null?data.nonStrikerBalls:data.nonBalls));
-                  var sr=b?((r/b)*100).toFixed(0):'0';
-                  return '4s '+f4+'  ·  6s '+s6+'  ·  SR '+sr;
+                  var srV=b?((r/b)*100).toFixed(0):'0';
+                  return 'SR '+srV;
                 })())
               ),
-              h('div',{className:'comm-mini'},
-                h('div',{className:'lab'},'Bowler'),
-                h('div',{className:'name'}, (function(){
-                  var nm=(data&&data.bowlerName)||'';
-                  if(nm && String(nm).trim() && String(nm).trim()!=='-'){
-                    try{
-                      var bb=n(data&&(data.bowlerBalls!=null?data.bowlerBalls:data.bowlBalls));
-                      var ov=data&&(data.bowlerOvers||data.bowlOvers);
-                      if(ov==null||ov===''){ ov=(Math.floor(bb/6)+'.'+(bb%6)); }
-                      var r=n(data&&(data.bowlerRuns!=null?data.bowlerRuns:data.bowlRuns));
-                      var w=n(data&&(data.bowlerWickets!=null?data.bowlerWickets:data.bowlWkts));
-                      lastBowlRef.current={name:String(nm).trim(),runs:r,balls:bb,wickets:w,overs:String(ov)};
-                    }catch(e){}
-                    return String(nm).trim();
-                  }
-                  return (lastBowlRef.current&&lastBowlRef.current.name)||'-';
-                })()),
-                h('div',{className:'stat'}, (function(){
-                  var nm=(data&&data.bowlerName)||'';
-                  var r,bb,w,ov;
-                  if(nm && String(nm).trim() && String(nm).trim()!=='-'){
-                    bb=n(data&&(data.bowlerBalls!=null?data.bowlerBalls:data.bowlBalls));
-                    ov=data&&(data.bowlerOvers||data.bowlOvers);
-                    if(ov==null||ov===''){ ov=(Math.floor(bb/6)+'.'+(bb%6)); }
-                    r=n(data&&(data.bowlerRuns!=null?data.bowlerRuns:data.bowlRuns));
-                    w=n(data&&(data.bowlerWickets!=null?data.bowlerWickets:data.bowlWkts));
+              (function(){
+                // retain last bowler until a new one is selected
+                var nm=(data&&data.bowlerName)?String(data.bowlerName).trim():'';
+                var bb=n(data&&(data.bowlerBalls!=null?data.bowlerBalls:data.bowlBalls));
+                var ov=data&&(data.bowlerOvers||data.bowlOvers);
+                if(ov==null||ov===''){ ov=(Math.floor(bb/6)+'.'+(bb%6)); }
+                var r=n(data&&(data.bowlerRuns!=null?data.bowlerRuns:data.bowlRuns));
+                var w=n(data&&(data.bowlerWickets!=null?data.bowlerWickets:data.bowlWkts));
+                var lb=lastBowlRef.current||{name:'',runs:0,balls:0,wickets:0,overs:'0.0'};
+                if(nm && nm!=='-'){
+                  if((r>0||bb>0||w>0) || !lb.name){
+                    lastBowlRef.current={name:nm,runs:r,balls:bb,wickets:w,overs:String(ov)};
+                  } else if(lb.name===nm){
+                    // same bowler, transient zero at over end — keep previous
                   } else {
-                    var lb=lastBowlRef.current||{};
-                    r=n(lb.runs); bb=n(lb.balls); w=n(lb.wickets); ov=lb.overs||(Math.floor(bb/6)+'.'+(bb%6));
+                    lastBowlRef.current={name:nm,runs:r,balls:bb,wickets:w,overs:String(ov)};
                   }
-                  return r+'('+ov+')/'+w;
-                })()),
-                h('div',{className:'stat'}, (function(){
-                  var nm=(data&&data.bowlerName)||'';
-                  var r,bb,ov;
-                  if(nm && String(nm).trim() && String(nm).trim()!=='-'){
-                    bb=n(data&&(data.bowlerBalls!=null?data.bowlerBalls:data.bowlBalls));
-                    ov=data&&(data.bowlerOvers||data.bowlOvers);
-                    if(ov==null||ov===''){ ov=(Math.floor(bb/6)+'.'+(bb%6)); }
-                    r=n(data&&(data.bowlerRuns!=null?data.bowlerRuns:data.bowlRuns));
-                  } else {
-                    var lb=lastBowlRef.current||{};
-                    r=n(lb.runs); bb=n(lb.balls); ov=lb.overs||'0.0';
-                  }
-                  var balls=bb; if(!balls){ var parts=String(ov).split('.'); balls=n(parts[0])*6+n(parts[1]); }
-                  var econ=balls?((r*6)/balls).toFixed(2):'0.00';
-                  return 'Econ '+econ;
-                })())
-              )
+                }
+                lb=lastBowlRef.current||lb;
+                var showName=lb.name||nm||'-';
+                var showR=n(lb.runs), showB=n(lb.balls), showW=n(lb.wickets), showO=lb.overs||'0.0';
+                var balls=showB; if(!balls){ var parts=String(showO).split('.'); balls=n(parts[0])*6+n(parts[1]); }
+                var econ=balls?((showR*6)/balls).toFixed(2):'0.00';
+                return h('div',{className:'comm-mini'},
+                  h('div',{className:'lab'},'Bowler'),
+                  h('div',{className:'name'}, showName),
+                  h('div',{className:'stat'}, showR+'('+showO+')/'+showW),
+                  h('div',{className:'stat'}, 'Econ '+econ)
+                );
+              })()
             )
           ),
           (function(){
