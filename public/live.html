@@ -536,6 +536,17 @@ body.theme-light .comm-mini,body.theme-iccpro .comm-mini{border-right-color:rgba
 .comm-over-sum .ttl{font-size:10px;letter-spacing:.08em;color:#fbbf24;font-weight:900;margin-bottom:4px}
 body.theme-light .comm-sticky,body.theme-iccpro .comm-sticky{background:linear-gradient(180deg,#fff 75%,transparent)}
 
+/* sb-sc-table-v262 */
+.sb-sc-wrap{width:100%;padding:4px 6px 6px;box-sizing:border-box;max-height:140px;overflow:hidden}
+.sb-sc-wrap.sp-overflow .sb-sc-scroll{animation:spScroll 7s linear infinite}
+.sb-sc-scroll{will-change:transform}
+.sb-sc-wrap table{width:100%;border-collapse:collapse;font-size:10px;font-weight:700}
+.sb-sc-wrap th,.sb-sc-wrap td{padding:2px 4px;text-align:left;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-sc-wrap th{font-size:8px;letter-spacing:.05em;text-transform:uppercase;opacity:.7}
+.sb-sc-wrap td.num{text-align:right;font-variant-numeric:tabular-nums}
+.sb-sc-wrap .sc-title{font-size:9px;font-weight:900;letter-spacing:.06em;margin:4px 0 2px;opacity:.85;text-transform:uppercase}
+.sb-sc-wrap .sc-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:420px){.sb-sc-wrap .sc-cols{grid-template-columns:1fr}}
 /* sb-players-v261 */
 .sb-players{font-size:10px;font-weight:700;line-height:1.3;text-align:center;max-width:130px;margin:0 auto;max-height:72px;overflow:hidden;position:relative}
 .sb-players .sp-scroll{animation:none}
@@ -670,8 +681,23 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     return {
       name:d.matchName||d.matchTitle||d.leagueName||d.tournamentName||d.matchDesc||d.title||'',
       type:d.matchType||d.tournamentType||d.format||'',
-      venue:d.venue||d.location||d.ground||''
+      venue:d.venue||d.location||d.ground||d.matchVenue||d.stadium||d.place||''
     };
+  }
+  function tossTextOf(d){
+    if(!d) return '';
+    var t = d.tossText || d.tossResult || d.tossInfo || '';
+    if(t && typeof t==='object'){
+      var w=t.winner||t.team||t.tossWinner||'';
+      var dec=t.decision||t.chose||t.choice||'';
+      t = w ? (w + (dec ? (' won the toss and chose to '+dec) : ' won the toss')) : '';
+    }
+    if(!t){
+      var w2=d.tossWinner||d.tossWinTeam||d.tossWinningTeam||(d.toss&& (d.toss.winner||d.toss.team))||'';
+      var dec2=d.tossDecision||d.tossChoice||d.electedTo||(d.toss&&(d.toss.decision||d.toss.choice))||'';
+      if(w2) t = String(w2) + (dec2 ? (' won the toss and elected to '+String(dec2)) : ' won the toss');
+    }
+    return String(t||'').trim();
   }
   function matchStartTs(d){
     if(!d)return null;
@@ -2144,7 +2170,49 @@ function excitingHindi(d, ev){
           venueLine?h('div',{className:'sub'},venueLine):null,
           h('div',{className:'time'},'Start '+startLabel+' · '+elapsed)
         ),
-        h('div',{className:'score-grid'+(scoreGlow==='runs'?' score-glow-runs':scoreGlow==='wkt'?' score-glow-wkt':'')},
+        (overCard&&Date.now()<(overCard.until||0))?h('div',{
+          className:'sb-sc-wrap'+((((overCard.a||[]).length+(overCard.b||[]).length)>6)?' sp-overflow':''),
+          ref:function(el){
+            try{
+              if(!el) return;
+              var nRows=((overCard.a||[]).length+(overCard.b||[]).length);
+              if(nRows>6){ var sh=Math.min(70, Math.max(16,(nRows-6)*12)); el.style.setProperty('--sp-shift','-'+sh+'px'); }
+            }catch(e){}
+          }
+        },
+          h('div',{className:'sb-sc-scroll'},
+            h('div',{className:'sc-cols'},
+              h('div',null,
+                h('div',{className:'sc-title'}, (overCard.aLabel||'Batting')+' · '+(overCard.nameA||dual.nameA||'')),
+                h('table',null,
+                  h('thead',null,h('tr',null,
+                    h('th',null, overCard.aLabel==='Bowling'?'Bowler':'Batter'),
+                    h('th',{className:'num'}, overCard.aLabel==='Bowling'?'O-R-W':'R(B)')
+                  )),
+                  h('tbody',null,
+                    ((overCard.a&&overCard.a.length)?overCard.a:[{name:'—',line:'-'}]).map(function(p,i){
+                      return h('tr',{key:'a'+i}, h('td',null,p.name||'-'), h('td',{className:'num'}, p.line||'-'));
+                    })
+                  )
+                )
+              ),
+              h('div',null,
+                h('div',{className:'sc-title'}, (overCard.bLabel||'Bowling')+' · '+(overCard.nameB||dual.nameB||'')),
+                h('table',null,
+                  h('thead',null,h('tr',null,
+                    h('th',null, overCard.bLabel==='Bowling'?'Bowler':'Batter'),
+                    h('th',{className:'num'}, overCard.bLabel==='Bowling'?'O-R-W':'R(B)')
+                  )),
+                  h('tbody',null,
+                    ((overCard.b&&overCard.b.length)?overCard.b:[{name:'—',line:'-'}]).map(function(p,i){
+                      return h('tr',{key:'b'+i}, h('td',null,p.name||'-'), h('td',{className:'num'}, p.line||'-'));
+                    })
+                  )
+                )
+              )
+            )
+          )
+        ):(h('div',{className:'score-grid'+(scoreGlow==='runs'?' score-glow-runs':scoreGlow==='wkt'?' score-glow-wkt':'')},
           h('div',{className:'side side-left'},
             h('div',{className:'tname'+(celebSide==='A'?' team-celebrate sky-shot':'')},
               h('img',{className:dual.aBat&&!ended?'wave':'',src:FLAG_URL[flags.a]||FLAG_URL.in,alt:''}),
@@ -2193,7 +2261,7 @@ function excitingHindi(d, ev){
               fb.sub?h('div',{className:'overs'},fb.sub):null
             ),
             h('div',{className:'role'},dual.bBat&&!ended?'Batting':'Bowling')
-          )
+          ))
         ),
 
         h('div',{className:'crr'},
@@ -2470,19 +2538,8 @@ function excitingHindi(d, ev){
             h('div',{className:'item'},h('div',{className:'k'},'Status'),h('div',{className:'v'},ended?((data&&data.matchResult)||'Completed'):((data&&data.statusText)||'Live'))),
             h('div',{className:'item'},h('div',{className:'k'},'Match'),h('div',{className:'v'},meta.name||'-')),
             h('div',{className:'item'},h('div',{className:'k'},'Type'),h('div',{className:'v'},meta.type||'-')),
-            h('div',{className:'item'},h('div',{className:'k'},'Venue'),h('div',{className:'v'},meta.venue||'-')),
-            h('div',{className:'item'},h('div',{className:'k'},'Toss'),h('div',{className:'v'},(function(){
-              if(!data) return '-';
-              var t = data.tossText || data.toss || data.tossResult || '';
-              if(t && typeof t==='object') t = (t.winner||t.team||'') + (t.decision?(' chose to '+t.decision):'');
-              if(!t){
-                var w = data.tossWinner || data.tossWinTeam || (data.toss&&data.toss.winner) || '';
-                var dec = data.tossDecision || data.tossChose || (data.toss&&data.toss.decision) || '';
-                if(w && dec) t = w + ' won the toss and chose to ' + dec;
-                else if(w) t = w + ' won the toss';
-              }
-              return t || '-';
-            })())),
+            h('div',{className:'item'},h('div',{className:'k'},'Venue'),h('div',{className:'v'},meta.venue||(data&&(data.venue||data.location||data.ground||data.matchVenue))||'-')),
+            h('div',{className:'item'},h('div',{className:'k'},'Toss'),h('div',{className:'v'}, tossTextOf(data)||'-')),
             h('div',{className:'item'},h('div',{className:'k'},'Overs'),h('div',{className:'v'},(data&&(data.maxOvers||data.totalOvers))||'-')),
             h('div',{className:'item'},h('div',{className:'k'},'Target'),h('div',{className:'v'},(data&&(data.target||data.targetScore))||'-'))
           )
