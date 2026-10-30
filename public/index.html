@@ -554,6 +554,60 @@ body.scoring-page #scoring-controls-panel { display: block !important; }
 }
 #page-transition-fx { pointer-events: none !important; }
 #winner-screen.hidden { display: none !important; }
+
+/* v268 dark readable text */
+body[data-theme="dark"] .theme-text,
+body.theme-dark .theme-text,
+html.dark .theme-text{ color:#ffffff !important; }
+body[data-theme="dark"] .theme-muted,
+body.theme-dark .theme-muted,
+html.dark .theme-muted{ color:#e5e7eb !important; }
+body[data-theme="dark"] #float-ads-settings,
+body.theme-dark #float-ads-settings{
+  background:rgba(15,23,42,0.55) !important;
+  color:#fff !important;
+}
+body[data-theme="dark"] #float-ads-settings label,
+body[data-theme="dark"] #float-ads-settings .theme-text,
+body[data-theme="dark"] #float-ads-settings .theme-muted,
+body.theme-dark #float-ads-settings label,
+body.theme-dark #float-ads-settings .theme-text,
+body.theme-dark #float-ads-settings .theme-muted{
+  color:#ffffff !important;
+}
+body[data-theme="dark"] #float-ads-settings input,
+body[data-theme="dark"] #float-ads-settings select,
+body[data-theme="dark"] #float-ads-settings textarea,
+body.theme-dark #float-ads-settings input,
+body.theme-dark #float-ads-settings select,
+body.theme-dark #float-ads-settings textarea{
+  color:#ffffff !important;
+  background:#0f172a !important;
+  border-color:#475569 !important;
+}
+body[data-theme="dark"] #page-tournament,
+body[data-theme="dark"] #page-tournament .theme-text,
+body[data-theme="dark"] #page-tournament .theme-muted,
+body[data-theme="dark"] #page-tournament label,
+body[data-theme="dark"] #page-tournament h1,
+body[data-theme="dark"] #page-tournament h2,
+body[data-theme="dark"] #page-tournament h3,
+body[data-theme="dark"] #page-tournament button,
+body.theme-dark #page-tournament,
+body.theme-dark #page-tournament .theme-text,
+body.theme-dark #page-tournament .theme-muted{
+  color:#ffffff !important;
+}
+body[data-theme="dark"] #page-tournament input,
+body[data-theme="dark"] #page-tournament select,
+body[data-theme="dark"] #page-tournament textarea,
+body.theme-dark #page-tournament input,
+body.theme-dark #page-tournament select,
+body.theme-dark #page-tournament textarea{
+  color:#ffffff !important;
+  background:#1e293b !important;
+}
+
 </style>
 
     <!-- Canvas Confetti for Animations -->
@@ -2674,7 +2728,7 @@ body[data-theme="dark"] #cup-sub-create h3 {
                     </div>
 
                 
-<div class="border theme-border rounded-xl p-3 space-y-2 mt-2" id="float-ads-settings" style="background:rgba(15,23,42,0.04)">
+<div class="border theme-border rounded-xl p-3 space-y-2 mt-2" id="float-ads-settings" style="background:rgba(15,23,42,0.5);color:#fff">
                         <label class="text-xs font-black theme-text uppercase tracking-wider block">📢 Advertise panel</label>
                         <label class="flex items-center gap-2 text-sm theme-text"><input type="checkbox" id="ad-float-enabled" onchange="saveAdSettings()"/> Enable advertise</label>
 
