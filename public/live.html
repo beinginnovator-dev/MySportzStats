@@ -583,6 +583,14 @@ body.theme-light .comm-sticky,body.theme-iccpro .comm-sticky{background:linear-g
 .below-sb-ad .ad-txt{text-align:center;font-size:12px;font-weight:700;margin-top:6px;color:#e2e8f0}
 .below-sb-ad .ad-close-mini{position:absolute;right:14px;top:10px;width:28px;height:28px;border-radius:999px;border:0;background:rgba(0,0,0,.55);color:#fff;font-weight:900;cursor:pointer;z-index:2}
 .below-sb-ad{position:relative}
+
+.comm-lang-toggle{display:flex;gap:6px;margin:0 0 10px;align-items:center}
+.comm-lang-toggle span{font-size:11px;font-weight:800;opacity:.75;margin-right:4px}
+.comm-lang-toggle button{
+  border:1px solid rgba(148,163,184,.35);background:rgba(15,23,42,.5);color:#e2e8f0;
+  font-size:12px;font-weight:800;padding:6px 12px;border-radius:999px;cursor:pointer
+}
+.comm-lang-toggle button.on{background:#2563eb;border-color:#3b82f6;color:#fff}
 </style>
 </head>
 <body class="theme-dark">
@@ -945,12 +953,12 @@ try{ if(window.speechSynthesis){ speechSynthesis.getVoices(); speechSynthesis.on
     }catch(e){ return null; }
   }
   var lastSpokenSig='';
-  function speakTts(d, ev){
+  function speakTts(d, ev, onEnd){
     try{
-      if(lsGet('cricket_tts_on','1')==='0') return;
-      if(lsGet('react_tts_on','1')==='0') return;
-      if(!window.speechSynthesis) return;
-      try{ if(window.__adSoundUntil && Date.now()<window.__adSoundUntil) return; }catch(eAd){}
+      if(lsGet('cricket_tts_on','1')==='0'){ if(onEnd) onEnd(); return; }
+      if(lsGet('react_tts_on','1')==='0'){ if(onEnd) onEnd(); return; }
+      if(!window.speechSynthesis){ if(onEnd) onEnd(); return; }
+      // Allow full boundary/wicket commentary even if an ad is about to play
       var langNow = lsGet('react_comm_lang','en') || 'en';
       var line = '';
       if(langNow==='hi'){
@@ -965,12 +973,12 @@ try{ if(window.speechSynthesis){ speechSynthesis.getVoices(); speechSynthesis.on
       } else {
         try{ line = excitingLine(d, ev) || ''; }catch(e3){}
       }
-      if(!line) return;
+      if(!line){ if(onEnd) onEnd(); return; }
       var sig=(d&&d.balls||'')+'|'+(d&&d.runs||'')+'|'+(d&&d.wickets||'')+'|'+(ev&&ev.kind)+'|'+langNow+'|'+String(line).slice(0,40);
-      if(typeof lastSpokenSig!=='undefined' && sig===lastSpokenSig) return;
+      if(typeof lastSpokenSig!=='undefined' && sig===lastSpokenSig){ if(onEnd) onEnd(); return; }
       try{ lastSpokenSig = sig; }catch(eS){}
-      speakMale(line, langNow);
-    }catch(e){ console.log('tts', e); }
+      speakMale(line, langNow, onEnd);
+    }catch(e){ console.log('tts', e); try{ if(onEnd) onEnd(); }catch(e2){} }
   }
 
   function getVoicesSafe(){
@@ -1046,10 +1054,10 @@ try{ if(window.speechSynthesis){ speechSynthesis.getVoices(); speechSynthesis.on
     return text;
   }
 
-  function speakMale(text, forceLang){
-    if(!window.speechSynthesis)return;
+  function speakMale(text, forceLang, onEnd){
+    if(!window.speechSynthesis){ if(onEnd) onEnd(); return; }
     text=String(text||'').split('*').join(' ').trim();
-    if(!text)return;
+    if(!text){ if(onEnd) onEnd(); return; }
     try{speechSynthesis.cancel();}catch(e){}
     var lang = forceLang || lsGet('react_comm_lang','en') || 'en';
     if(lang!=='hi' && /[\u0900-\u097F]/.test(text)) lang='hi';
@@ -1057,13 +1065,19 @@ try{ if(window.speechSynthesis){ speechSynthesis.getVoices(); speechSynthesis.on
     var u=new SpeechSynthesisUtterance(text);
     u.lang = lang==='hi' ? 'hi-IN' : 'en-IN';
     if(lang==='hi'){ u.rate = 0.92; u.pitch = 1.0; }
+    var done=false;
+    function finish(){ if(done) return; done=true; try{ if(onEnd) onEnd(); }catch(eF){} }
+    u.onend = finish;
+    u.onerror = finish;
     function go(){
       var v = getPreferredVoice(lang);
       if(v) u.voice = v;
       var g = lsGet('react_voice_gender','male');
       if(lang==='hi'){ u.rate = 0.95; u.pitch = 1.05; }
       else { u.rate = g==='female' ? 1.05 : 1.08; u.pitch = g==='female' ? 1.15 : 0.9; }
-      speechSynthesis.speak(u);
+      try{ speechSynthesis.speak(u); }catch(eS){ finish(); }
+      // safety if onend never fires
+      setTimeout(finish, Math.min(20000, 1200 + String(text).length * 80));
     }
     if(getVoicesSafe().length) go();
     else {
@@ -1756,6 +1770,19 @@ function excitingHindi(d, ev){
       }
     },[]);
     var _tts=useState(function(){return lsGet('cricket_tts_on','1')!=='0';}),ttsOn=_tts[0],setTtsOn=_tts[1];
+    // panel always: keep image ad visible under tabs
+    useEffect(function(){
+      try{
+        var fa=(data&&data.floatAd)||{};
+        if(!fa||!fa.enabled) return;
+        if((fa.displayMode||'')!=='panel' && (fa.displayMode||'')!=='panel_always') return;
+        var img=(fa.image||'').trim();
+        if(!img) return;
+        if(adShow && adShow.image===img && (adShow.displayMode==='panel'||adShow.displayMode==='panel_always')) return;
+        setAdShow({image:img, video:'', youtube:'', text:fa.text||'', link:fa.link||'', shape:fa.shape||'rect', size:fa.size||'m', displayMode:'panel', mediaMode:'image'});
+      }catch(e){}
+    },[data&&data.floatAd&&data.floatAd.image, data&&data.floatAd&&data.floatAd.displayMode, data&&data.floatAd&&data.floatAd.enabled]);
+
     useEffect(function(){
       try{ window.__viewerPing && window.__viewerPing(welcomeName||viewerDisplayName()); }catch(e){}
       var t=setInterval(function(){ try{ window.__viewerPing && window.__viewerPing(); }catch(e){} }, 15000);
@@ -1973,29 +2000,55 @@ function excitingHindi(d, ev){
         var img=(a.image||fa.image||'').trim();
         var text=(a.text||fa.text||'').trim();
         var link=(a.link||fa.link||'').trim();
+        var dm = (displayMode || fa.displayMode || 'event');
         var ytEmbed='';
         var durMs=Math.max(3000, Math.min(30000, (Number(fa.duration)||6)*1000));
-        try{ window.__adSoundUntil=Date.now()+durMs; if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e0){}
 
-        // Prefer video URL from this ad item
-        if(vid || soundSrc){
+        function runAdSound(){
+          try{
+            window.__adSoundUntil=Date.now()+durMs;
+            playAdSound();
+          }catch(e){}
+        }
+        function afterCommentaryThenSound(){
+          // Wait until TTS finishes so full boundary line is heard first
+          var tries=0;
+          function check(){
+            tries++;
+            var speaking=false;
+            try{ speaking=!!(window.speechSynthesis && speechSynthesis.speaking); }catch(e){}
+            if(!speaking || tries>40){ runAdSound(); return; }
+            setTimeout(check, 250);
+          }
+          setTimeout(check, 300);
+        }
+
+        // Video always floating — may pause commentary
+        if(vid || (mediaMode==='video' && soundSrc)){
+          try{ window.__adSoundUntil=Date.now()+durMs; if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e0){}
           ytEmbed=ytEmbedUrl(vid||soundSrc,{mute:0,forceSound:true}) || ytEmbedUrl(soundSrc,{mute:0,forceSound:true});
+          if(ytEmbed){
+            setAdShow({image:'', video:'', youtube:ytEmbed, text:text, link:link, shape:fa.shape||'rect', size:fa.size||'m', displayMode:'event', mediaMode:'video'});
+            return;
+          }
+          if(vid && /^https?:\/\//i.test(vid) && /\.(mp4|webm|ogg)(\?|$)/i.test(vid)){
+            setAdShow({image:'', video:vid, youtube:'', text:text, link:link, shape:fa.shape||'rect', size:fa.size||'m', displayMode:'event', mediaMode:'video'});
+            return;
+          }
         }
-        if(ytEmbed){
-          setAdShow({image:'', video:'', youtube:ytEmbed, text:text, link:link, shape:fa.shape||'rect', size:fa.size||'m', displayMode:'event', mediaMode:'video'});
-          return;
-        }
-        if(vid && /^https?:\/\//i.test(vid) && /\.(mp4|webm|ogg)(\?|$)/i.test(vid)){
-          setAdShow({image:'', video:vid, youtube:'', text:text, link:link, shape:fa.shape||'rect', size:fa.size||'m', displayMode:'event', mediaMode:'video'});
-          return;
-        }
-        // Image floating only (no panel / no strip above tabs)
+        // Image — show while commentary continues; play sound AFTER commentary
         if(img || text){
-          setAdShow({image:img, video:'', youtube:'', text:text, link:link, shape:fa.shape||'rect', size:fa.size||'m', displayMode:'event', mediaMode:'image'});
-          if(soundSrc) playAdSound();
+          var isPanel = (dm==='panel' || dm==='panel_event' || dm==='panel_always');
+          setAdShow({
+            image:img, video:'', youtube:'', text:text, link:link,
+            shape:fa.shape||'rect', size:fa.size||'m',
+            displayMode: isPanel ? (dm==='panel'?'panel':'panel_event') : 'event',
+            mediaMode:'image'
+          });
+          if(soundSrc) afterCommentaryThenSound();
           return;
         }
-        if(soundSrc) playAdSound();
+        if(soundSrc) afterCommentaryThenSound();
       }
       var tm=setTimeout(function(){
         if(mode==='sequence'){
@@ -2003,14 +2056,14 @@ function excitingHindi(d, ev){
           function next(){
             if(i>=ads.length){ setAdShow(null); return; }
             var a=ads[i++];
-            showOne(a);
-            setTimeout(function(){ setAdShow(null); setTimeout(next, 400); }, dur);
+            setTimeout(function(){ showOne(a); }, 600);
+            setTimeout(function(){ setAdShow(null); setTimeout(next, 400); }, dur+600);
           }
           next();
         } else {
           var a = mode==='random' ? ads[Math.floor(Math.random()*ads.length)] : ads[0];
-          showOne(a);
-          setTimeout(function(){ setAdShow(null); }, dur);
+          setTimeout(function(){ showOne(a); }, 600);
+          setTimeout(function(){ setAdShow(null); }, dur+600);
         }
       }, 800);
       return function(){ clearTimeout(tm); };
@@ -2282,7 +2335,7 @@ function excitingHindi(d, ev){
         )
       ):null,
 
-      (adShow&&(adShow.displayMode!=='panel'&&adShow.displayMode!=='panel_event'))?h('div',{className:'ad-overlay show'+((((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='xl'||((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='full')?' panel-fill':''),onClick:function(){setAdShow(null);}},
+      (adShow&&adShow.displayMode!=='panel'&&adShow.displayMode!=='panel_event'&&adShow.displayMode!=='panel_always')?h('div',{className:'ad-overlay show'+((((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='xl'||((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='full')?' panel-fill':''),onClick:function(){setAdShow(null);}},
           h('div',{className:'ad-card ad-box size-'+((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'m'),onClick:function(e){e.stopPropagation();}},
             h('button',{className:'ad-close',type:'button',onClick:function(){setAdShow(null);}},'\u00d7'),
             (function(){
@@ -2561,6 +2614,25 @@ function excitingHindi(d, ev){
         ):null
       ),
 
+      /* panel ad below scoreboard — all tabs (Live, Commentary, …) */
+      (function(){
+        if(!adShow) return null;
+        var dm=adShow.displayMode||'';
+        var img=(adShow.image||'').trim();
+        if(!img) return null;
+        if(dm!=='panel' && dm!=='panel_event' && dm!=='panel_always') return null;
+        var txt=adShow.text||'';
+        var link=adShow.link||'';
+        return h('div',{
+          className:'below-sb-ad',
+          onClick:function(){ if(link) try{ window.open(link,'_blank'); }catch(e){} }
+        },
+          h('button',{type:'button',className:'ad-close-mini',onClick:function(e){ e.stopPropagation(); setAdShow(null); }},'×'),
+          h('img',{src:img,alt:txt||'Ad'}),
+          txt?h('div',{className:'ad-txt'},txt):null
+        );
+      })(),
+
       h('div',{className:'tabs'},
         tabs.map(function(pair){
           return h('button',{key:pair[0],className:tab===pair[0]?'on':'',onClick:function(){setTab(pair[0]);}},pair[1]);
@@ -2662,6 +2734,19 @@ function excitingHindi(d, ev){
         ):null,
 
         tab==='commentary'?h('div',{className:'card'},
+          h('div',{className:'comm-lang-toggle'},
+            h('span',null,'Commentary'),
+            h('button',{
+              type:'button',
+              className:commLang==='en'?'on':'',
+              onClick:function(){ try{ lsSet('react_comm_lang','en'); }catch(e){}; setCommLang('en'); }
+            },'English'),
+            h('button',{
+              type:'button',
+              className:commLang==='hi'?'on':'',
+              onClick:function(){ try{ lsSet('react_comm_lang','hi'); }catch(e){}; setCommLang('hi'); }
+            },'हिंदी')
+          ),
           h('div',{className:'comm-sticky'},
             h('div',{className:'comm-mini-row'},
               h('div',{className:'comm-mini'},
