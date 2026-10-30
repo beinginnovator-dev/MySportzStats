@@ -2740,7 +2740,7 @@ body[data-theme="dark"] #cup-sub-create h3 {
                           <div class="mt-2 space-y-2">
                         <label class="text-[10px] theme-muted font-semibold block">Direct image URL (png/jpg — not gallery page)</label>
                         <input type="url" id="ad-float-image" placeholder="https://.../banner.png" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
-                        <label class="text-[10px] theme-muted font-semibold block mt-2">Ad video URL (optional, mp4/webm)</label>
+                        <label class="text-[10px] theme-muted font-semibold block mt-2">Ad video URL (optional direct mp4/webm — or use YouTube link above)</label>
                         <input id="ad-float-video" type="url" placeholder="https://…/ad.mp4" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()" oninput="saveAdSettings()"/>
                         <div class="text-[10px] theme-muted">If set, video plays in the panel (cover fit). Image used as fallback.</div>
                         <input type="text" id="ad-float-text" placeholder="Ad headline / sponsor" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
@@ -2752,8 +2752,13 @@ body[data-theme="dark"] #cup-sub-create h3 {
                           <summary class="text-xs font-black theme-text cursor-pointer">3 · Sound & duration</summary>
                           <div class="mt-2 space-y-2">
                         <label class="text-[10px] theme-muted font-semibold block">Ad sound URL (plays with ad on events)</label>
-                        <input id="ad-float-sound" type="url" placeholder="https://…/ad-jingle.mp3" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()" oninput="saveAdSettings()"/>
-                        <div class="text-[10px] theme-muted">Optional audio played when the ad appears.</div>
+                        <input id="ad-float-sound" type="url" placeholder="https://youtube.com/watch?v=… or youtu.be/…" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()" oninput="saveAdSettings()"/>
+                        <div class="text-[10px] theme-muted">YouTube link or direct media URL.</div>
+                        <label class="text-[10px] theme-muted font-semibold block mt-2">Play mode</label>
+                        <select id="ad-float-media-mode" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
+                          <option value="sound">Sound only</option>
+                          <option value="video">Video with sound</option>
+                        </select>
                         <label class="text-[10px] theme-muted font-semibold block mt-2">Ad duration (seconds)</label>
                         <input id="ad-float-duration" type="number" min="2" max="30" value="6" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
                         
@@ -17270,6 +17275,8 @@ body[data-theme="dark"] button.cup-subtab.is-active {
       size: (document.getElementById('ad-float-size')||{}).value || 'm',
       displayMode: (document.getElementById('ad-float-display-mode')||{}).value || 'event',
       sound: ((document.getElementById('ad-float-sound')||{}).value || '').trim(),
+      mediaMode: (document.getElementById('ad-float-media-mode')||{}).value || 'sound',
+      mediaMode: (document.getElementById('ad-float-media-mode')||{}).value || 'sound',
       duration: (function(){ var el=document.getElementById('ad-float-duration'); var n=el?parseInt(el.value,10):6; return (isNaN(n)||n<2)?6:Math.min(30,n); })()
     };
     try { localStorage.setItem(AD_KEY, JSON.stringify(o)); } catch(e){}
@@ -17409,6 +17416,7 @@ body[data-theme="dark"] button.cup-subtab.is-active {
       var tx = document.getElementById('ad-float-text'); if (tx) tx.value = o.text || '';
       var lk = document.getElementById('ad-float-link'); if (lk) lk.value = o.link || '';
       var snd = document.getElementById('ad-float-sound'); if (snd) snd.value = o.sound || '';
+      var mm = document.getElementById('ad-float-media-mode'); if (mm) mm.value = o.mediaMode || o.media_mode || 'sound';
       var dur = document.getElementById('ad-float-duration'); if (dur && o.duration) dur.value = o.duration;
       var pm = document.getElementById('ad-float-playmode'); if (pm && o.playMode) pm.value = o.playMode;
       var sz = document.getElementById('ad-float-size'); if (sz && o.size) sz.value = o.size;
