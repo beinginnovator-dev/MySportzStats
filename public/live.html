@@ -944,10 +944,15 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     wicket: 'विकेट'
   };
   function ciHiLine(bw, st, eventHi, extra){
-    // Cricinfo: "गेंदबाज, बल्लेबाज को, इवेंट"
-    var a = (bw||'गेंदबाज').trim();
-    var b = (st||'बल्लेबाज').trim();
-    var line = a + ', ' + b + ' को, ' + eventHi;
+    var a = (bw||'गेंदबाज़').trim();
+    var b = (st||'बल्लेबाज़').trim();
+    var ev = String(eventHi||'').trim();
+    var line = a + ' की गेंद पर ' + b + ' ने ' + ev;
+    if(/^(वाइड|1 वाइड|नो बॉल|1 नो बॉल)/.test(ev)) line = a + ' की गेंद — ' + ev;
+    else if(/आउट|विकेट|बोल्ड|कैच|एलबीडब्ल्यू|स्टंप/.test(ev)) line = a + ' की गेंद पर ' + b + ' ' + ev;
+    else if(/कोई रन नहीं/.test(ev)) line = a + ' की सटीक गेंद पर ' + b + ' से कोई रन नहीं';
+    else if(/^(1|2|3)\s*रन$/.test(ev)) line = a + ' की गेंद पर ' + b + ' ने ' + ev + ' जोड़े';
+    else if(/चार रन|छह रन|चौका|छक्का/.test(ev)) line = a + ' की गेंद पर ' + b + ' ने ' + ev + ' बनाए';
     if(extra) line += ' — ' + extra;
     return line;
   }
@@ -966,16 +971,21 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     var m=line.match(/^([A-Za-z][A-Za-z\s.\']+?)\s+to\s+([A-Za-z][A-Za-z\s.\']+?),?\s*(\d+)(?:st|nd|rd|th)?\s*ball\s*[—\-:]\s*(.*)$/i);
     if(m){
       var bw=m[1].trim(), st=m[2].trim(), rest=m[4]||'';
-      if(/\bSIX\b|\b6\b/i.test(rest)) return ciHiLine(bw,st,'छह रन', hiDetail('six',bw,st));
-      if(/\bFOUR\b|\b4\b/i.test(rest)) return ciHiLine(bw,st,'चार रन', hiDetail('four',bw,st));
-      if(/WICKET|OUT|bowled|caught|lbw|stumped|run out/i.test(rest)){
+      if(/\bSIX\b|\b6\s*runs?\b/i.test(rest)) return ciHiLine(bw,st,'छह रन', hiDetail('six',bw,st));
+      if(/\bFOUR\b|\b4\s*runs?\b/i.test(rest)) return ciHiLine(bw,st,'चार रन', hiDetail('four',bw,st));
+      var isWicket = /\bWICKET\b/i.test(rest) || (/\bOUT\b/i.test(rest) && !/out of\b/i.test(rest))
+        || /\bbowled\b/i.test(rest) || /\bcaught\b/i.test(rest) || /\blbw\b/i.test(rest)
+        || /\bstumped\b/i.test(rest) || /\brun\s*out\b/i.test(rest);
+      if(/\b([1-3])\s*runs?\b/i.test(rest) || /\bsingle\b|\bdouble\b|\btriple\b/i.test(rest)) isWicket=false;
+      if(/\bFOUR\b|\bSIX\b/i.test(rest)) isWicket=false;
+      if(isWicket){
         var how='आउट';
-        if(/bowled/i.test(rest)) how='बोल्ड आउट';
+        if(/\bbowled\b/i.test(rest)) how='बोल्ड आउट';
         else if(/catch|caught/i.test(rest)) how='कैच आउट';
-        else if(/lbw/i.test(rest)) how='एलबीडब्ल्यू';
+        else if(/\blbw\b/i.test(rest)) how='एलबीडब्ल्यू';
         else if(/stump/i.test(rest)) how='स्टंपड';
         else if(/run\s*out/i.test(rest)) how='रन आउट';
-        return ciHiLine(bw,st,how,'विकेट!');
+        return ciHiLine(bw,st,how, hiDetail('wicket',bw,st));
       }
       if(/wide/i.test(rest)) return ciHiLine(bw,st,'1 वाइड');
       if(/no[-\s]?ball/i.test(rest)) return ciHiLine(bw,st,'1 नो बॉल');
@@ -1104,7 +1114,7 @@ function excitingHindi(d, ev){
     // detect event stamp
     if(/\bSIX\b/i.test(rest)) stamp='6';
     else if(/\bFOUR\b/i.test(rest)) stamp='4';
-    else if(/\bWICKET\b|\bOUT\b|bowled|caught|lbw|stumped|run out/i.test(rest)) stamp='W';
+    else if(/\bWICKET\b/i.test(rest)||(/\bOUT\b/i.test(rest)&&!/out of\b/i.test(rest))||/\bbowled\b|\bcaught\b|\blbw\b|\bstumped\b|\brun\s*out\b/i.test(rest)) stamp='W';
     else if(/\bWIDE\b/i.test(rest)) stamp='WD';
     else if(/no[-\s]?ball/i.test(rest)) stamp='NB';
     else if(/\bdot\b/i.test(rest)) stamp='0';
@@ -1118,8 +1128,12 @@ function excitingHindi(d, ev){
     return {over:over, text:rest, stamp:stamp};
   }
   function renderCommLine(line, key, langOpt){
-    var lang=langOpt||lsGet('react_comm_lang','en'); if(lang==='hi') line=toHindiComm(line);
+    var lang=langOpt||lsGet('react_comm_lang','en');
+    var f0=formatCommLine(line);
+    if(lang==='hi') line=toHindiComm(line);
     var f=formatCommLine(line);
+    if(f0.stamp && !f.stamp) f.stamp=f0.stamp;
+    if(f0.over && !f.over) f.over=f0.over;
     var parts=String(f.text).split(/(\|\|\|HI[BW]\|\|\|.*?\|\|\|\/HI[BW]\|\|\|)/);
     var kids=[];
     if(f.stamp) kids.push(h('span',{className:'comm-stamp '+stampClass(f.stamp)}, f.stamp));
@@ -1298,9 +1312,9 @@ function excitingHindi(d, ev){
   function MiniBowlStats(props){
     var d=props.d||{};
     return h('table',null,
-      h('thead',null,h('tr',null,h('th',null,'O'),h('th',null,'R'),h('th',null,'W'),h('th',null,'Econ'))),
+      h('thead',null,h('tr',null,h('th',null,'O'),h('th',null,'R'),h('th',null,'W'),h('th',null,'Dots'),h('th',null,'Econ'))),
       h('tbody',null,h('tr',null,
-        h('td',null,oversFromBalls(d.balls)),h('td',null,n(d.runs)),h('td',null,n(d.wickets)),h('td',null,econ(d.runs,d.balls))
+        h('td',null,oversFromBalls(d.balls)),h('td',null,n(d.runs)),h('td',null,n(d.wickets)),h('td',null,n(d.dots)),h('td',null,econ(d.runs,d.balls))
       ))
     );
   }
@@ -1836,7 +1850,7 @@ function excitingHindi(d, ev){
       fours:data&&(data.nonStrikerFours!=null?data.nonStrikerFours:data.nonStriker4s),
       sixes:data&&(data.nonStrikerSixes!=null?data.nonStrikerSixes:data.nonStriker6s)
     };
-    var bowlStats={runs:data&&data.bowlerRuns,balls:data&&data.bowlerBalls,wickets:data&&data.bowlerWickets};
+    var bowlStats={runs:data&&data.bowlerRuns,balls:data&&data.bowlerBalls,wickets:data&&data.bowlerWickets,dots:data&&(data.bowlerDots!=null?data.bowlerDots:data.bowlDots)};
 
     return h('div',{className:'app'},
       welcome?h('div',{className:'welcome'},
