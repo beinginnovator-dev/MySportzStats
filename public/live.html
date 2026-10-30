@@ -494,6 +494,7 @@ body.theme-dark .broadcast .tname{text-shadow:0 1px 2px rgba(0,0,0,.45)}
   animation:panelAdIn .3s ease-out;
   border-radius:inherit;overflow:hidden;
 }
+.bb-ad-cover iframe.panel-ad-media{position:absolute;inset:0;width:100%;height:100%;border:0}
 .bb-ad-cover .panel-ad-media{
   position:absolute;inset:0;width:100%;height:100%;
   object-fit:cover;object-position:center center;display:block;border:0;
@@ -627,9 +628,13 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     var id=parseYouTubeId(url);
     if(!id) return '';
     opts=opts||{};
-    var q='autoplay=1&rel=0&playsinline=1&mute='+(opts.mute?1:0);
+    // mute=1 required by many browsers for autoplay; video mode still shows player
+    var mute = opts.mute!=null ? (opts.mute?1:0) : (opts.soundOnly?0:1);
+    if(opts.forceSound) mute=0;
+    var q='autoplay=1&rel=0&playsinline=1&modestbranding=1&enablejsapi=1&mute='+mute;
     if(opts.soundOnly) q+='&controls=0';
-    return 'https://www.youtube.com/embed/'+id+'?'+q;
+    else q+='&controls=1';
+    return 'https://www.youtube-nocookie.com/embed/'+id+'?'+q;
   }
 
   window.__viewerPing = function(forceName){
@@ -892,6 +897,7 @@ try{ if(window.speechSynthesis){ speechSynthesis.getVoices(); speechSynthesis.on
       if(lsGet('cricket_tts_on','1')==='0') return;
       if(lsGet('react_tts_on','1')==='0') return;
       if(!window.speechSynthesis) return;
+      try{ if(window.__adSoundUntil && Date.now()<window.__adSoundUntil) return; }catch(eAd){}
       var langNow = lsGet('react_comm_lang','en') || 'en';
       var line = '';
       if(langNow==='hi'){
@@ -1848,11 +1854,12 @@ function excitingHindi(d, ev){
           if(yt){
             // YouTube: hidden iframe for sound-only, or let video UI handle video mode
             if(mode==='sound'){
+              try{ window.__adSoundUntil=Date.now()+Math.max(3000,Math.min(30000,(Number(fa.duration)||6)*1000)); if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(eM){}
               var ifr=document.createElement('iframe');
               ifr.id='yt-ad-audio';
-              ifr.src=ytEmbedUrl(src,{mute:false,soundOnly:true});
+              ifr.src=ytEmbedUrl(src,{mute:0,forceSound:true,soundOnly:true});
               ifr.allow='autoplay; encrypted-media';
-              ifr.style.cssText='position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-100px;top:-100px;border:0;';
+              ifr.style.cssText='position:fixed;width:180px;height:100px;opacity:0.02;pointer-events:none;left:0;top:0;border:0;z-index:0;';
               document.body.appendChild(ifr);
               setTimeout(function(){ try{ var x=document.getElementById('yt-ad-audio'); if(x) x.parentNode.removeChild(x); }catch(e2){} }, Math.max(3000, Math.min(30000, Number(fa.duration)||6)*1000));
             }
@@ -1869,25 +1876,42 @@ function excitingHindi(d, ev){
       function showOne(a){
         var mediaMode=(fa.mediaMode||fa.media_mode||'sound');
         var soundSrc=(fa.sound||fa.soundUrl||'').trim();
-        var vid=a.video||fa.video||'';
-        var img=a.image||fa.image||'';
+        var vid=(a.video||fa.video||'').trim();
+        var img=(a.image||fa.image||'').trim();
+        var text=(a.text||fa.text||'').trim();
         var ytEmbed='';
+        var durMs=Math.max(3000, Math.min(30000, (Number(fa.duration)||6)*1000));
+        // pause commentary while ad media plays
+        try{ window.__adSoundUntil=Date.now()+durMs; if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e0){}
         if(mediaMode==='video'){
-          ytEmbed=ytEmbedUrl(soundSrc,{mute:false}) || ytEmbedUrl(vid,{mute:false});
-          if(ytEmbed) vid=''; // use iframe instead of video tag
+          ytEmbed=ytEmbedUrl(soundSrc,{mute:0,forceSound:true}) || ytEmbedUrl(vid,{mute:0,forceSound:true});
+          if(ytEmbed) vid='';
+        }
+        var hasVisual=!!(img || vid || ytEmbed || (mediaMode==='video' && soundSrc));
+        // Sound only + no image/video → play audio only, no blank popup
+        if(mediaMode==='sound' && !img && !vid && !ytEmbed){
+          playAdSound();
+          return;
+        }
+        if(mediaMode==='sound' && !hasVisual){
+          playAdSound();
+          return;
         }
         setAdShow({
           image:img,
           video:vid,
           youtube: ytEmbed,
-          text:a.text||fa.text||'',
+          text:text,
           link:a.link||fa.link||'',
           shape:fa.shape||'rect',
           size:fa.size||'m',
           displayMode: displayMode || fa.displayMode || 'event',
           mediaMode: mediaMode
         });
-        playAdSound();
+        // sound-only with image: still play sound; video mode: iframe has sound
+        if(mediaMode==='sound') playAdSound();
+        else if(ytEmbed){ /* youtube iframe autoplays */ }
+        else playAdSound();
       }
       var tm=setTimeout(function(){
         if(mode==='sequence'){
@@ -1957,7 +1981,7 @@ function excitingHindi(d, ev){
             var co=String(data.overs||'');
             if(po && co && po!==co && /\.0$/.test(co)) overEnd=true;
           }
-          if(overEnd && data){
+          if(false && overEnd && data){ // v265: no scorecard on scoreboard after over
             var lines2=teamLines(data);
             var d2s=dualTeamScores(data);
             // Current batting team scorecard only (batters + opposition bowlers)
@@ -1986,7 +2010,7 @@ function excitingHindi(d, ev){
             });
             var scoreKey=String(d2s.aR)+'/'+String(d2s.aW)+'|'+String(d2s.bR)+'/'+String(d2s.bW);
             overCardScoreRef.current=scoreKey;
-            setOverCard({
+            if(false)setOverCard({
               until:Date.now()+6000,
               mode:'battingSc',
               batters:batters,
@@ -2177,7 +2201,7 @@ function excitingHindi(d, ev){
       (adShow&&(adShow.displayMode!=='panel'&&adShow.displayMode!=='panel_event'))?h('div',{className:'ad-overlay show'+((((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='xl'||((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='full')?' panel-fill':''),onClick:function(){setAdShow(null);}},
           h('div',{className:'ad-card ad-box size-'+((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'m'),onClick:function(e){e.stopPropagation();}},
             h('button',{className:'ad-close',type:'button',onClick:function(){setAdShow(null);}},'\u00d7'),
-            adShow.youtube?h('iframe',{src:adShow.youtube,allow:'autoplay; encrypted-media; picture-in-picture',frameBorder:'0',style:{width:'100%',minHeight:'180px',border:0}}):(adShow.video?h('video',{src:adShow.video,autoPlay:true,playsInline:true,muted:false,controls:false,style:{width:'100%'}}):null),
+            adShow.youtube?h('iframe',{src:adShow.youtube,allow:'autoplay; encrypted-media; picture-in-picture; fullscreen',frameBorder:'0',style:{width:'100%',minHeight:'220px',border:0},title:'Ad'}):(adShow.video?h('video',{src:adShow.video,autoPlay:true,playsInline:true,muted:false,controls:false,style:{width:'100%'}}):null),
             (!adShow.youtube&&!adShow.video&&adShow.image)?h('img',{src:adShow.image,alt:'Ad'}):null,
             adShow.text?h('div',{className:'ad-text'},adShow.text):null
           )
@@ -2484,7 +2508,7 @@ function excitingHindi(d, ev){
                 var yt=(adShow.youtube||'').trim();
                 var vid=(adShow.video||'').trim();
                 var img=(adShow.image||'').trim();
-                if(yt) return h('iframe',{className:'panel-ad-media',src:yt,allow:'autoplay; encrypted-media; picture-in-picture',frameBorder:'0',style:{border:0}});
+                if(yt) return h('iframe',{className:'panel-ad-media',src:yt,allow:'autoplay; encrypted-media; picture-in-picture; fullscreen',frameBorder:'0',style:{border:0,width:'100%',height:'100%',minHeight:'200px'},title:'Ad'});
                 if(vid && /^https?:\/\//i.test(vid)) return h('video',{className:'panel-ad-media',src:vid,autoPlay:true,muted:false,playsInline:true,loop:true});
                 if(img) return h('img',{className:'panel-ad-media',src:img,alt:adShow.text||'Ad'});
                 return null;
