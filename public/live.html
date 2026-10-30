@@ -484,6 +484,25 @@ body.theme-dark .broadcast .tname{text-shadow:0 1px 2px rgba(0,0,0,.45)}
 .tour-card .badge.up{background:#065f46;color:#a7f3d0}
 .tour-card .badge.today{background:#1e3a8a;color:#bfdbfe}
 .tour-card .badge.live{background:#7f1d1d;color:#fecaca}
+
+/* panel-ad-cover-v250 */
+.panel-wrap{position:relative;min-height:200px}
+.panel-ad-cover{
+  position:absolute;inset:0;z-index:25;
+  background:#0b1220 center/cover no-repeat;
+  display:flex;align-items:flex-end;justify-content:center;
+  animation:panelAdIn .35s ease-out;
+  border-radius:12px;overflow:hidden;
+}
+.panel-ad-cover .panel-ad-caption{
+  width:100%;padding:12px 14px;background:linear-gradient(transparent,rgba(0,0,0,.85));
+  color:#fff;font-weight:800;font-size:14px;text-align:center;
+}
+.panel-ad-cover .panel-ad-close{
+  position:absolute;top:8px;right:8px;border:0;border-radius:999px;
+  background:rgba(0,0,0,.55);color:#fff;font-weight:800;padding:6px 10px;cursor:pointer;z-index:2;
+}
+@keyframes panelAdIn{from{opacity:0}to{opacity:1}}
 </style>
 </head>
 <body class="theme-dark">
@@ -1553,22 +1572,47 @@ function excitingHindi(d, ev){
       if(!ads.length && (fa.image||fa.text)) ads=[{image:fa.image||'',text:fa.text||'',link:fa.link||''}];
       if(!ads.length) return;
       var mode=fa.playMode||'trigger';
+      var displayMode=fa.displayMode||'event';
+      var dur=Math.max(2, Math.min(30, Number(fa.duration)||6)) * 1000;
+      function playAdSound(){
+        try{
+          var src=(fa.sound||fa.soundUrl||'').trim();
+          if(!src||!/^https?:\/\//i.test(src)) return;
+          if(window.__adAudio){ try{ window.__adAudio.pause(); }catch(e0){} }
+          var a=new Audio(src);
+          a.volume=0.85;
+          window.__adAudio=a;
+          var p=a.play();
+          if(p&&p.catch) p.catch(function(){});
+        }catch(e){}
+      }
+      function showOne(a){
+        setAdShow({
+          image:a.image||'',
+          text:a.text||'',
+          link:a.link||fa.link||'',
+          shape:fa.shape||'rect',
+          size:fa.size||'m',
+          displayMode:displayMode
+        });
+        playAdSound();
+      }
       var tm=setTimeout(function(){
         if(mode==='sequence'){
           var i=0;
           function next(){
             if(i>=ads.length){ setAdShow(null); return; }
             var a=ads[i++];
-            setAdShow({image:a.image||'',text:a.text||'',link:a.link||'',shape:fa.shape||'rect',size:fa.size||'m'});
-            setTimeout(function(){ setAdShow(null); setTimeout(next, 400); }, 5000);
+            showOne(a);
+            setTimeout(function(){ setAdShow(null); setTimeout(next, 400); }, dur);
           }
           next();
         } else {
           var a = mode==='random' ? ads[Math.floor(Math.random()*ads.length)] : ads[0];
-          setAdShow({image:a.image||'',text:a.text||'',link:a.link||'',shape:fa.shape||'rect',size:fa.size||'m'});
-          setTimeout(function(){ setAdShow(null); }, 5000);
+          showOne(a);
+          setTimeout(function(){ setAdShow(null); }, dur);
         }
-      }, 3000);
+      }, 800);
       return function(){ clearTimeout(tm); };
     },[data&&data.floatAdEvent, data&&data.lastEvent, data&&data.balls, data&&data.runs, data&&data.wickets]);
 
@@ -1760,7 +1804,7 @@ function excitingHindi(d, ev){
         )
       ):null,
 
-      (adShow&&(!data||!data.floatAd||data.floatAd.displayMode!=='panel'))?h('div',{className:'ad-overlay show'+((((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='xl'||((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='full')?' panel-fill':''),onClick:function(){setAdShow(null);}},
+      (adShow&&(!data||!data.floatAd||data.floatAd.displayMode!=='panel'&&data.floatAd.displayMode!=='panel_event'))?h('div',{className:'ad-overlay show'+((((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='xl'||((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='full')?' panel-fill':''),onClick:function(){setAdShow(null);}},
           h('div',{className:'ad-card ad-box size-'+((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'m'),onClick:function(e){e.stopPropagation();}},
             h('button',{className:'ad-close',type:'button',onClick:function(){setAdShow(null);}},'\u00d7'),
             adShow.image?h('img',{src:adShow.image,alt:'Ad'}):null,
@@ -1955,7 +1999,17 @@ function excitingHindi(d, ev){
         })
       ),
 
-      h('div',{className:'panel'},
+      h('div',{className:'panel panel-wrap'+(adShow&&(adShow.displayMode==='panel_event'||adShow.displayMode==='panel')?' has-panel-ad':'')},
+        (adShow&&(adShow.displayMode==='panel_event'||adShow.displayMode==='panel'))?h('div',{
+          className:'panel-ad-cover',
+          style: adShow.image?{backgroundImage:'url('+adShow.image+')'}:null,
+          onClick:function(){ if(adShow.link) try{ window.open(adShow.link,'_blank'); }catch(e){} }
+        },
+          h('button',{type:'button',className:'panel-ad-close',onClick:function(e){ e.stopPropagation(); setAdShow(null); try{ if(window.__adAudio) window.__adAudio.pause(); }catch(e2){} }},'✕'),
+          (adShow.text)?h('div',{className:'panel-ad-caption'},adShow.text):null
+        ):null,
+        // hide tab content while panel_event ad is up
+        (adShow&&adShow.displayMode==='panel_event')?null:null,
         tab==='live'?h(React.Fragment,null,
           h('div',{className:'card'},
             h('h3',null,'Batsmen & bowler'),

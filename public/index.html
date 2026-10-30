@@ -2702,7 +2702,8 @@ body[data-theme="dark"] #cup-sub-create h3 {
                         </div>
                         <label class="text-[10px] theme-muted font-semibold block">Display mode</label>
                         <select id="ad-float-display-mode" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
-                            <option value="event">On events (over / boundary / wicket)</option>
+                            <option value="event">Floating ad on events</option>
+                            <option value="panel_event">Panel background on events (hide stats)</option>
                             <option value="panel">Always fill panel below scoreboard</option>
                         </select>
                         <select id="ad-float-trigger" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()">
@@ -2721,6 +2722,11 @@ body[data-theme="dark"] #cup-sub-create h3 {
                         <input type="url" id="ad-float-image" placeholder="https://.../banner.png" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
                         <input type="text" id="ad-float-text" placeholder="Ad headline / sponsor" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
                         <input type="url" id="ad-float-link" placeholder="https://click-through-link" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
+                        <label class="text-[10px] theme-muted font-semibold block mt-2">Ad sound URL (plays with ad on events)</label>
+                        <input id="ad-float-sound" type="url" placeholder="https://…/ad-jingle.mp3" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()" oninput="saveAdSettings()"/>
+                        <div class="text-[10px] theme-muted">Optional audio played when the ad appears.</div>
+                        <label class="text-[10px] theme-muted font-semibold block mt-2">Ad duration (seconds)</label>
+                        <input id="ad-float-duration" type="number" min="2" max="30" value="6" class="w-full border theme-border theme-card theme-text p-2 rounded text-sm" onchange="saveAdSettings()"/>
                         
                         
                         
@@ -17227,7 +17233,12 @@ body[data-theme="dark"] button.cup-subtab.is-active {
       image: ((document.getElementById('ad-float-image')||{}).value || '').trim(),
       text: ((document.getElementById('ad-float-text')||{}).value || '').trim(),
       ads: (function(){ try{ var ta=document.getElementById('ad-float-multi'); if(!ta) return []; return String(ta.value||'').split(/\n/).map(function(line){ line=line.trim(); if(!line)return null; var p=line.split('|'); return { image:(p[0]||'').trim(), text:(p[1]||p[0]||'').trim() }; }).filter(Boolean); }catch(e){ return []; } })(),
-      link: ((document.getElementById('ad-float-link')||{}).value || '').trim()
+      link: ((document.getElementById('ad-float-link')||{}).value || '').trim(),
+      playMode: (document.getElementById('ad-float-playmode')||{}).value || 'trigger',
+      size: (document.getElementById('ad-float-size')||{}).value || 'm',
+      displayMode: (document.getElementById('ad-float-display-mode')||{}).value || 'event',
+      sound: ((document.getElementById('ad-float-sound')||{}).value || '').trim(),
+      duration: (function(){ var el=document.getElementById('ad-float-duration'); var n=el?parseInt(el.value,10):6; return (isNaN(n)||n<2)?6:Math.min(30,n); })()
     };
     try { localStorage.setItem(AD_KEY, JSON.stringify(o)); } catch(e){}
     return o;
@@ -17364,6 +17375,11 @@ body[data-theme="dark"] button.cup-subtab.is-active {
       var im = document.getElementById('ad-float-image'); if (im) im.value = o.image || '';
       var tx = document.getElementById('ad-float-text'); if (tx) tx.value = o.text || '';
       var lk = document.getElementById('ad-float-link'); if (lk) lk.value = o.link || '';
+      var snd = document.getElementById('ad-float-sound'); if (snd) snd.value = o.sound || '';
+      var dur = document.getElementById('ad-float-duration'); if (dur && o.duration) dur.value = o.duration;
+      var pm = document.getElementById('ad-float-playmode'); if (pm && o.playMode) pm.value = o.playMode;
+      var sz = document.getElementById('ad-float-size'); if (sz && o.size) sz.value = o.size;
+      var dm = document.getElementById('ad-float-display-mode'); if (dm && o.displayMode) dm.value = o.displayMode;
     } catch(e){}
   }
   function maybeShowAd(eventType){
