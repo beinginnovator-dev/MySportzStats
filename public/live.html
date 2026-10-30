@@ -560,6 +560,11 @@ body.theme-light .comm-sticky,body.theme-iccpro .comm-sticky{background:linear-g
 }
 .sb-players .sp-row{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.95}
 .sb-players .sp-lab{font-size:8px;letter-spacing:.06em;opacity:.7;text-transform:uppercase;margin-bottom:2px}
+
+.ad-yt-clip{position:relative;overflow:hidden;border-radius:12px;background:#000;width:100%;aspect-ratio:9/16;max-height:min(62vh,420px);margin:0 auto}
+.ad-yt-clip.panel-yt{position:absolute;inset:0;aspect-ratio:auto;max-height:none;border-radius:0}
+.ad-yt-frame{position:absolute;border:0;pointer-events:none;width:140%;height:120%;left:50%;top:50%;transform:translate(-50%,-50%)}
+.ad-native-video{width:100%;border-radius:12px;display:block;background:#000;max-height:min(62vh,420px)}
 </style>
 </head>
 <body class="theme-dark">
@@ -628,13 +633,25 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
     var id=parseYouTubeId(url);
     if(!id) return '';
     opts=opts||{};
-    // mute=1 required by many browsers for autoplay; video mode still shows player
     var mute = opts.mute!=null ? (opts.mute?1:0) : (opts.soundOnly?0:1);
     if(opts.forceSound) mute=0;
-    var q='autoplay=1&rel=0&playsinline=1&modestbranding=1&enablejsapi=1&mute='+mute;
-    if(opts.soundOnly) q+='&controls=0';
-    else q+='&controls=1';
-    return 'https://www.youtube-nocookie.com/embed/'+id+'?'+q;
+    // Chrome-less embed (no Shorts UI chrome when using standard /embed/)
+    var q=[
+      'autoplay=1',
+      'mute='+mute,
+      'controls=0',
+      'disablekb=1',
+      'fs=0',
+      'modestbranding=1',
+      'rel=0',
+      'iv_load_policy=3',
+      'cc_load_policy=0',
+      'playsinline=1',
+      'enablejsapi=1',
+      'loop=1',
+      'playlist='+id
+    ].join('&');
+    return 'https://www.youtube.com/embed/'+id+'?'+q;
   }
 
   window.__viewerPing = function(forceName){
@@ -2201,7 +2218,15 @@ function excitingHindi(d, ev){
       (adShow&&(adShow.displayMode!=='panel'&&adShow.displayMode!=='panel_event'))?h('div',{className:'ad-overlay show'+((((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='xl'||((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='full')?' panel-fill':''),onClick:function(){setAdShow(null);}},
           h('div',{className:'ad-card ad-box size-'+((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'m'),onClick:function(e){e.stopPropagation();}},
             h('button',{className:'ad-close',type:'button',onClick:function(){setAdShow(null);}},'\u00d7'),
-            adShow.youtube?h('iframe',{src:adShow.youtube,allow:'autoplay; encrypted-media; picture-in-picture; fullscreen',frameBorder:'0',style:{width:'100%',minHeight:'220px',border:0},title:'Ad'}):(adShow.video?h('video',{src:adShow.video,autoPlay:true,playsInline:true,muted:false,controls:false,style:{width:'100%'}}):null),
+            adShow.youtube?h('div',{className:'ad-yt-clip'},
+              h('iframe',{
+                src:adShow.youtube,
+                allow:'autoplay; encrypted-media',
+                frameBorder:'0',
+                title:'Ad',
+                className:'ad-yt-frame'
+              })
+            ):(adShow.video?h('video',{src:adShow.video,autoPlay:true,playsInline:true,muted:false,controls:false,className:'ad-native-video'}):null),
             (!adShow.youtube&&!adShow.video&&adShow.image)?h('img',{src:adShow.image,alt:'Ad'}):null,
             adShow.text?h('div',{className:'ad-text'},adShow.text):null
           )
@@ -2508,7 +2533,7 @@ function excitingHindi(d, ev){
                 var yt=(adShow.youtube||'').trim();
                 var vid=(adShow.video||'').trim();
                 var img=(adShow.image||'').trim();
-                if(yt) return h('iframe',{className:'panel-ad-media',src:yt,allow:'autoplay; encrypted-media; picture-in-picture; fullscreen',frameBorder:'0',style:{border:0,width:'100%',height:'100%',minHeight:'200px'},title:'Ad'});
+                if(yt) return h('div',{className:'ad-yt-clip panel-yt'}, h('iframe',{className:'ad-yt-frame',src:yt,allow:'autoplay; encrypted-media',frameBorder:'0',title:'Ad'}));
                 if(vid && /^https?:\/\//i.test(vid)) return h('video',{className:'panel-ad-media',src:vid,autoPlay:true,muted:false,playsInline:true,loop:true});
                 if(img) return h('img',{className:'panel-ad-media',src:img,alt:adShow.text||'Ad'});
                 return null;
