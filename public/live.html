@@ -784,18 +784,36 @@ try{ if(window.speechSynthesis){ speechSynthesis.getVoices(); speechSynthesis.on
   }
   function tossTextOf(d){
     if(!d) return '';
+    function normDec(dec){
+      dec=String(dec||'').toLowerCase().trim();
+      if(!dec) return '';
+      if(/bat|batting|बल्लेबाजी/.test(dec)) return 'bat';
+      if(/bowl|field|ball|bowling|गेंद/.test(dec)) return 'bowl';
+      return dec;
+    }
+    var w='', dec='';
     var t = d.tossText || d.tossResult || d.tossInfo || '';
     if(t && typeof t==='object'){
-      var w=t.winner||t.team||t.tossWinner||'';
-      var dec=t.decision||t.chose||t.choice||'';
-      t = w ? (w + (dec ? (' won the toss and chose to '+dec) : ' won the toss')) : '';
+      w=t.winner||t.team||t.tossWinner||'';
+      dec=t.decision||t.chose||t.choice||t.elected||'';
+    } else if(t){
+      // parse "X won the toss and elected to bat"
+      var m=String(t).match(/^(.+?)\s+won/i);
+      if(m) w=m[1].trim();
+      if(/\bbat/i.test(t)) dec='bat';
+      else if(/\b(bowl|field)/i.test(t)) dec='bowl';
+      if(w && dec) return w+' won the toss and decided to '+normDec(dec);
+      if(String(t).trim()) return String(t).trim();
     }
-    if(!t){
-      var w2=d.tossWinner||d.tossWinTeam||d.tossWinningTeam||(d.toss&& (d.toss.winner||d.toss.team))||'';
-      var dec2=d.tossDecision||d.tossChoice||d.electedTo||(d.toss&&(d.toss.decision||d.toss.choice))||'';
-      if(w2) t = String(w2) + (dec2 ? (' won the toss and elected to '+String(dec2)) : ' won the toss');
+    if(!w){
+      w=d.tossWinner||d.tossWinTeam||d.tossWinningTeam||(d.toss&&(d.toss.winner||d.toss.team))||d.tossWonBy||'';
+      dec=d.tossDecision||d.tossChoice||d.electedTo||d.tossElect||(d.toss&&(d.toss.decision||d.toss.choice))||'';
     }
-    return String(t||'').trim();
+    w=String(w||'').trim();
+    dec=normDec(dec);
+    if(w && dec) return w+' won the toss and decided to '+dec;
+    if(w) return w+' won the toss';
+    return '';
   }
   function matchStartTs(d){
     if(!d)return null;
@@ -981,17 +999,46 @@ try{ if(window.speechSynthesis){ speechSynthesis.getVoices(); speechSynthesis.on
     return g === 'female' ? getFemaleVoice(lang) : getMaleVoice(lang);
   }
 
+  
+  function numToHindiWords(num){
+    num=Number(num);
+    if(isNaN(num)) return String(num);
+    num=Math.floor(Math.abs(num));
+    var ones=['शून्य','एक','दो','तीन','चार','पाँच','छह','सात','आठ','नौ','दस','ग्यारह','बारह','तेरह','चौदह','पंद्रह','सोलह','सत्रह','अठारह','उन्नीस','बीस','इक्कीस','बाईस','तेईस','चौबीस','पच्चीस','छब्बीस','सत्ताईस','अट्ठाईस','उनतीस','तीस','इकतीस','बत्तीस','तैंतीस','चौंतीस','पैंतीस','छत्तीस','सैंतीस','अड़तीस','उनतालीस','चालीस','इकतालीस','बयालीस','तैंतालीस','चवालीस','पैंतालीस','छियालीस','सैंतालीस','अड़तालीस','उनचास','पचास','इक्यावन','बावन','तिरेपन','चौवन','पचपन','छप्पन','सत्तावन','अट्ठावन','उनसठ','साठ','इकसठ','बासठ','तिरेसठ','चौंसठ','पैंसठ','छियासठ','सड़सठ','अड़सठ','उनहत्तर','सत्तर','इकहत्तर','बहत्तर','तिहत्तर','चौहत्तर','पचहत्तर','छिहत्तर','सतहत्तर','अठहत्तर','उनासी','अस्सी','इक्यासी','बयासी','तिरासी','चौरासी','पचासी','छियासी','सतासी','अठासी','नवासी','नब्बे','इक्यानवे','बानवे','तिरानवे','चौरानवे','पचानवे','छियानवे','सत्तानवे','अट्ठानवे','निन्यानवे'];
+    if(num<100) return ones[num];
+    if(num<200) return 'एक सौ'+(num%100?(' '+ones[num%100]):'');
+    if(num<1000){
+      var h=Math.floor(num/100), r=num%100;
+      return ones[h]+' सौ'+(r?(' '+ones[r]):'');
+    }
+    if(num<100000){
+      var th=Math.floor(num/1000), r=num%1000;
+      return numToHindiWords(th)+' हज़ार'+(r?(' '+numToHindiWords(r)):'');
+    }
+    return String(num);
+  }
+  function hindiSpeakText(text){
+    text=String(text||'');
+    // overs like 3.2 → तीन दशमलव दो / तीन ओवर दो गेंद
+    text=text.replace(/(\d+)\.(\d+)/g, function(_,a,b){ return numToHindiWords(a)+' दशमलव '+numToHindiWords(b); });
+    // scores 45/2
+    text=text.replace(/(\d+)\s*\/\s*(\d+)/g, function(_,a,b){ return numToHindiWords(a)+' के '+numToHindiWords(b); });
+    // plain integers
+    text=text.replace(/\b(\d+)\b/g, function(_,n){ return numToHindiWords(n); });
+    return text;
+  }
+
   function speakMale(text, forceLang){
     if(!window.speechSynthesis)return;
     text=String(text||'').split('*').join(' ').trim();
     if(!text)return;
     try{speechSynthesis.cancel();}catch(e){}
     var lang = forceLang || lsGet('react_comm_lang','en') || 'en';
-    // auto-detect Devanagari → Hindi voice
     if(lang!=='hi' && /[\u0900-\u097F]/.test(text)) lang='hi';
+    if(lang==='hi'){ try{ text=hindiSpeakText(text); }catch(eH){} }
     var u=new SpeechSynthesisUtterance(text);
     u.lang = lang==='hi' ? 'hi-IN' : 'en-IN';
-    if(lang==='hi'){ u.rate = 0.95; u.pitch = 1.0; }
+    if(lang==='hi'){ u.rate = 0.92; u.pitch = 1.0; }
     function go(){
       var v = getPreferredVoice(lang);
       if(v) u.voice = v;
@@ -1233,10 +1280,10 @@ function excitingHindi(d, ev){
     var st=(d&&d.strikerName)||'बल्लेबाज़';
     var bw=(d&&d.bowlerName)||'गेंदबाज़';
     var over=(d&&d.overs)||'';
-    var score=(d&&d.runs!=null?d.runs:'')+'/'+(d&&d.wickets!=null?d.wickets:'');
+    var score=(d&&d.runs!=null?numToHindiWords(d.runs):'')+' के '+(d&&d.wickets!=null?numToHindiWords(d.wickets):'');
     var sR=n(d&&d.strikerRuns), sB=n(d&&d.strikerBalls);
-    var batBit=(sB||sR)?(' '+st+' '+sR+' रन ('+sB+' गेंद)।'):'';
-    var tail=' मैच का स्कोर '+score+(over?(' ओवर '+over):'')+'।'+batBit;
+    var batBit=(sB||sR)?(' '+st+' '+numToHindiWords(sR)+' रन ('+numToHindiWords(sB)+' गेंद)।'):'';
+    var tail=' मैच का स्कोर '+score+(over?(' ओवर '+String(over).replace(/(\d+)/g,function(m){return numToHindiWords(m);})): '')+'।'+batBit;
     if(ev){
       var k=ev.kind;
       if(k==='six') return ciHiLine(bw,st,'छह रन', hiDetail('six',bw,st)+tail);
@@ -1891,44 +1938,59 @@ function excitingHindi(d, ev){
         }catch(e){}
       }
       function showOne(a){
-        var mediaMode=(fa.mediaMode||fa.media_mode||'sound');
+        var mediaMode=(fa.mediaMode||fa.media_mode||'image');
+        if(mediaMode==='sound' && (a.image||fa.image) && !(fa.sound||fa.soundUrl)) mediaMode='image';
         var soundSrc=(fa.sound||fa.soundUrl||'').trim();
         var vid=(a.video||fa.video||'').trim();
         var img=(a.image||fa.image||'').trim();
         var text=(a.text||fa.text||'').trim();
+        var link=(a.link||fa.link||'').trim();
+        var dm = displayMode || fa.displayMode || 'event';
         var ytEmbed='';
         var durMs=Math.max(3000, Math.min(30000, (Number(fa.duration)||6)*1000));
-        // pause commentary while ad media plays
         try{ window.__adSoundUntil=Date.now()+durMs; if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e0){}
+
+        // Video → always floating (never panel)
         if(mediaMode==='video'){
+          dm='event';
           ytEmbed=ytEmbedUrl(soundSrc,{mute:0,forceSound:true}) || ytEmbedUrl(vid,{mute:0,forceSound:true});
           if(ytEmbed) vid='';
-        }
-        var hasVisual=!!(img || vid || ytEmbed || (mediaMode==='video' && soundSrc));
-        // Sound only + no image/video → play audio only, no blank popup
-        if(mediaMode==='sound' && !img && !vid && !ytEmbed){
-          playAdSound();
+          if(!ytEmbed && !vid && !img){
+            // no media — try sound only
+            playAdSound();
+            return;
+          }
+          setAdShow({image:img, video:vid, youtube:ytEmbed, text:text, link:link, shape:fa.shape||'rect', size:fa.size||'m', displayMode:dm, mediaMode:'video'});
+          if(!ytEmbed) playAdSound();
           return;
         }
-        if(mediaMode==='sound' && !hasVisual){
-          playAdSound();
+
+        // Sound only → no popup
+        if(mediaMode==='sound'){
+          if(img){
+            // has image — treat as image+sound
+            mediaMode='image';
+          } else {
+            playAdSound();
+            return;
+          }
+        }
+
+        // Image ad (with optional sound) — works float + panel
+        if(!img && !text){
+          // nothing to show
+          if(soundSrc){ playAdSound(); }
           return;
         }
-        setAdShow({
-          image:img,
-          video:vid,
-          youtube: ytEmbed,
-          text:text,
-          link:a.link||fa.link||'',
-          shape:fa.shape||'rect',
-          size:fa.size||'m',
-          displayMode: displayMode || fa.displayMode || 'event',
-          mediaMode: mediaMode
-        });
-        // sound-only with image: still play sound; video mode: iframe has sound
-        if(mediaMode==='sound') playAdSound();
-        else if(ytEmbed){ /* youtube iframe autoplays */ }
-        else playAdSound();
+        // Panel modes: image only (strip video/youtube)
+        if(dm==='panel' || dm==='panel_event' || dm==='panel_always'){
+          setAdShow({image:img, video:'', youtube:'', text:text, link:link, shape:fa.shape||'rect', size:fa.size||'m', displayMode:dm, mediaMode:'image'});
+          if(soundSrc) playAdSound();
+          return;
+        }
+        // Floating image
+        setAdShow({image:img, video:'', youtube:'', text:text, link:link, shape:fa.shape||'rect', size:fa.size||'m', displayMode:dm, mediaMode:'image'});
+        if(soundSrc) playAdSound();
       }
       var tm=setTimeout(function(){
         if(mode==='sequence'){
@@ -2129,7 +2191,7 @@ function excitingHindi(d, ev){
     }
 
     var viewerRows=useMemo(function(){
-      var cutoff=Date.now()-14*24*60*60*1000;
+      var cutoff=Date.now()-2*24*60*60*1000;
       var src=(viewers&&viewers.length)?viewers.slice():[];
       if(!src.length && data&&(data.viewerHistory||data.viewersLog)) src=(data.viewerHistory||data.viewersLog||[]).slice();
       try{
@@ -2218,16 +2280,15 @@ function excitingHindi(d, ev){
       (adShow&&(adShow.displayMode!=='panel'&&adShow.displayMode!=='panel_event'))?h('div',{className:'ad-overlay show'+((((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='xl'||((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='full')?' panel-fill':''),onClick:function(){setAdShow(null);}},
           h('div',{className:'ad-card ad-box size-'+((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'m'),onClick:function(e){e.stopPropagation();}},
             h('button',{className:'ad-close',type:'button',onClick:function(){setAdShow(null);}},'\u00d7'),
-            adShow.youtube?h('div',{className:'ad-yt-clip'},
-              h('iframe',{
-                src:adShow.youtube,
-                allow:'autoplay; encrypted-media',
-                frameBorder:'0',
-                title:'Ad',
-                className:'ad-yt-frame'
-              })
-            ):(adShow.video?h('video',{src:adShow.video,autoPlay:true,playsInline:true,muted:false,controls:false,className:'ad-native-video'}):null),
-            (!adShow.youtube&&!adShow.video&&adShow.image)?h('img',{src:adShow.image,alt:'Ad'}):null,
+            (function(){
+              var mode=adShow.mediaMode||'image';
+              if(mode==='video' && adShow.youtube) return h('div',{className:'ad-yt-clip'}, h('iframe',{src:adShow.youtube,allow:'autoplay; encrypted-media',frameBorder:'0',title:'Ad',className:'ad-yt-frame'}));
+              if(mode==='video' && adShow.video) return h('video',{src:adShow.video,autoPlay:true,playsInline:true,muted:false,controls:false,className:'ad-native-video'});
+              if(adShow.image) return h('img',{src:adShow.image,alt:adShow.text||'Ad',style:{width:'100%',borderRadius:'12px',display:'block'}});
+              if(adShow.youtube) return h('div',{className:'ad-yt-clip'}, h('iframe',{src:adShow.youtube,allow:'autoplay; encrypted-media',frameBorder:'0',title:'Ad',className:'ad-yt-frame'}));
+              if(adShow.video) return h('video',{src:adShow.video,autoPlay:true,playsInline:true,muted:false,controls:false,className:'ad-native-video'});
+              return null;
+            })(),
             adShow.text?h('div',{className:'ad-text'},adShow.text):null
           )
         ):null,
@@ -2533,9 +2594,9 @@ function excitingHindi(d, ev){
                 var yt=(adShow.youtube||'').trim();
                 var vid=(adShow.video||'').trim();
                 var img=(adShow.image||'').trim();
-                if(yt) return h('div',{className:'ad-yt-clip panel-yt'}, h('iframe',{className:'ad-yt-frame',src:yt,allow:'autoplay; encrypted-media',frameBorder:'0',title:'Ad'}));
-                if(vid && /^https?:\/\//i.test(vid)) return h('video',{className:'panel-ad-media',src:vid,autoPlay:true,muted:false,playsInline:true,loop:true});
                 if(img) return h('img',{className:'panel-ad-media',src:img,alt:adShow.text||'Ad'});
+                // panel: image only — no youtube/video
+                return h('div',{className:'panel-ad-media',style:{display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:800}}, adShow.text||'Ad');
                 return null;
               })(),
               (adShow.text)?h('div',{className:'panel-ad-caption'},adShow.text):null
@@ -2616,9 +2677,13 @@ function excitingHindi(d, ev){
                   return 'SR '+sr;
                 })())
               ),
-              h('div',{className:'comm-mini'},
+              (function(){
+                var ns=(data&&(data.nonStrikerName||data.nonStriker))||'';
+                ns=String(ns).trim();
+                if(!ns || ns==='-' || ns==='—' || /^non[- ]?striker$/i.test(ns)) return null;
+                return h('div',{className:'comm-mini'},
                 h('div',{className:'lab'},'Non-striker'),
-                h('div',{className:'name'},(data&&(data.nonStrikerName||data.nonStriker))||'-'),
+                h('div',{className:'name'}, ns),
                 h('div',{className:'stat'}, (function(){
                   var r=n(data&&(data.nonStrikerRuns!=null?data.nonStrikerRuns:data.nonRuns));
                   var b=n(data&&(data.nonStrikerBalls!=null?data.nonStrikerBalls:data.nonBalls));
@@ -2635,7 +2700,8 @@ function excitingHindi(d, ev){
                   var srV=b?((r/b)*100).toFixed(0):'0';
                   return 'SR '+srV;
                 })())
-              ),
+              );
+              })(),
               (function(){
                 // retain last bowler until a new one is selected
                 var nm=(data&&data.bowlerName)?String(data.bowlerName).trim():'';
