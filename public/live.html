@@ -1956,59 +1956,37 @@ function excitingHindi(d, ev){
         }catch(e){}
       }
       function showOne(a){
-        var mediaMode=(fa.mediaMode||fa.media_mode||'image');
-        if(mediaMode==='sound' && (a.image||fa.image) && !(fa.sound||fa.soundUrl)) mediaMode='image';
+        var adType=(fa.adType||'').trim() || ((fa.mediaMode==='video')?'video':'image');
         var soundSrc=(fa.sound||fa.soundUrl||'').trim();
         var vid=(a.video||fa.video||'').trim();
         var img=(a.image||fa.image||'').trim();
         var text=(a.text||fa.text||'').trim();
         var link=(a.link||fa.link||'').trim();
-        var dm = displayMode || fa.displayMode || 'event';
         var ytEmbed='';
         var durMs=Math.max(3000, Math.min(30000, (Number(fa.duration)||6)*1000));
         try{ window.__adSoundUntil=Date.now()+durMs; if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e0){}
-
-        // Video → always floating (never panel)
-        if(mediaMode==='video'){
-          dm='event';
-          ytEmbed=ytEmbedUrl(soundSrc,{mute:0,forceSound:true}) || ytEmbedUrl(vid,{mute:0,forceSound:true});
-          if(ytEmbed) vid='';
-          if(!ytEmbed && !vid && !img){
-            // no media — try sound only
-            playAdSound();
-            return;
-          }
-          setAdShow({image:img, video:vid, youtube:ytEmbed, text:text, link:link, shape:fa.shape||'rect', size:fa.size||'m', displayMode:dm, mediaMode:'video'});
-          if(!ytEmbed) playAdSound();
-          return;
-        }
-
-        // Sound only → no popup
-        if(mediaMode==='sound'){
-          if(img){
-            // has image — treat as image+sound
-            mediaMode='image';
-          } else {
-            playAdSound();
-            return;
+        var videoList=[];
+        try{
+          if(Array.isArray(fa.videos)) videoList=fa.videos.slice();
+          else if(typeof fa.videos==='string'&&fa.videos.trim()) videoList=fa.videos.split(/\n/).map(function(x){return x.trim();}).filter(Boolean);
+        }catch(eV){}
+        if(vid) videoList.unshift(vid);
+        var wantImage=(adType==='image'||adType==='both');
+        var wantVideo=(adType==='video'||adType==='both');
+        var vurl=videoList.length?videoList[0]:'';
+        if(wantVideo&&vurl){
+          ytEmbed=ytEmbedUrl(vurl,{mute:0,forceSound:true})||ytEmbedUrl(soundSrc,{mute:0,forceSound:true});
+          if(ytEmbed){ setAdShow({image:'',video:'',youtube:ytEmbed,text:text,link:link,shape:'rect',size:'m',displayMode:'event',mediaMode:'video'}); return; }
+          if(/^https?:\/\//i.test(vurl)&&/\.(mp4|webm|ogg)(\?|$)/i.test(vurl)){
+            setAdShow({image:'',video:vurl,youtube:'',text:text,link:link,shape:'rect',size:'m',displayMode:'event',mediaMode:'video'}); return;
           }
         }
-
-        // Image ad (with optional sound) — works float + panel
-        if(!img && !text){
-          // nothing to show
-          if(soundSrc){ playAdSound(); }
-          return;
-        }
-        // Panel modes: image only (strip video/youtube)
-        if(dm==='panel' || dm==='panel_event' || dm==='panel_always'){
-          setAdShow({image:img, video:'', youtube:'', text:text, link:link, shape:fa.shape||'rect', size:fa.size||'m', displayMode:dm, mediaMode:'image'});
+        if(wantImage&&img){
+          setAdShow({image:img,video:'',youtube:'',text:text,link:link,shape:'rect',size:'m',displayMode:'panel_event',mediaMode:'image'});
           if(soundSrc) playAdSound();
           return;
         }
-        // Floating image
-        setAdShow({image:img, video:'', youtube:'', text:text, link:link, shape:fa.shape||'rect', size:fa.size||'m', displayMode:dm, mediaMode:'image'});
-        if(soundSrc) playAdSound();
+        if(soundSrc){ playAdSound(); }
       }
       var tm=setTimeout(function(){
         if(mode==='sequence'){
@@ -2295,7 +2273,7 @@ function excitingHindi(d, ev){
         )
       ):null,
 
-      (adShow&&(adShow.displayMode!=='panel'&&adShow.displayMode!=='panel_event'))?h('div',{className:'ad-overlay show'+((((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='xl'||((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='full')?' panel-fill':''),onClick:function(){setAdShow(null);}},
+      (adShow&&(adShow.mediaMode==='video'||adShow.youtube||adShow.video))?h('div',{className:'ad-overlay show'+((((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='xl'||((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'')==='full')?' panel-fill':''),onClick:function(){setAdShow(null);}},
           h('div',{className:'ad-card ad-box size-'+((adShow&&adShow.size)||(data&&data.floatAd&&data.floatAd.size)||'m'),onClick:function(e){e.stopPropagation();}},
             h('button',{className:'ad-close',type:'button',onClick:function(){setAdShow(null);}},'\u00d7'),
             (function(){
@@ -2574,26 +2552,14 @@ function excitingHindi(d, ev){
         ):null
       ),
 
-      /* below scoreboard image ad — all tabs */
+      /* below scoreboard image ad — all tabs, event + duration only */
       (function(){
-        var fa=(data&&data.floatAd)||{};
-        var img='';
-        var txt='';
-        var link='';
-        if(adShow&&(adShow.image||'').trim()&&(adShow.mediaMode!=='video')){
-          img=String(adShow.image).trim(); txt=adShow.text||''; link=adShow.link||'';
-        } else if(fa&&fa.enabled&&(fa.image||'').trim()&&(fa.mediaMode||fa.media_mode||'image')!=='video'){
-          // panel / always styles keep image available under board
-          var dm=fa.displayMode||'event';
-          if(dm==='panel'||dm==='panel_always'||dm==='panel_event'||adShow){
-            img=String(fa.image).trim(); txt=fa.text||''; link=fa.link||'';
-          }
-        }
-        if(!img) return null;
-        return h('div',{
-          className:'below-sb-ad',
-          onClick:function(){ if(link) try{ window.open(link,'_blank'); }catch(e){} }
-        },
+        if(!adShow) return null;
+        var img=(adShow.image||'').trim();
+        if(!img || adShow.mediaMode==='video') return null;
+        var txt=adShow.text||'';
+        var link=adShow.link||'';
+        return h('div',{className:'below-sb-ad',onClick:function(){ if(link) try{ window.open(link,'_blank'); }catch(e){} }},
           h('button',{type:'button',className:'ad-close-mini',onClick:function(e){ e.stopPropagation(); setAdShow(null); }},'×'),
           h('img',{src:img,alt:txt||'Ad'}),
           txt?h('div',{className:'ad-txt'},txt):null
@@ -2610,7 +2576,7 @@ function excitingHindi(d, ev){
         
         // hide tab content while panel_event ad is up
         tab==='live'?h(React.Fragment,null,
-          h('div',{className:'card bb-card'+(adShow&&(adShow.displayMode==='panel_event'||adShow.displayMode==='panel')?' has-bb-ad':'')},
+          h('div',{className:'card bb-card'},
             h('h3',null,'Batsmen & bowler'),
             h('div',{className:'players-row',style:(adShow&&(adShow.displayMode==='panel_event'||adShow.displayMode==='panel'))?{opacity:0.06}:null},
               h('div',{className:'pbox'},
