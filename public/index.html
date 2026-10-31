@@ -17928,21 +17928,34 @@ body[data-theme="light"] #scorer-viewers-badge {
       var server = (typeof getLiveServerUrl === 'function' ? getLiveServerUrl() : '') || '';
       if (!server || !/^https?:\/\//i.test(server)) return;
       var matchId = (typeof getLiveMatchId === 'function' ? getLiveMatchId() : 'default') || 'default';
-      var url = server.replace(/\/+$/,'') + '/presence';
-      fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: 'scorer-dashboard', name: 'Scorer', match: matchId, tab: 'scorer' }),
-        mode: 'cors',
-        cache: 'no-store'
-      }).then(function(r){ return r.json(); }).then(function(j){
-        if (j && (typeof j.watching === 'number' || typeof j.count === 'number')) {
-          setBadge(j.watching != null ? j.watching : j.count);
-        }
-      }).catch(function(){});
+      // Prefer live-public payload (same count React live uses)
+      var base = server.replace(/\/+$/,'');
+      var urls = [
+        base + '/api/live-public?match=' + encodeURIComponent(matchId) + '&_=' + Date.now(),
+        base + '/presence'
+      ];
+      function applyCount(j){
+        if (!j) return;
+        var c = null;
+        if (typeof j.viewerCount === 'number') c = j.viewerCount;
+        else if (typeof j.watching === 'number') c = j.watching;
+        else if (typeof j.count === 'number') c = j.count;
+        else if (Array.isArray(j.viewers)) c = j.viewers.filter(function(v){ return v && v.online !== false; }).length;
+        if (c != null) setBadge(c);
+      }
+      fetch(urls[0], { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(j){
+          if (j) { applyCount(j); return; }
+          return fetch(urls[1], {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: 'scorer-dashboard', name: 'Scorer', match: matchId, tab: 'scorer' }),
+            mode: 'cors', cache: 'no-store'
+          }).then(function(r){ return r.json(); }).then(applyCount);
+        }).catch(function(){});
     } catch(e){}
   }
-  setInterval(poll, 8000);
+  setInterval(poll, 5000);
   setTimeout(poll, 1500);
   window.refreshViewerCount = poll;
 })();
