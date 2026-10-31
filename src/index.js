@@ -202,7 +202,7 @@ async function handlePlatform(request, env, url) {
     );
     const origin = url.origin;
     const shortUrl = origin + "/m/" + code;
-    const liveUrl = origin + "/live.html?match=" + encodeURIComponent(matchId);
+    const liveUrl = origin + "/live-react.html?match=" + encodeURIComponent(matchId || "current");
     return new Response(
       JSON.stringify({ ok: true, code, shortUrl, liveUrl, title }),
       { headers: cors }
@@ -234,7 +234,7 @@ async function handleShortPage(request, env, url) {
   const teamA = data.teamA || "Team A";
   const teamB = data.teamB || "Team B";
   const desc = data.desc || (teamA + " vs " + teamB + " — live ball-by-ball scores, commentary & stats");
-  const liveUrl = new URL("/live.html?match=" + encodeURIComponent(matchId), url.origin).toString();
+  const liveUrl = new URL("/live-react.html?match=" + encodeURIComponent(matchId || "current"), url.origin).toString();
   let customImg = data.imageUrl ? String(data.imageUrl).trim() : "";
   if (customImg && !/^https:\/\//i.test(customImg)) customImg = "";
   const label = encodeURIComponent((teamA + " VS " + teamB).slice(0, 40));
@@ -479,6 +479,9 @@ export default {
     }
     if (url.pathname === "/live" || url.pathname === "/live.html") {
       return env.ASSETS.fetch(new Request(new URL("/live.html", request.url), request));
+    }
+    if (url.pathname === "/live-react" || url.pathname === "/live-react.html") {
+      return env.ASSETS.fetch(new Request(new URL("/live-react.html", request.url), request));
     }
 
     return env.ASSETS.fetch(request);
