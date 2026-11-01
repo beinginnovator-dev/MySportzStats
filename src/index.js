@@ -360,6 +360,51 @@ export default {
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: CORS });
     }
+
+    // ---- HTML first (Wrangler 3: run_worker_first = true boolean) ----
+    // Serve from ASSETS by pathname only. Never env.ASSETS.fetch("https://assets.local" + url.pathname).
+    {
+      const p = url.pathname;
+      const isScorer = (p === "/" || p === "/score" || p === "/index.html");
+      const isViewer = (
+        p === "/live" || p === "/live.html" || p === "/live-react" ||
+        p === "/live-react.html" || p === "/viewer" || p === "/viewers" ||
+        p === "/viewer.html"
+      );
+      if ((isScorer || isViewer) && env.ASSETS) {
+        try {
+          const tryPaths = isScorer
+            ? ["/index.html"]
+            : ["/live-react.html", "/viewer.html", "/live.html"];
+          for (const assetPath of tryPaths) {
+            const res = await env.ASSETS.fetch("https://assets.local" + assetPath);
+            if (res && res.status < 400) {
+              const buf = await res.arrayBuffer();
+              return new Response(buf, {
+                status: 200,
+                headers: {
+                  "Content-Type": "text/html; charset=utf-8",
+                  "Cache-Control": "no-store",
+                  "X-Served-Asset": assetPath,
+                },
+              });
+            }
+          }
+        } catch (e) {
+          return new Response("Asset error: " + String(e && e.message || e), {
+            status: 500,
+            headers: { "Content-Type": "text/plain; charset=utf-8" },
+          });
+        }
+        return new Response(
+          isScorer
+            ? "Scorer missing: upload public/index.html"
+            : "Viewer missing: upload public/live-react.html",
+          { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
+        );
+      }
+    }
+
     }
 
     }
