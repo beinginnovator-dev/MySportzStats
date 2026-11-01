@@ -578,31 +578,6 @@ export class MatchDO {
     if (!session) return;
 
     switch (msg.type) {
-      case "ping":
-      case "heartbeat":
-      case "viewer": {
-        // Presence over WebSocket — avoids HTTP /viewer-activity DO hits
-        const name = String((msg && msg.name) || session.name || "Fan").slice(0, 40);
-        const id = String((msg && (msg.id || msg.uid)) || "").slice(0, 64);
-        session.name = name;
-        session.lastPing = Date.now();
-        if (id) session.uid = id;
-        try {
-          const now = Date.now();
-          const key = id || name;
-          this.httpViewers.set(key, { id: key, name, ts: now, via: "ws" });
-        } catch (_) {}
-        try {
-          ws.send(JSON.stringify({ type: "pong", ts: Date.now() }));
-        } catch (_) {}
-        break;
-      }
-      case "sync": {
-        try {
-          ws.send(JSON.stringify({ type: "full", data: this.publicPayload() }));
-        } catch (_) {}
-        break;
-      }
       case "chat":
         this.live.chat = this.live.chat || [];
         this.live.chat.push({
