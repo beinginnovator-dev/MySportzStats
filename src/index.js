@@ -353,6 +353,7 @@ function escapeXml(s) {
     .replace(/"/g, "&quot;");
 }
 
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -361,14 +362,18 @@ export default {
       return new Response(null, { status: 204, headers: CORS });
     }
 
-    // ---- HTML first (Wrangler 3: run_worker_first = true boolean) ----
-    // Serve from ASSETS by pathname only. Never env.ASSETS.fetch("https://assets.local" + url.pathname).
+    // HTML shells — assets.local only (Wrangler 3: run_worker_first = true)
+    // Never env.ASSETS.fetch(request) — that causes redirect loops.
     {
       const p = url.pathname;
       const isScorer = (p === "/" || p === "/score" || p === "/index.html");
       const isViewer = (
-        p === "/live" || p === "/live.html" || p === "/live-react" ||
-        p === "/live-react.html" || p === "/viewer" || p === "/viewers" ||
+        p === "/live" ||
+        p === "/live.html" ||
+        p === "/live-react" ||
+        p === "/live-react.html" ||
+        p === "/viewer" ||
+        p === "/viewers" ||
         p === "/viewer.html"
       );
       if ((isScorer || isViewer) && env.ASSETS) {
@@ -405,225 +410,90 @@ export default {
       }
     }
 
-    }
-
-    }
-
-
     // PWA assets
-    if (url.pathname === "/manifest.json" || url.pathname === "/sw.js" || url.pathname === "/sw-live.js"
-        || url.pathname === "/icon-192.png" || url.pathname === "/icon-512.png"
-        || url.pathname === "/icon-live-192.png" || url.pathname === "/icon-live-512.png") {
+    if (
+      url.pathname === "/manifest.json" ||
+      url.pathname === "/sw.js" ||
+      url.pathname === "/sw-live.js" ||
+      url.pathname === "/icon-192.png" ||
+      url.pathname === "/icon-512.png" ||
+      url.pathname === "/icon-live-192.png" ||
+      url.pathname === "/icon-live-512.png"
+    ) {
       try {
         if (env.ASSETS) {
-          const ar = await env.ASSETS.fetch(new URL(url.pathname, "https://assets.local"));
+          const ar = await env.ASSETS.fetch("https://assets.local" + url.pathname);
           if (ar && ar.status < 400) return ar;
         }
-      } catch (eA) {}
+      } catch (_) {}
     }
 
-    if (url.pathname === "/manifest.json") {
-      const body = "{\"name\": \"MySportzStats Cricket Scorer\", \"short_name\": \"Cric Scorer\", \"description\": \"Live cricket scoring, commentary and stats\", \"start_url\": \"/index.html\", \"scope\": \"/\", \"display\": \"standalone\", \"orientation\": \"portrait\", \"background_color\": \"#0f766e\", \"theme_color\": \"#009270\", \"icons\": [{\"src\": \"/icon-192.png\", \"sizes\": \"192x192\", \"type\": \"image/png\", \"purpose\": \"any\"}, {\"src\": \"/icon-512.png\", \"sizes\": \"512x512\", \"type\": \"image/png\", \"purpose\": \"any\"}, {\"src\": \"/icon-192.png\", \"sizes\": \"192x192\", \"type\": \"image/png\", \"purpose\": \"maskable\"}, {\"src\": \"/icon-512.png\", \"sizes\": \"512x512\", \"type\": \"image/png\", \"purpose\": \"maskable\"}]}";
-      return new Response(body, { headers: { "Content-Type": "application/manifest+json", "Cache-Control": "no-cache" } });
-    }
-    if (url.pathname === "/sw.js") {
-      const body = "/* MySportzStats scorer SW */\nconst CACHE = 'mysportz-scorer-v1';\nconst ASSETS = ['/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png'];\n\nself.addEventListener('install', function(e) {\n  e.waitUntil(caches.open(CACHE).then(function(c) { return c.addAll(ASSETS).catch(function(){}); }).then(function(){ return self.skipWaiting(); }));\n});\nself.addEventListener('activate', function(e) {\n  e.waitUntil(caches.keys().then(function(keys) {\n    return Promise.all(keys.filter(function(k){ return k !== CACHE; }).map(function(k){ return caches.delete(k); }));\n  }).then(function(){ return self.clients.claim(); }));\n});\nself.addEventListener('fetch', function(e) {\n  var url = new URL(e.request.url);\n  // Never intercept live viewer or API\n  if (url.pathname.indexOf('live.html') >= 0 || url.pathname.indexOf('/api/') === 0 || url.pathname.indexOf('/m/') === 0) {\n    return;\n  }\n  if (e.request.method !== 'GET') return;\n  e.respondWith(\n    fetch(e.request).then(function(r) {\n      try {\n        var copy = r.clone();\n        caches.open(CACHE).then(function(c){ c.put(e.request, copy); });\n      } catch(err){}\n      return r;\n    }).catch(function(){ return caches.match(e.request); })\n  );\n});\n";
-      return new Response(body, { headers: { "Content-Type": "application/javascript", "Cache-Control": "no-cache", "Service-Worker-Allowed": "/" } });
-    }
-    
-    if (url.pathname === "/icon-192.png" || url.pathname === "/icon-live-192.png") {
-      const bin = Uint8Array.from(atob("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"), c => c.charCodeAt(0));
-      return new Response(bin, { headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400" } });
-    }
-    if (url.pathname === "/icon-512.png" || url.pathname === "/icon-live-512.png") {
-      const bin = Uint8Array.from(atob("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"), c => c.charCodeAt(0));
-      return new Response(bin, { headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400" } });
-    }
-
-    if (url.pathname === "/sw-live.js") {
-      const body = "/* Live viewer \u2014 do not take over navigation */\nself.addEventListener('install', function(e){ self.skipWaiting(); });\nself.addEventListener('activate', function(e){\n  e.waitUntil(self.registration.unregister().then(function(){ return self.clients.claim(); }));\n});\n";
-      return new Response(body, { headers: { "Content-Type": "application/javascript", "Cache-Control": "no-cache" } });
-    }
-
-
-    // AI TTS — multi-voice
-    if (url.pathname === "/api/tts") {
-      return handleTts(request, env);
-    }
-
-    // Match poster SVG for OG / WhatsApp
-    if (url.pathname === "/api/poster" || url.pathname === "/api/poster.svg") {
-      return handlePoster(url);
-    }
-    if (url.pathname === "/api/poster.png") {
-      // Raster redirect for crawlers that hit this path directly
-      const a = url.searchParams.get("a") || "Team A";
-      const b = url.searchParams.get("b") || "Team B";
-      const label = encodeURIComponent((a + " VS " + b).slice(0, 40));
-      return Response.redirect("https://placehold.co/1200x630/0f766e/ecfdf5/png?text=" + label, 302);
-    }
-
-    // Short share links /m/CODE
+    // Short share pages /m/CODE
     if (url.pathname.startsWith("/m/")) {
       return handleShortPage(request, env, url);
     }
 
-    // Platform ads + short API
-    {
-      const plat = await handlePlatform(request, env, url);
-      if (plat) return plat;
+    // Poster
+    if (url.pathname === "/poster.png" || url.pathname === "/og.png") {
+      return handlePoster(url);
     }
 
-    // WebSocket → Durable Object
-    if (url.pathname === "/ws") {
+    // TTS
+    if (url.pathname === "/api/tts") {
+      return handleTts(request, env);
+    }
+
+    // Platform admin/short APIs
+    if (
+      url.pathname.startsWith("/api/platform") ||
+      url.pathname.startsWith("/api/short") ||
+      url.pathname.startsWith("/api/ads")
+    ) {
+      return handlePlatform(request, env, url);
+    }
+
+    // WebSocket + match DO routes
+    if (url.pathname === "/ws" || url.pathname.startsWith("/ws/")) {
       const matchId = url.searchParams.get("match") || "current";
       return env.MATCH.get(env.MATCH.idFromName(matchId)).fetch(request);
     }
 
-    // Scorer HTTP push — write to match id AND alias "current" so live page always finds data
-    if (
-      (url.pathname === "/api/live" || url.pathname === "/api/update") &&
-      request.method === "POST"
-    ) {
-      const matchId = url.searchParams.get("match") || "current";
-      const bodyText = await request.text();
-      const mkReq = (mid) =>
-        new Request(url.pathname + "?match=" + encodeURIComponent(mid), {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Publisher-Key": request.headers.get("X-Publisher-Key") || "" },
-          body: bodyText,
-        });
-      const res = await env.MATCH.get(env.MATCH.idFromName(matchId)).fetch(mkReq(matchId));
-      if (matchId !== "current") {
-        try {
-          await env.MATCH.get(env.MATCH.idFromName("current")).fetch(mkReq("current"));
-        } catch (_) {}
-      }
-      return res;
-    }
-
-    // Viewer poll
-    if (
-      (url.pathname === "/api/live-public" || url.pathname === "/api/live") &&
-      request.method === "GET"
-    ) {
-      const matchId = url.searchParams.get("match") || "current";
-      return env.MATCH.get(env.MATCH.idFromName(matchId)).fetch(request);
-    }
-
+    // Match API → Durable Object
     const doPaths = [
-      "/fans",
-      "/viewers-history",
-      "/viewer-activity",
-      "/admin/reset-viewers",
-      "/presence",
-      "/chat",
-      "/floats",
-      "/predictions",
-      "/admin/login",
-      "/admin/block",
-      "/admin/unblock",
-      "/admin/reset-coins",
-      "/admin/reset-emojis",
-      "/admin/blocks",
+      "/api/live",
+      "/api/live-public",
+      "/api/score",
+      "/api/state",
+      "/api/viewers",
+      "/api/cheer",
+      "/api/publish",
     ];
-    if (doPaths.some((p) => url.pathname === p || url.pathname.startsWith(p + "/"))) {
-      const matchId = url.searchParams.get("match") || "current";
-      return env.MATCH.get(env.MATCH.idFromName(matchId)).fetch(request);
+    for (const p of doPaths) {
+      if (url.pathname === p || url.pathname.startsWith(p + "/")) {
+        const matchId = url.searchParams.get("match") || "current";
+        return env.MATCH.get(env.MATCH.idFromName(matchId)).fetch(request);
+      }
     }
 
+    // Generic /api/* that should hit DO
     if (url.pathname.startsWith("/api/")) {
-      return json({ ok: true });
-    }
-
-    // -------- Static assets (Cloudflare ASSETS binding) --------
-    // Docs: env.ASSETS.fetch(request | URL | string)
-    // Hostname in URL is ignored; only pathname matches assets.
-    // https://developers.cloudflare.com/workers/static-assets/binding/#fetch
-    const VIEWER_ALIASES = new Set([
-      "/live",
-      "/live.html",
-      "/live-react",
-      "/live-react.html",
-      "/viewer",
-      "/viewers",
-      "/viewer.html",
-    ]);
-
-    async function serveAssetPath(pathname) {
-      if (!env.ASSETS) {
-        return new Response("ASSETS binding missing", { status: 500 });
-      }
-      // Prefer string form from CF docs
-      const res = await env.ASSETS.fetch("https://assets.local" + pathname);
-      return res;
-    }
-
-    const p = url.pathname;
-
-    // Viewer aliases → always serve live-react.html body
-    if (VIEWER_ALIASES.has(p)) {
+      const matchId = url.searchParams.get("match") || "current";
       try {
-        let res = await serveAssetPath("/live-react.html");
-        if (!res || res.status >= 400) {
-          res = await serveAssetPath("/viewer.html");
-        }
-        if (!res || res.status >= 400) {
-          res = await serveAssetPath("/live.html");
-        }
-        if (res && res.status < 400) {
-          // Clone body so we can force correct content-type
-          const body = await res.arrayBuffer();
-          return new Response(body, {
-            status: 200,
-            headers: {
-              "Content-Type": "text/html; charset=utf-8",
-              "Cache-Control": "no-store",
-              "X-Viewer-Asset": "live-react",
-            },
-          });
-        }
-      } catch (e) {
-        return new Response("Viewer asset error: " + String(e && e.message || e), {
-          status: 500,
-          headers: { "Content-Type": "text/plain; charset=utf-8" },
-        });
+        return env.MATCH.get(env.MATCH.idFromName(matchId)).fetch(request);
+      } catch (_) {
+        return json({ ok: true });
       }
-      return new Response(
-        "Viewer HTML missing from deploy. Ensure public/live-react.html is uploaded.\\nTried: /live-react.html, /viewer.html, /live.html",
-        { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
-      );
     }
 
-    // Scorer (if request reached Worker)
-    if (p === "/" || p === "/score" || p === "/index.html") {
+    // Other static files
+    if (env.ASSETS) {
       try {
-        const res = await serveAssetPath("/index.html");
-        if (res && res.status < 400) {
-          const body = await res.arrayBuffer();
-          return new Response(body, {
-            status: 200,
-            headers: {
-              "Content-Type": "text/html; charset=utf-8",
-              "Cache-Control": "no-store",
-            },
-          });
-        }
-      } catch (_) {}
-      return new Response("Scorer missing (public/index.html)", { status: 503 });
-    }
-
-    // Fallback: pass through to assets (CF recommended)
-    try {
-      if (env.ASSETS) {
-        // Use path-only URL — do NOT pass original request when run_worker_first matched
-        // (passing request can re-apply routing and loop on some configs)
-        const res = await env.ASSETS.fetch("https://assets.local" + p);
+        const res = await env.ASSETS.fetch("https://assets.local" + url.pathname);
         if (res && res.status < 400) return res;
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
 
-    return new Response("Not found: " + p, {
+    return new Response("Not found: " + url.pathname, {
       status: 404,
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
