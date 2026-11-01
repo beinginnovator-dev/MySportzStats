@@ -18,7 +18,6 @@ binding = "AI"
 directory = "./public"
 binding = "ASSETS"
 # Serve files from public/ (live-react.html, index.html, sounds, …)
-run_worker_first = true
 
 # App creator only — set a strong secret, then use header X-Admin-Key for ad APIs
 [vars]
