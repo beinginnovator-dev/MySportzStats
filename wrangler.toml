@@ -17,8 +17,6 @@ binding = "AI"
 [assets]
 directory = "./public"
 binding = "ASSETS"
-run_worker_first = true
-
 
 [vars]
 ADMIN_KEY = "mysportz-admin-2024"
