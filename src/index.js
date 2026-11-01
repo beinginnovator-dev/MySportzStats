@@ -1,5 +1,4 @@
 import { MatchDO } from "./match.js";
-export { MatchDO };
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -108,7 +107,6 @@ async function handleTts(request, env) {
     return json({ ok: false, error: String(e && e.message ? e.message : e) }, 502);
   }
 }
-
 
 /** Platform-wide config (ads + short codes) lives in a dedicated Durable Object name */
 function platformStub(env) {
@@ -352,7 +350,6 @@ function escapeXml(s) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
-
 
 export default {
   async fetch(request, env, ctx) {
