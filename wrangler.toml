@@ -1,5 +1,5 @@
-# Cloudflare Workers + Static Assets (official routing pattern)
-# https://developers.cloudflare.com/workers/static-assets/binding/
+# Compatible with Wrangler 3.x (Cloudflare Workers Builds)
+# run_worker_first must be boolean in wrangler@3 — array only in wrangler@4
 name = "mysportzstats"
 main = "src/index.js"
 compatibility_date = "2024-09-23"
@@ -19,21 +19,9 @@ binding = "AI"
 [assets]
 directory = "./public"
 binding = "ASSETS"
-# Worker-first ONLY where we need dynamic handling / path aliases.
-# "/" and "/index.html" stay asset-first (no redirect loops).
-# https://developers.cloudflare.com/workers/static-assets/routing/worker-script/
-run_worker_first = [
-  "/api/*",
-  "/ws",
-  "/m/*",
-  "/live",
-  "/live.html",
-  "/live-react",
-  "/live-react.html",
-  "/viewer",
-  "/viewers",
-  "/viewer.html"
-]
+# boolean ONLY (wrangler 3). Worker handles every request first.
+# HTML served via env.ASSETS.fetch("https://assets.local/...") — never fetch(request)
+run_worker_first = true
 
 [vars]
 ADMIN_KEY = "mysportz-admin-2024"
