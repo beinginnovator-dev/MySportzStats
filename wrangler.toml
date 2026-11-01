@@ -17,7 +17,8 @@ binding = "AI"
 [assets]
 directory = "./public"
 binding = "ASSETS"
+run_worker_first = true
 
-# App creator only — set a strong secret, then use header X-Admin-Key for ad APIs
+
 [vars]
 ADMIN_KEY = "mysportz-admin-2024"
