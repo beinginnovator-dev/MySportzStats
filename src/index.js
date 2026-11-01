@@ -427,30 +427,17 @@ export default {
 
     // WebSocket → Durable Object
     if (url.pathname === "/ws") {
-      const matchId = url.searchParams.get("match") || "current";
+      const matchId = url.searchParams.get("match") || "default";
       return env.MATCH.get(env.MATCH.idFromName(matchId)).fetch(request);
     }
 
-    // Scorer HTTP push — write to match id AND alias "current" so live page always finds data
+    // Scorer HTTP push
     if (
       (url.pathname === "/api/live" || url.pathname === "/api/update") &&
       request.method === "POST"
     ) {
-      const matchId = url.searchParams.get("match") || "current";
-      const bodyText = await request.text();
-      const mkReq = (mid) =>
-        new Request(url.pathname + "?match=" + encodeURIComponent(mid), {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Publisher-Key": request.headers.get("X-Publisher-Key") || "" },
-          body: bodyText,
-        });
-      const res = await env.MATCH.get(env.MATCH.idFromName(matchId)).fetch(mkReq(matchId));
-      if (matchId !== "current") {
-        try {
-          await env.MATCH.get(env.MATCH.idFromName("current")).fetch(mkReq("current"));
-        } catch (_) {}
-      }
-      return res;
+      const matchId = url.searchParams.get("match") || "default";
+      return env.MATCH.get(env.MATCH.idFromName(matchId)).fetch(request);
     }
 
     // Viewer poll
@@ -458,7 +445,7 @@ export default {
       (url.pathname === "/api/live-public" || url.pathname === "/api/live") &&
       request.method === "GET"
     ) {
-      const matchId = url.searchParams.get("match") || "current";
+      const matchId = url.searchParams.get("match") || "default";
       return env.MATCH.get(env.MATCH.idFromName(matchId)).fetch(request);
     }
 
