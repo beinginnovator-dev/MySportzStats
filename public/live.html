@@ -613,13 +613,6 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
       return id;
     }catch(e){ return 'v_'+String(Date.now()); }
   }
-  function nextFanName(){
-    try{
-      var n=parseInt(localStorage.getItem('react_fan_seq')||'0',10)||0;
-      n+=1; localStorage.setItem('react_fan_seq',String(n));
-      return 'Fan-'+n;
-    }catch(e){ return 'Fan-1'; }
-  }
   function viewerDisplayName(){
     try{
       var n=(localStorage.getItem('react_viewer_name')||localStorage.getItem('viewer_name')||'').trim();
@@ -1800,15 +1793,14 @@ function excitingHindi(d, ev){
     var data=live.data,viewers=live.viewers,connected=live.connected;
     var _tab=useState('commentary'),tab=_tab[0],setTab=_tab[1];
     var _w=useState(true),welcome=_w[0],setWelcome=_w[1];
-    var _act=useState(false),showActivity=_act[0],setShowActivity=_act[1];
     var _wn=useState(function(){ try{ return localStorage.getItem('react_viewer_name')||''; }catch(e){ return ''; } }),welcomeName=_wn[0],setWelcomeName=_wn[1];
-    // welcome-auto-close: if name already saved, close after 6s
+    // welcome-auto-close: if name already saved, close after 4s
     useEffect(function(){
       var existing='';
       try{ existing=localStorage.getItem('react_viewer_name')||localStorage.getItem('viewer_name')||''; }catch(e){}
       if(existing && String(existing).trim()){
         setWelcomeName(String(existing).trim());
-        var t=setTimeout(function(){ setWelcome(false); }, 6000);
+        var t=setTimeout(function(){ setWelcome(false); }, 4000);
         return function(){ clearTimeout(t); };
       }
     },[]);
@@ -2913,9 +2905,9 @@ function excitingHindi(d, ev){
           capSub==='orange'?h('table',null,
             h('thead',null,h('tr',null,h('th',null,'#'),h('th',null,'Player'),h('th',null,'Runs'),h('th',null,'Balls'),h('th',null,'Avg'),h('th',null,'SR'))),
             h('tbody',null,
-              (data&&(data.cumulativeOrangeCap||data.orangeCap)?(data.cumulativeOrangeCap||data.orangeCap).slice(0,20):[]).map(function(p,i){
+              (data&&data.orangeCap?data.orangeCap.slice(0,20):[]).map(function(p,i){
                 return h('tr',{key:i},
-                  h('td',null,i+1),h('td',null,p.name),h('td',null,p.runs||0),h('td',null,p.balls||0),h('td',null,p.avg!=null?p.avg:(p.SR||p.sr||'-')),h('td',null,p.SR||p.sr||'-'),
+                  h('td',null,i+1),h('td',null,p.name),h('td',null,p.runs||0),h('td',null,p.balls||0),
                   h('td',null,p.avg!=null?p.avg:(p.average!=null?p.average:'-')),
                   h('td',null,p.sr!=null?p.sr:sr(p.runs,p.balls))
                 );
@@ -2925,7 +2917,7 @@ function excitingHindi(d, ev){
           ):h('table',null,
             h('thead',null,h('tr',null,h('th',null,'#'),h('th',null,'Player'),h('th',null,'W'),h('th',null,'Runs'),h('th',null,'Overs'),h('th',null,'Econ'))),
             h('tbody',null,
-              (data&&(data.cumulativePurpleCap||data.purpleCap)?(data.cumulativePurpleCap||data.purpleCap).slice(0,20):[]).map(function(p,i){
+              (data&&data.purpleCap?data.purpleCap.slice(0,20):[]).map(function(p,i){
                 var bb=p.bowlBalls!=null?n(p.bowlBalls):n(p.balls);
                 var rr=p.bowlRuns!=null?n(p.bowlRuns):n(p.runs);
                 return h('tr',{key:i},
@@ -3148,25 +3140,7 @@ function excitingHindi(d, ev){
         ):null,
 
         tab==='viewers'?h('div',{className:'card'},
-          h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}},
-            h('h3',{style:{margin:0}},'Viewers · last 2 weeks'),
-            h('button',{
-              type:'button',
-              className:'btn',
-              style:{padding:'6px 12px',fontSize:12,fontWeight:800,borderRadius:999,border:'1px solid rgba(148,163,184,.35)',background:showActivity?'#2563eb':'rgba(15,23,42,.5)',color:'#fff'},
-              onClick:function(){ setShowActivity(!showActivity); }
-            }, showActivity ? 'Hide activity' : 'Activity')
-          ),
-          showActivity?h('div',{style:{marginBottom:12,padding:10,borderRadius:12,background:'rgba(15,23,42,.45)',fontSize:12,lineHeight:1.5}},
-            (viewerRows||[]).slice(0,40).map(function(v,i){
-              return h('div',{key:i,style:{padding:'6px 0',borderBottom:'1px solid rgba(148,163,184,.15)'}},
-                h('b',null,v.name||('Fan-'+(i+1))),' · ',
-                (v.online||v.status==='online')?'🟢 online':'⚫ offline',' · ',
-                v.activity||v.lastAction||'visit',' · ',
-                v.lastSeen? new Date(v.lastSeen).toLocaleString(): (v.joinedAt?new Date(v.joinedAt).toLocaleString():'')
-              );
-            })
-          ):null,
+          h('h3',null,'Viewers · last 2 weeks'),
           h('table',null,
             h('thead',null,h('tr',null,h('th',null,'Name'),h('th',null,'Status'),h('th',null,'Log in'),h('th',null,'Out'),h('th',null,'Activity'))),
             h('tbody',null,
