@@ -17,7 +17,9 @@ binding = "AI"
 [assets]
 directory = "./public"
 binding = "ASSETS"
-run_worker_first = true
+# Only these paths hit the Worker first (fixes /live-react.html 404).
+# Do NOT include "/" or "/index.html" — those are pure static (avoids redirect loop).
+run_worker_first = ["/live", "/live.html", "/live-react", "/live-react.html", "/viewer", "/viewers", "/ws", "/api/*", "/m/*"]
 
 [vars]
 ADMIN_KEY = "mysportz-admin-2024"
