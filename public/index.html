@@ -8157,7 +8157,7 @@ function placeBoundaryAnimationOnStriker(toast){
             }
             server = String(server).replace(/\/+$/,'');
             try { localStorage.setItem(LIVE_SERVER_KEY, server); localStorage.setItem('cricket_live_server', server); } catch(eSrv){}
-            var url = server + '/live?match=' + encodeURIComponent(matchId || getLiveMatchId());
+            var url = server + '/live?match=' + encodeURIComponent(matchId || getLiveMatchId() || 'current');
             if (viewKey) url += '&key=' + encodeURIComponent(viewKey);
             return url;
         } catch(e) {
@@ -10080,10 +10080,12 @@ function updateView() {
             var hist = [];
             try { hist = JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch(e){ hist = []; }
             if (!Array.isArray(hist)) hist = [];
-            // Avoid double-write of the same finished match
+            // Avoid double-write only if same match saved in last 15 seconds (was blocking new matches)
             try {
                 var last = hist[hist.length - 1];
-                if (last && String(last.teamA) === String(teamConfig.A.name) && String(last.teamB) === String(teamConfig.B.name)
+                var nowTs = Date.now();
+                if (last && last._savedAt && (nowTs - (last._savedAt|0)) < 15000
+                    && String(last.teamA) === String(teamConfig.A.name) && String(last.teamB) === String(teamConfig.B.name)
                     && (last.score|0) === (totalScore|0) && String(last.winner) === String(winner)
                     && (last.firstInningsScore|0) === (firstInningsScore|0)) {
                     return;
@@ -10113,7 +10115,7 @@ function updateView() {
                     isOut:!!p.isOut, howOut:p.howOut||'', outFielder:p.outFielder||''
                 };
             });
-            var slimDeliv = (deliveryHistory||[]).slice(-150).map(function(d){
+            var slimDeliv = (deliveryHistory||[]).slice(-80).map(function(d){
                 return {
                     batsman:d.batsman, bowler:d.bowler, runs:d.runs|0, runsConceded:d.runsConceded|0,
                     legal:!!d.legal, isWicket:!!d.isWicket, chipLabel:d.chipLabel||'', zone:d.zone||null,
@@ -10156,7 +10158,9 @@ function updateView() {
                 matchDescription: (typeof getMatchDescription==='function'?getMatchDescription():''),
                 umpires: (typeof currentUmpires!=='undefined'?currentUmpires:'') || '',
                 commentators: (typeof currentCommentators!=='undefined'?currentCommentators:'') || '',
-                venue: (typeof currentVenue!=='undefined'?currentVenue:'') || ''
+                venue: (typeof currentVenue!=='undefined'?currentVenue:'') || '',
+                _savedAt: Date.now(),
+                id: 'm-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8)
             };
             hist.push(entry);
             // Cap to last 50 matches
@@ -10168,34 +10172,71 @@ function updateView() {
                 hist.forEach(function(m,i){ m.matchNo = i + 1; });
             }
             function writeHist(arr) {
-                var json = JSON.stringify(arr);
-                try {
+                function slim(m){
+                    if (!m) return m;
+                    m.deliveryHistory = (m.deliveryHistory||[]).slice(-40);
+                    m.commentaryLog = (m.commentaryLog||[]).slice(-8);
+                    if (m.players && m.players.length > 30) m.players = m.players.slice(0, 30);
+                    if (m.orangeCap) m.orangeCap = m.orangeCap.slice(0, 10);
+                    if (m.purpleCap) m.purpleCap = m.purpleCap.slice(0, 10);
+                    if (m.seriesSnapshot) {
+                      if (m.seriesSnapshot.orangeCap) m.seriesSnapshot.orangeCap = m.seriesSnapshot.orangeCap.slice(0, 8);
+                      if (m.seriesSnapshot.purpleCap) m.seriesSnapshot.purpleCap = m.seriesSnapshot.purpleCap.slice(0, 8);
+                    }
+                    return m;
+                }
+                function tryWrite(list){
+                    var json = JSON.stringify(list);
                     localStorage.setItem(HKEY, json);
-                    localStorage.setItem(HKEY + '_bak', json);
+                    try { localStorage.setItem(HKEY + '_bak', json); } catch(eB){}
+                    try { localStorage.setItem('cricket_match_history', json); } catch(eC){}
+                    try { localStorage.setItem('cricket_match_history_v1', json); } catch(eD){}
                     return true;
+                }
+                try {
+                    return tryWrite(arr);
                 } catch(e) {
-                    // Shrink and retry
+                    // Quota / size — progressive shrink, keep as many matches as possible
                     try {
-                        arr.forEach(function(m){
-                            m.deliveryHistory = (m.deliveryHistory||[]).slice(-60);
-                            m.commentaryLog = (m.commentaryLog||[]).slice(-10);
-                            if (m.orangeCap) m.orangeCap = m.orangeCap.slice(0, 12);
-                            if (m.purpleCap) m.purpleCap = m.purpleCap.slice(0, 12);
-                        });
-                        while (arr.length > 15) {
+                        arr = arr.map(slim);
+                        try { return tryWrite(arr); } catch(e1){}
+                        while (arr.length > 5) {
                             var o = arr.shift();
-                            try { if (o.commentaryFileKey) localStorage.removeItem(o.commentaryFileKey); } catch(e2){}
+                            try { if (o && o.commentaryFileKey) localStorage.removeItem(o.commentaryFileKey); } catch(e2){}
+                            arr.forEach(function(m,i){ if(m) m.matchNo = i + 1; });
+                            try { return tryWrite(arr); } catch(e3){}
                         }
-                        arr.forEach(function(m,i){ m.matchNo = i + 1; });
-                        localStorage.setItem(HKEY, JSON.stringify(arr));
+                        // Last resort: ultra-light records
+                        arr = arr.map(function(m){
+                            return {
+                              matchNo: m.matchNo, id: m.id, _savedAt: m._savedAt,
+                              date: m.date, time: m.time, teamA: m.teamA, teamB: m.teamB,
+                              score: m.score|0, wickets: m.wickets|0, overs: m.overs,
+                              firstInningsScore: m.firstInningsScore|0, firstInningsWickets: m.firstInningsWickets|0,
+                              targetScore: m.targetScore|0, winner: m.winner, matchResult: m.matchResult,
+                              manOfTheMatch: m.manOfTheMatch||'', venue: m.venue||''
+                            };
+                        });
+                        tryWrite(arr);
                         return true;
-                    } catch(e3) {
-                        console.log('history write failed', e3);
+                    } catch(e4) {
+                        console.log('history write failed', e4);
+                        try {
+                          if (typeof showModal === 'function')
+                            showModal({ title: 'History full', message: 'Could not save match history (storage full). Clear old history or browser data.', icon: '⚠️' });
+                        } catch(eM){}
                         return false;
                     }
                 }
             }
             writeHist(hist);
+            // Verify save stuck
+            try {
+              var check = JSON.parse(localStorage.getItem(HKEY) || '[]');
+              if (!Array.isArray(check) || check.length < hist.length) {
+                console.log('history verify mismatch', (check&&check.length), hist.length);
+              }
+            } catch(eV){}
             try { renderHistory(); } catch(e){}
             try { rebuildStatsFromHistory(); } catch(e){}
         } catch(err) { console.log('saveMatchToHistorySafe', err); }
@@ -11614,12 +11655,12 @@ function computeManOfTheMatch(plist) {
                 if (Array.isArray(arr)) hist = hist.concat(arr);
             } catch(e){}
         });
-        // de-dupe by matchNo+date+teams
+        // de-dupe by unique id / save time (do not collapse separate matches)
         var map = {};
         hist.forEach(function(m){
             if (!m) return;
-            var id = String(m.matchNo||'') + '|' + (m.date||'') + '|' + (m.teamA||'') + '|' + (m.teamB||'') + '|' + (m.score||'');
-            if (!map[id] || (m.players && m.players.length)) map[id] = m;
+            var id = m.id || (String(m._savedAt||'') + '|' + (m.date||'') + '|' + (m.time||'') + '|' + (m.teamA||'') + '|' + (m.teamB||'') + '|' + (m.score||'') + '|' + (m.winner||''));
+            if (!map[id] || ((m.players&&m.players.length) > ((map[id].players&&map[id].players.length)||0))) map[id] = m;
         });
         var out = Object.keys(map).map(function(k){ return map[k]; });
         out.sort(function(a,b){ return (a.matchNo|0) - (b.matchNo|0); });
@@ -17928,21 +17969,34 @@ body[data-theme="light"] #scorer-viewers-badge {
       var server = (typeof getLiveServerUrl === 'function' ? getLiveServerUrl() : '') || '';
       if (!server || !/^https?:\/\//i.test(server)) return;
       var matchId = (typeof getLiveMatchId === 'function' ? getLiveMatchId() : 'default') || 'default';
-      var url = server.replace(/\/+$/,'') + '/presence';
-      fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: 'scorer-dashboard', name: 'Scorer', match: matchId, tab: 'scorer' }),
-        mode: 'cors',
-        cache: 'no-store'
-      }).then(function(r){ return r.json(); }).then(function(j){
-        if (j && (typeof j.watching === 'number' || typeof j.count === 'number')) {
-          setBadge(j.watching != null ? j.watching : j.count);
-        }
-      }).catch(function(){});
+      // Prefer live-public payload (same count React live uses)
+      var base = server.replace(/\/+$/,'');
+      var urls = [
+        base + '/api/live-public?match=' + encodeURIComponent(matchId) + '&_=' + Date.now(),
+        base + '/presence'
+      ];
+      function applyCount(j){
+        if (!j) return;
+        var c = null;
+        if (typeof j.viewerCount === 'number') c = j.viewerCount;
+        else if (typeof j.watching === 'number') c = j.watching;
+        else if (typeof j.count === 'number') c = j.count;
+        else if (Array.isArray(j.viewers)) c = j.viewers.filter(function(v){ return v && v.online !== false; }).length;
+        if (c != null) setBadge(c);
+      }
+      fetch(urls[0], { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(j){
+          if (j) { applyCount(j); return; }
+          return fetch(urls[1], {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: 'scorer-dashboard', name: 'Scorer', match: matchId, tab: 'scorer' }),
+            mode: 'cors', cache: 'no-store'
+          }).then(function(r){ return r.json(); }).then(applyCount);
+        }).catch(function(){});
     } catch(e){}
   }
-  setInterval(poll, 8000);
+  setInterval(poll, 5000);
   setTimeout(poll, 1500);
   window.refreshViewerCount = poll;
 })();

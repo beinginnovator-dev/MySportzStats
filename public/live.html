@@ -613,6 +613,13 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
       return id;
     }catch(e){ return 'v_'+String(Date.now()); }
   }
+  function nextFanName(){
+    try{
+      var n=parseInt(localStorage.getItem('react_fan_seq')||'0',10)||0;
+      n+=1; localStorage.setItem('react_fan_seq',String(n));
+      return 'Fan-'+n;
+    }catch(e){ return 'Fan-1'; }
+  }
   function viewerDisplayName(){
     try{
       var n=(localStorage.getItem('react_viewer_name')||localStorage.getItem('viewer_name')||'').trim();
@@ -686,10 +693,15 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
       recordLocalViewer(name);
       var match='current';
       try{ match=new URLSearchParams(location.search).get('match')||'current'; }catch(e2){}
-      var body=JSON.stringify({id:viewerUid(),uid:viewerUid(),name:name,match:match,tab:'live'});
-      fetch('/viewer-activity?match='+encodeURIComponent(match),{method:'POST',headers:{'Content-Type':'application/json'},body:body,cache:'no-store'}).catch(function(){});
-      fetch('/api/viewer-activity?match='+encodeURIComponent(match),{method:'POST',headers:{'Content-Type':'application/json'},body:body,cache:'no-store'}).catch(function(){});
-    }catch(e3){}
+      var payload={type:'ping',id:viewerUid(),uid:viewerUid(),name:name,match:match,tab:'live'};
+      // Prefer WebSocket push path (no DO HTTP request)
+      try{
+        var ws=window.__liveWs || null;
+        if(ws && ws.readyState===1){ ws.send(JSON.stringify(payload)); return; }
+      }catch(eW){}
+      // Fallback HTTP only when WS is down
+      fetch('/api/viewer-activity?match='+encodeURIComponent(match),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store'}).catch(function(){});
+    }catch(e){}
   };
 try{ if(window.speechSynthesis){ speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged=function(){ try{speechSynthesis.getVoices();}catch(e){} }; } }catch(eV){}
   'use strict';
@@ -1504,7 +1516,7 @@ function excitingHindi(d, ev){
       }catch(eMH){}
     },[]);
     useEffect(function(){
-      var match=new URLSearchParams(location.search).get('match')||'current';
+      var match=new URLSearchParams(location.search).get('match')||localStorage.getItem('cricket_live_match_id')||'current';
       if(!match || match==='undefined' || match==='null' || match==='0') match='current';
       var dead=false,retry=0,pollTimer;
       function connect(){
@@ -1512,28 +1524,50 @@ function excitingHindi(d, ev){
         try{
           var proto=location.protocol==='https:'?'wss:':'ws:';
           var ws=new WebSocket(proto+'//'+location.host+'/ws?match='+encodeURIComponent(match)+'&name='+encodeURIComponent((function(){try{return localStorage.getItem('react_viewer_name')||localStorage.getItem('viewer_name')||'Fan';}catch(e){return 'Fan';}})())+'&role=viewer');
-          wsRef.current=ws;
-          ws.onopen=function(){setConnected(true);retry=0; try{ window.__viewerPing && window.__viewerPing(); }catch(e){} };
+          wsRef.current=ws; try{ window.__liveWs=ws; }catch(e0){}
+          ws.onopen=function(){
+            try{ schedulePoll(); }catch(eSP){}
+            setConnected(true);retry=0;
+            try{ ws.send(JSON.stringify({type:'sync'})); }catch(eSy){}
+            try{ window.__viewerPing && window.__viewerPing(); }catch(e){}
+          };
           ws.onmessage=function(ev){
             try{
               var msg=JSON.parse(ev.data);
               if(!msg||msg.type==='pong')return;
               if(msg.type==='presence'){setViewers(Array.isArray(msg.data)?msg.data:[]);return;}
               if(msg.type==='mic'||String(msg.type||'').indexOf('webrtc')===0)return;
-              apply(msg.data||msg);
+              // Push payload: full | update | live | raw data
+              if(msg.type==='full' || msg.type==='update' || msg.type==='live'){
+                apply(msg.data||msg.payload||msg);
+                return;
+              }
+              if(msg.data){ apply(msg.data); return; }
+              apply(msg);
             }catch(e){}
           };
-          ws.onclose=function(){setConnected(false);setTimeout(connect,Math.min(15000,800+retry++*700));};
+          ws.onclose=function(){ try{ schedulePoll(); }catch(eSC){} setConnected(false);setTimeout(connect,Math.min(15000,800+retry++*700));};
         }catch(e){}
       }
       connect();
       function poll(){
+        // HTTP fallback ONLY when WebSocket is disconnected (push-first for 200–300 concurrent free tier)
         fetch('/api/live-public?match='+encodeURIComponent(match)+'&_='+Date.now(),{cache:'no-store'})
           .then(function(r){return r.ok?r.json():null;})
           .then(function(j){if(j)apply(j);})
           .catch(function(){});
       }
-      pollTimer=setInterval(poll,1000);poll();
+      // Push-based: no 1s polling. Fallback poll every 45s, or every 8s if WS down.
+      function schedulePoll(){
+        try{ if(pollTimer) clearInterval(pollTimer); }catch(e){}
+        var wsOk = !!(wsRef.current && wsRef.current.readyState===1);
+        // Push-first with safety net: rare HTTP even when WS up (recovers empty/missed pushes)
+        pollTimer=setInterval(poll, wsOk ? 30000 : 8000);
+      }
+      schedulePoll();
+      // Always bootstrap once so first paint is never blank
+      try{ poll(); }catch(e0){}
+      setTimeout(function(){ try{ poll(); }catch(e1){} }, 1500);
       function wakeSync(){
         try{ window.__forceLiveApply=true; lastSig.current=''; }catch(e0){}
         try{ poll(); }catch(e1){}
@@ -1758,14 +1792,15 @@ function excitingHindi(d, ev){
     var data=live.data,viewers=live.viewers,connected=live.connected;
     var _tab=useState('commentary'),tab=_tab[0],setTab=_tab[1];
     var _w=useState(true),welcome=_w[0],setWelcome=_w[1];
+    var _act=useState(false),showActivity=_act[0],setShowActivity=_act[1];
     var _wn=useState(function(){ try{ return localStorage.getItem('react_viewer_name')||''; }catch(e){ return ''; } }),welcomeName=_wn[0],setWelcomeName=_wn[1];
-    // welcome-auto-close: if name already saved, close after 4s
+    // welcome-auto-close: if name already saved, close after 6s
     useEffect(function(){
       var existing='';
       try{ existing=localStorage.getItem('react_viewer_name')||localStorage.getItem('viewer_name')||''; }catch(e){}
       if(existing && String(existing).trim()){
         setWelcomeName(String(existing).trim());
-        var t=setTimeout(function(){ setWelcome(false); }, 4000);
+        var t=setTimeout(function(){ setWelcome(false); }, 6000);
         return function(){ clearTimeout(t); };
       }
     },[]);
@@ -1785,7 +1820,7 @@ function excitingHindi(d, ev){
 
     useEffect(function(){
       try{ window.__viewerPing && window.__viewerPing(welcomeName||viewerDisplayName()); }catch(e){}
-      var t=setInterval(function(){ try{ window.__viewerPing && window.__viewerPing(); }catch(e){} }, 15000);
+      var t=setInterval(function(){ try{ window.__viewerPing && window.__viewerPing(); }catch(e){} }, 60000);
       // reconnect WS so server presence uses SD7 etc name
       try{
         var nm=(welcomeName||viewerDisplayName()||'').trim();
@@ -2870,9 +2905,9 @@ function excitingHindi(d, ev){
           capSub==='orange'?h('table',null,
             h('thead',null,h('tr',null,h('th',null,'#'),h('th',null,'Player'),h('th',null,'Runs'),h('th',null,'Balls'),h('th',null,'Avg'),h('th',null,'SR'))),
             h('tbody',null,
-              (data&&data.orangeCap?data.orangeCap.slice(0,20):[]).map(function(p,i){
+              (data&&(data.cumulativeOrangeCap||data.orangeCap)?(data.cumulativeOrangeCap||data.orangeCap).slice(0,20):[]).map(function(p,i){
                 return h('tr',{key:i},
-                  h('td',null,i+1),h('td',null,p.name),h('td',null,p.runs||0),h('td',null,p.balls||0),
+                  h('td',null,i+1),h('td',null,p.name),h('td',null,p.runs||0),h('td',null,p.balls||0),h('td',null,p.avg!=null?p.avg:(p.SR||p.sr||'-')),h('td',null,p.SR||p.sr||'-'),
                   h('td',null,p.avg!=null?p.avg:(p.average!=null?p.average:'-')),
                   h('td',null,p.sr!=null?p.sr:sr(p.runs,p.balls))
                 );
@@ -2882,7 +2917,7 @@ function excitingHindi(d, ev){
           ):h('table',null,
             h('thead',null,h('tr',null,h('th',null,'#'),h('th',null,'Player'),h('th',null,'W'),h('th',null,'Runs'),h('th',null,'Overs'),h('th',null,'Econ'))),
             h('tbody',null,
-              (data&&data.purpleCap?data.purpleCap.slice(0,20):[]).map(function(p,i){
+              (data&&(data.cumulativePurpleCap||data.purpleCap)?(data.cumulativePurpleCap||data.purpleCap).slice(0,20):[]).map(function(p,i){
                 var bb=p.bowlBalls!=null?n(p.bowlBalls):n(p.balls);
                 var rr=p.bowlRuns!=null?n(p.bowlRuns):n(p.runs);
                 return h('tr',{key:i},
@@ -3105,7 +3140,25 @@ function excitingHindi(d, ev){
         ):null,
 
         tab==='viewers'?h('div',{className:'card'},
-          h('h3',null,'Viewers · last 2 weeks'),
+          h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}},
+            h('h3',{style:{margin:0}},'Viewers · last 2 weeks'),
+            h('button',{
+              type:'button',
+              className:'btn',
+              style:{padding:'6px 12px',fontSize:12,fontWeight:800,borderRadius:999,border:'1px solid rgba(148,163,184,.35)',background:showActivity?'#2563eb':'rgba(15,23,42,.5)',color:'#fff'},
+              onClick:function(){ setShowActivity(!showActivity); }
+            }, showActivity ? 'Hide activity' : 'Activity')
+          ),
+          showActivity?h('div',{style:{marginBottom:12,padding:10,borderRadius:12,background:'rgba(15,23,42,.45)',fontSize:12,lineHeight:1.5}},
+            (viewerRows||[]).slice(0,40).map(function(v,i){
+              return h('div',{key:i,style:{padding:'6px 0',borderBottom:'1px solid rgba(148,163,184,.15)'}},
+                h('b',null,v.name||('Fan-'+(i+1))),' · ',
+                (v.online||v.status==='online')?'🟢 online':'⚫ offline',' · ',
+                v.activity||v.lastAction||'visit',' · ',
+                v.lastSeen? new Date(v.lastSeen).toLocaleString(): (v.joinedAt?new Date(v.joinedAt).toLocaleString():'')
+              );
+            })
+          ):null,
           h('table',null,
             h('thead',null,h('tr',null,h('th',null,'Name'),h('th',null,'Status'),h('th',null,'Log in'),h('th',null,'Out'),h('th',null,'Activity'))),
             h('tbody',null,
