@@ -686,15 +686,10 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
       recordLocalViewer(name);
       var match='current';
       try{ match=new URLSearchParams(location.search).get('match')||'current'; }catch(e2){}
-      var payload={type:'ping',id:viewerUid(),uid:viewerUid(),name:name,match:match,tab:'live'};
-      // Prefer WebSocket push path (no DO HTTP request)
-      try{
-        var ws=window.__liveWs || null;
-        if(ws && ws.readyState===1){ ws.send(JSON.stringify(payload)); return; }
-      }catch(eW){}
-      // Fallback HTTP only when WS is down
-      fetch('/api/viewer-activity?match='+encodeURIComponent(match),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store'}).catch(function(){});
-    }catch(e){}
+      var body=JSON.stringify({id:viewerUid(),uid:viewerUid(),name:name,match:match,tab:'live'});
+      fetch('/viewer-activity?match='+encodeURIComponent(match),{method:'POST',headers:{'Content-Type':'application/json'},body:body,cache:'no-store'}).catch(function(){});
+      fetch('/api/viewer-activity?match='+encodeURIComponent(match),{method:'POST',headers:{'Content-Type':'application/json'},body:body,cache:'no-store'}).catch(function(){});
+    }catch(e3){}
   };
 try{ if(window.speechSynthesis){ speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged=function(){ try{speechSynthesis.getVoices();}catch(e){} }; } }catch(eV){}
   'use strict';
@@ -1517,58 +1512,28 @@ function excitingHindi(d, ev){
         try{
           var proto=location.protocol==='https:'?'wss:':'ws:';
           var ws=new WebSocket(proto+'//'+location.host+'/ws?match='+encodeURIComponent(match)+'&name='+encodeURIComponent((function(){try{return localStorage.getItem('react_viewer_name')||localStorage.getItem('viewer_name')||'Fan';}catch(e){return 'Fan';}})())+'&role=viewer');
-          wsRef.current=ws; try{ window.__liveWs=ws; }catch(e0){}
-          ws.onopen=function(){
-            try{ schedulePoll(); }catch(eSP){}
-            setConnected(true);retry=0;
-            try{ ws.send(JSON.stringify({type:'sync'})); }catch(eSy){}
-            try{ window.__viewerPing && window.__viewerPing(); }catch(e){}
-          };
+          wsRef.current=ws;
+          ws.onopen=function(){setConnected(true);retry=0; try{ window.__viewerPing && window.__viewerPing(); }catch(e){} };
           ws.onmessage=function(ev){
             try{
               var msg=JSON.parse(ev.data);
               if(!msg||msg.type==='pong')return;
               if(msg.type==='presence'){setViewers(Array.isArray(msg.data)?msg.data:[]);return;}
               if(msg.type==='mic'||String(msg.type||'').indexOf('webrtc')===0)return;
-              // Push payload: full | update | live | raw data
-              if(msg.type==='full' || msg.type==='update' || msg.type==='live'){
-                apply(msg.data||msg.payload||msg);
-                return;
-              }
-              if(msg.data){ apply(msg.data); return; }
-              apply(msg);
+              apply(msg.data||msg);
             }catch(e){}
           };
-          ws.onclose=function(){ try{ schedulePoll(); }catch(eSC){} setConnected(false);setTimeout(connect,Math.min(15000,800+retry++*700));};
+          ws.onclose=function(){setConnected(false);setTimeout(connect,Math.min(15000,800+retry++*700));};
         }catch(e){}
       }
       connect();
       function poll(){
-        // HTTP fallback ONLY when WebSocket is disconnected (push-first for 200–300 concurrent free tier)
         fetch('/api/live-public?match='+encodeURIComponent(match)+'&_='+Date.now(),{cache:'no-store'})
           .then(function(r){return r.ok?r.json():null;})
           .then(function(j){if(j)apply(j);})
           .catch(function(){});
       }
-      // Push-based: no 1s polling. Fallback poll every 45s, or every 8s if WS down.
-      function schedulePoll(){
-        try{ if(pollTimer) clearInterval(pollTimer); }catch(e){}
-        var wsOk = !!(wsRef.current && wsRef.current.readyState===1);
-        // Push-first: NO regular HTTP poll while WebSocket is healthy
-        // Fallback poll only when WS is down (every 12s)
-        if(wsOk){
-          pollTimer=null;
-          return;
-        }
-        pollTimer=setInterval(poll, 12000);
-      }
-      schedulePoll();
-      // Single bootstrap HTTP only if WS not open within 2s
-      setTimeout(function(){
-        try{
-          if(!wsRef.current || wsRef.current.readyState!==1) poll();
-        }catch(e){ poll(); }
-      }, 2000);
+      pollTimer=setInterval(poll,1000);poll();
       function wakeSync(){
         try{ window.__forceLiveApply=true; lastSig.current=''; }catch(e0){}
         try{ poll(); }catch(e1){}
@@ -1820,7 +1785,7 @@ function excitingHindi(d, ev){
 
     useEffect(function(){
       try{ window.__viewerPing && window.__viewerPing(welcomeName||viewerDisplayName()); }catch(e){}
-      var t=setInterval(function(){ try{ window.__viewerPing && window.__viewerPing(); }catch(e){} }, 60000);
+      var t=setInterval(function(){ try{ window.__viewerPing && window.__viewerPing(); }catch(e){} }, 15000);
       // reconnect WS so server presence uses SD7 etc name
       try{
         var nm=(welcomeName||viewerDisplayName()||'').trim();
