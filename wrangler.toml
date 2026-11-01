@@ -1,3 +1,5 @@
+# Cloudflare Workers + Static Assets (official routing pattern)
+# https://developers.cloudflare.com/workers/static-assets/binding/
 name = "mysportzstats"
 main = "src/index.js"
 compatibility_date = "2024-09-23"
@@ -17,7 +19,21 @@ binding = "AI"
 [assets]
 directory = "./public"
 binding = "ASSETS"
+# Worker-first ONLY where we need dynamic handling / path aliases.
+# "/" and "/index.html" stay asset-first (no redirect loops).
+# https://developers.cloudflare.com/workers/static-assets/routing/worker-script/
+run_worker_first = [
+  "/api/*",
+  "/ws",
+  "/m/*",
+  "/live",
+  "/live.html",
+  "/live-react",
+  "/live-react.html",
+  "/viewer",
+  "/viewers",
+  "/viewer.html"
+]
 
-# App creator only — set a strong secret, then use header X-Admin-Key for ad APIs
 [vars]
 ADMIN_KEY = "mysportz-admin-2024"
