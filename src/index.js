@@ -186,7 +186,7 @@ async function handlePlatform(request, env, url) {
   // Create short link for a match
   if (url.pathname === "/api/short" && request.method === "POST") {
     const body = await request.json().catch(() => ({}));
-    const matchId = String(body.match || body.matchId || "default").slice(0, 80);
+    const matchId = String(body.match || body.matchId || "current").slice(0, 80);
     const title = String(body.title || body.matchDesc || "Live Cricket").slice(0, 120);
     const teamA = String(body.teamA || "").slice(0, 40);
     const teamB = String(body.teamB || "").slice(0, 40);
@@ -202,7 +202,7 @@ async function handlePlatform(request, env, url) {
     );
     const origin = url.origin;
     const shortUrl = origin + "/m/" + code;
-    const liveUrl = origin + "/live-react.html?match=" + encodeURIComponent(matchId || "current");
+    const liveUrl = origin + "/live?match=" + encodeURIComponent(matchId || "current");
     return new Response(
       JSON.stringify({ ok: true, code, shortUrl, liveUrl, title }),
       { headers: cors }
@@ -234,7 +234,7 @@ async function handleShortPage(request, env, url) {
   const teamA = data.teamA || "Team A";
   const teamB = data.teamB || "Team B";
   const desc = data.desc || (teamA + " vs " + teamB + " — live ball-by-ball scores, commentary & stats");
-  const liveUrl = new URL("/live-react.html?match=" + encodeURIComponent(matchId || "current"), url.origin).toString();
+  const liveUrl = new URL("/live?match=" + encodeURIComponent(matchId || "current"), url.origin).toString();
   let customImg = data.imageUrl ? String(data.imageUrl).trim() : "";
   if (customImg && !/^https:\/\//i.test(customImg)) customImg = "";
   const label = encodeURIComponent((teamA + " VS " + teamB).slice(0, 40));
@@ -360,6 +360,10 @@ export default {
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: CORS });
     }
+    }
+
+    }
+
 
     // PWA assets
     if (url.pathname === "/manifest.json" || url.pathname === "/sw.js" || url.pathname === "/sw-live.js"
@@ -367,7 +371,7 @@ export default {
         || url.pathname === "/icon-live-192.png" || url.pathname === "/icon-live-512.png") {
       try {
         if (env.ASSETS) {
-          const ar = await env.ASSETS.fetch(request);
+          const ar = await env.ASSETS.fetch(new URL(url.pathname, "https://assets.local"));
           if (ar && ar.status < 400) return ar;
         }
       } catch (eA) {}
@@ -427,17 +431,30 @@ export default {
 
     // WebSocket → Durable Object
     if (url.pathname === "/ws") {
-      const matchId = url.searchParams.get("match") || "default";
+      const matchId = url.searchParams.get("match") || "current";
       return env.MATCH.get(env.MATCH.idFromName(matchId)).fetch(request);
     }
 
-    // Scorer HTTP push
+    // Scorer HTTP push — write to match id AND alias "current" so live page always finds data
     if (
       (url.pathname === "/api/live" || url.pathname === "/api/update") &&
       request.method === "POST"
     ) {
-      const matchId = url.searchParams.get("match") || "default";
-      return env.MATCH.get(env.MATCH.idFromName(matchId)).fetch(request);
+      const matchId = url.searchParams.get("match") || "current";
+      const bodyText = await request.text();
+      const mkReq = (mid) =>
+        new Request(url.pathname + "?match=" + encodeURIComponent(mid), {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Publisher-Key": request.headers.get("X-Publisher-Key") || "" },
+          body: bodyText,
+        });
+      const res = await env.MATCH.get(env.MATCH.idFromName(matchId)).fetch(mkReq(matchId));
+      if (matchId !== "current") {
+        try {
+          await env.MATCH.get(env.MATCH.idFromName("current")).fetch(mkReq("current"));
+        } catch (_) {}
+      }
+      return res;
     }
 
     // Viewer poll
@@ -445,7 +462,7 @@ export default {
       (url.pathname === "/api/live-public" || url.pathname === "/api/live") &&
       request.method === "GET"
     ) {
-      const matchId = url.searchParams.get("match") || "default";
+      const matchId = url.searchParams.get("match") || "current";
       return env.MATCH.get(env.MATCH.idFromName(matchId)).fetch(request);
     }
 
@@ -466,7 +483,7 @@ export default {
       "/admin/blocks",
     ];
     if (doPaths.some((p) => url.pathname === p || url.pathname.startsWith(p + "/"))) {
-      const matchId = url.searchParams.get("match") || "default";
+      const matchId = url.searchParams.get("match") || "current";
       return env.MATCH.get(env.MATCH.idFromName(matchId)).fetch(request);
     }
 
@@ -474,16 +491,98 @@ export default {
       return json({ ok: true });
     }
 
-    if (url.pathname === "/" || url.pathname === "/score" || url.pathname === "/index.html") {
-      return env.ASSETS.fetch(new Request(new URL("/index.html", request.url), request));
-    }
-    if (url.pathname === "/live" || url.pathname === "/live.html") {
-      return env.ASSETS.fetch(new Request(new URL("/live.html", request.url), request));
-    }
-    if (url.pathname === "/live-react" || url.pathname === "/live-react.html") {
-      return env.ASSETS.fetch(new Request(new URL("/live-react.html", request.url), request));
+    // -------- Static assets (Cloudflare ASSETS binding) --------
+    // Docs: env.ASSETS.fetch(request | URL | string)
+    // Hostname in URL is ignored; only pathname matches assets.
+    // https://developers.cloudflare.com/workers/static-assets/binding/#fetch
+    const VIEWER_ALIASES = new Set([
+      "/live",
+      "/live.html",
+      "/live-react",
+      "/live-react.html",
+      "/viewer",
+      "/viewers",
+      "/viewer.html",
+    ]);
+
+    async function serveAssetPath(pathname) {
+      if (!env.ASSETS) {
+        return new Response("ASSETS binding missing", { status: 500 });
+      }
+      // Prefer string form from CF docs
+      const res = await env.ASSETS.fetch("https://assets.local" + pathname);
+      return res;
     }
 
-    return env.ASSETS.fetch(request);
-  }
+    const p = url.pathname;
+
+    // Viewer aliases → always serve live-react.html body
+    if (VIEWER_ALIASES.has(p)) {
+      try {
+        let res = await serveAssetPath("/live-react.html");
+        if (!res || res.status >= 400) {
+          res = await serveAssetPath("/viewer.html");
+        }
+        if (!res || res.status >= 400) {
+          res = await serveAssetPath("/live.html");
+        }
+        if (res && res.status < 400) {
+          // Clone body so we can force correct content-type
+          const body = await res.arrayBuffer();
+          return new Response(body, {
+            status: 200,
+            headers: {
+              "Content-Type": "text/html; charset=utf-8",
+              "Cache-Control": "no-store",
+              "X-Viewer-Asset": "live-react",
+            },
+          });
+        }
+      } catch (e) {
+        return new Response("Viewer asset error: " + String(e && e.message || e), {
+          status: 500,
+          headers: { "Content-Type": "text/plain; charset=utf-8" },
+        });
+      }
+      return new Response(
+        "Viewer HTML missing from deploy. Ensure public/live-react.html is uploaded.\\nTried: /live-react.html, /viewer.html, /live.html",
+        { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
+      );
+    }
+
+    // Scorer (if request reached Worker)
+    if (p === "/" || p === "/score" || p === "/index.html") {
+      try {
+        const res = await serveAssetPath("/index.html");
+        if (res && res.status < 400) {
+          const body = await res.arrayBuffer();
+          return new Response(body, {
+            status: 200,
+            headers: {
+              "Content-Type": "text/html; charset=utf-8",
+              "Cache-Control": "no-store",
+            },
+          });
+        }
+      } catch (_) {}
+      return new Response("Scorer missing (public/index.html)", { status: 503 });
+    }
+
+    // Fallback: pass through to assets (CF recommended)
+    try {
+      if (env.ASSETS) {
+        // Use path-only URL — do NOT pass original request when run_worker_first matched
+        // (passing request can re-apply routing and loop on some configs)
+        const res = await env.ASSETS.fetch("https://assets.local" + p);
+        if (res && res.status < 400) return res;
+      }
+    } catch (_) {}
+
+    return new Response("Not found: " + p, {
+      status: 404,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  },
 };
+
+export { MatchDO };

@@ -54,9 +54,13 @@ export class MatchDO {
       const [client, server] = Object.values(pair);
       server.accept();
 
-      const name = url.searchParams.get("name") || "Fan";
+      let name = (url.searchParams.get("name") || "").trim() || "Fan";
       const role = url.searchParams.get("role") || "viewer";
-
+      // Assign Fan-1, Fan-2… when no real name/initials
+      if (!name || /^fan([-_\s]?\d+)?$/i.test(name) || name === "Fan") {
+        this._fanSeq = (this._fanSeq || 0) + 1;
+        name = "Fan-" + this._fanSeq;
+      }
       this.sessions.set(server, { name, role, joinedAt: Date.now() });
       this.broadcastPresence();
 
@@ -513,7 +517,19 @@ export class MatchDO {
   collectViewers() {
     this.expireHttpViewers(Date.now());
     const now = Date.now();
-    // Prefer persistent log (includes offline)
+    // Merge WS sessions as online into log snapshot
+    try {
+      for (const s of this.sessions.values()) {
+        if (s.role && s.role !== "viewer") continue;
+        const id = s.uid || ("ws:" + (s.name || "Fan") + ":" + (s.joinedAt || 0));
+        const prev = this.viewerLog.get(id) || {};
+        this.viewerLog.set(id, Object.assign({}, prev, {
+          id, name: s.name || prev.name || "Fan",
+          joinedAt: prev.joinedAt || s.joinedAt || now,
+          lastSeen: now, online: true, leftAt: null,
+        }));
+      }
+    } catch (_) {}
     if (this.viewerLog && this.viewerLog.size) {
       return [...this.viewerLog.values()].map((v) => ({
         id: v.id,
@@ -522,6 +538,7 @@ export class MatchDO {
         lastSeen: v.lastSeen,
         leftAt: v.leftAt,
         online: !!v.online,
+        activity: v.activity || v.lastAction || (v.online ? "watching" : "left"),
         coins: v.coins != null ? v.coins : 10,
         matches: v.matches || [],
       }));
@@ -550,6 +567,25 @@ export class MatchDO {
     // Return full scorer payload so viewer gets BOTH team scores, CRR, target, etc.
     // (Previously stripped firstInningsScore / battingSide / crr → "Yet to bat" + CRR 0.00)
     const out = Object.assign({}, L);
+    // Live viewer count = active WS viewers + recent HTTP heartbeats (not offline log)
+    try {
+      this.expireHttpViewers(Date.now());
+      let n = 0;
+      for (const s of this.sessions.values()) {
+        if (s.role === 'viewer' || !s.role) n++;
+      }
+      for (const v of this.httpViewers.values()) {
+        if (v && v.ts && Date.now() - v.ts < 90000) n++;
+      }
+      // de-dup rough: prefer max of WS sessions vs http
+      const wsOnly = [...this.sessions.values()].filter(s => s.role === 'viewer' || !s.role).length;
+      out.viewerCount = Math.max(wsOnly, n > wsOnly ? n : wsOnly);
+      out.watching = out.viewerCount;
+      out.viewersOnline = out.viewerCount;
+    } catch (_) {
+      out.viewerCount = 0;
+      out.watching = 0;
+    }
     out.ts = L.ts || Date.now();
     out.runs = L.runs != null ? L.runs : (L.score && L.score.runs) || 0;
     out.wickets = L.wickets != null ? L.wickets : (L.score && L.score.wickets) || 0;
@@ -578,6 +614,31 @@ export class MatchDO {
     if (!session) return;
 
     switch (msg.type) {
+      case "ping":
+      case "heartbeat":
+      case "viewer": {
+        // Presence over WebSocket — avoids HTTP /viewer-activity DO hits
+        const name = String((msg && msg.name) || session.name || "Fan").slice(0, 40);
+        const id = String((msg && (msg.id || msg.uid)) || "").slice(0, 64);
+        session.name = name;
+        session.lastPing = Date.now();
+        if (id) session.uid = id;
+        try {
+          const now = Date.now();
+          const key = id || name;
+          this.httpViewers.set(key, { id: key, name, ts: now, via: "ws" });
+        } catch (_) {}
+        try {
+          ws.send(JSON.stringify({ type: "pong", ts: Date.now() }));
+        } catch (_) {}
+        break;
+      }
+      case "sync": {
+        try {
+          ws.send(JSON.stringify({ type: "full", data: this.publicPayload() }));
+        } catch (_) {}
+        break;
+      }
       case "chat":
         this.live.chat = this.live.chat || [];
         this.live.chat.push({
