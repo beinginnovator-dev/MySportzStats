@@ -2400,7 +2400,7 @@ function excitingHindi(d, ev){
 
       h('div',{className:'broadcast'},
         h('div',{className:'bar'},
-          h('span',{className:'live-pill'},h('i'),'LIVE · '+((viewers&&viewers.length)||0)),
+          h('span',{className:'live-pill'},h('i'),'LIVE · '+((function(){ try{ var src=viewers||[]; var n=0; for(var i=0;i<src.length;i++){ var v=src[i]; if(v&&(v.online===true||v.status==='online')) n++; } if(n>0) return n; if(data&&(data.viewersOnline|0)>0) return data.viewersOnline|0; if(data&&(data.watching|0)>0) return data.watching|0; if(data&&(data.viewerCount|0)>0) return data.viewerCount|0; return 0; }catch(e){ return 0; } })())),
           h('div',{style:{flex:1}}),
           h('button',{className:'gear',type:'button',onClick:function(){setSettingsOpen(!settingsOpen);}},'⚙')
         ),
@@ -2486,16 +2486,66 @@ function excitingHindi(d, ev){
               var cached = JSON.parse(localStorage.getItem('cricket_sponsors_v1')||localStorage.getItem('live_sponsors_cache')||'{}');
               if(cached && cached.enabled !== false) addFrom(cached);
             } catch(e){}
-            if(!names.length) return null;
-            // If payload disabled and no cache names, hide
-            if(data && data.sponsors && data.sponsors.enabled === false && names.length===0) return null;
-            var idx = Math.abs(spIdx|0) % names.length;
-            var name = names[idx];
-            var logo = '';
+            // Rich list {name,logo} so every sponsor logo shows when provided
+            var entries = [];
             try {
-              var items = (data && data.sponsors && data.sponsors.items) || [];
-              for(var i=0;i<items.length;i++){
-                if(items[i] && String(items[i].name||'')===name && items[i].logo){ logo=items[i].logo; break; }
+              var seenN = {};
+              function addEntry(nm, lg) {
+                nm = String(nm || '').trim();
+                if (!nm || seenN[nm.toLowerCase()]) return;
+                seenN[nm.toLowerCase()] = 1;
+                lg = lg || '';
+                if (!lg) {
+                  try {
+                    var its = (data && data.sponsors && data.sponsors.items) || [];
+                    for (var j = 0; j < its.length; j++) {
+                      var it = its[j];
+                      if (!it) continue;
+                      var iname = String(it.name || it.title || '').trim();
+                      if (iname && iname.toLowerCase() === nm.toLowerCase()) {
+                        lg = it.logo || it.logoUrl || it.image || it.img || it.icon || '';
+                        break;
+                      }
+                    }
+                  } catch (eR) {}
+                }
+                entries.push({ name: nm, logo: lg || '' });
+              }
+              var items0 = (data && data.sponsors && data.sponsors.items) || [];
+              for (var ii = 0; ii < items0.length; ii++) {
+                var it0 = items0[ii];
+                if (!it0) continue;
+                addEntry(it0.name || it0.title, it0.logo || it0.logoUrl || it0.image || it0.img || it0.icon || '');
+              }
+              for (var ni = 0; ni < names.length; ni++) addEntry(names[ni], '');
+              try {
+                var cached2 = JSON.parse(localStorage.getItem('cricket_sponsors_v1') || localStorage.getItem('live_sponsors_cache') || '{}');
+                var cItems = (cached2 && cached2.items) || [];
+                for (var ci = 0; ci < cItems.length; ci++) {
+                  var cit = cItems[ci];
+                  if (cit) addEntry(cit.name || cit.title, cit.logo || cit.logoUrl || cit.image || '');
+                }
+              } catch (eC) {}
+            } catch (eE) {}
+            if (!entries.length) {
+              for (var n2 = 0; n2 < names.length; n2++) entries.push({ name: names[n2], logo: '' });
+            }
+            if(!entries.length) return null;
+            if(data && data.sponsors && data.sponsors.enabled === false && entries.length===0) return null;
+            var idx = Math.abs(spIdx|0) % entries.length;
+            var name = entries[idx].name;
+            var logo = entries[idx].logo || '';
+            try {
+              if (!logo) {
+                var items = (data && data.sponsors && data.sponsors.items) || [];
+                for(var i=0;i<items.length;i++){
+                  if(!items[i]) continue;
+                  var nm2 = String(items[i].name||items[i].title||'');
+                  if(nm2 && nm2.toLowerCase()===String(name).toLowerCase()){
+                    logo = items[i].logo || items[i].logoUrl || items[i].image || items[i].img || '';
+                    break;
+                  }
+                }
               }
             } catch(e2){}
             var colors=['#fbbf24','#38bdf8','#f472b6','#4ade80','#a78bfa','#fb7185','#f97316'];
@@ -2518,7 +2568,7 @@ function excitingHindi(d, ev){
               })(),
               title: name
             },
-              logo?h('img',{src:logo,alt:''}):null,
+              logo?h('img',{src:logo,alt:name,style:{width:28,height:28,borderRadius:8,objectFit:'contain',background:'#fff',flexShrink:0},onError:function(e){try{e.target.style.display='none';}catch(x){}}}):null,
               h('span',null, name+' PRESENTS')
             );
           })(),
@@ -3153,7 +3203,7 @@ function excitingHindi(d, ev){
             (viewerRows||[]).slice(0,40).map(function(v,i){
               return h('div',{key:i,style:{padding:'6px 0',borderBottom:'1px solid rgba(148,163,184,.15)'}},
                 h('b',null,v.name||('Fan-'+(i+1))),' · ',
-                (v.online||v.status==='online')?'🟢 online':'⚫ offline',' · ',
+                (v.online===true||v.status==='online')?'🟢 online':'⚫ offline',' · ',
                 v.activity||v.lastAction||'visit',' · ',
                 v.lastSeen? new Date(v.lastSeen).toLocaleString(): (v.joinedAt?new Date(v.joinedAt).toLocaleString():'')
               );
@@ -3163,13 +3213,32 @@ function excitingHindi(d, ev){
             h('thead',null,h('tr',null,h('th',null,'Name'),h('th',null,'Status'),h('th',null,'Log in'),h('th',null,'Out'),h('th',null,'Activity'))),
             h('tbody',null,
               viewerRows.map(function(v,i){
-                var online=!(v.status==='offline'||v.online===false);
-                return h('tr',{key:i},
-                  h('td',null,v.name||v.displayName||'Viewer'),
+                var online=(v.online===true||v.status==='online');
+                var nm=v.name||v.displayName||('Fan-'+(i+1));
+                var initials=(function(){
+                  var p=String(nm).trim().split(/\s+/).filter(Boolean);
+                  if(!p.length) return 'F'+(i+1);
+                  if(p.length===1) return p[0].slice(0,2).toUpperCase();
+                  return (p[0][0]+p[p.length-1][0]).toUpperCase();
+                })();
+                var act=v.activity||v.lastAction||v.tab||(online?'watching':'left');
+                return h('tr',{key:v.id||i},
+                  h('td',null,
+                    h('div',{style:{display:'flex',alignItems:'center',gap:8}},
+                      h('span',{style:{width:28,height:28,borderRadius:999,background:online?'#166534':'#334155',color:'#fff',fontSize:11,fontWeight:800,display:'inline-flex',alignItems:'center',justifyContent:'center',flexShrink:0}}, initials),
+                      h('span',{style:{fontWeight:700}}, nm)
+                    )
+                  ),
                   h('td',{style:{color:online?'#22c55e':'#94a3b8',fontWeight:800}},online?'Online':'Offline'),
                   h('td',null,fmtTime(v.joinedAt||v.firstSeen)),
                   h('td',null,online?'-':fmtTime(v.leftAt||v.lastSeen)),
-                  h('td',null,v.activity||v.tab||'watching')
+                  h('td',null,
+                    h('button',{
+                      type:'button',
+                      title:act,
+                      style:{border:'1px solid rgba(148,163,184,.35)',background:online?'rgba(34,197,94,.15)':'rgba(148,163,184,.12)',color:online?'#86efac':'#cbd5e1',borderRadius:999,padding:'3px 10px',fontSize:11,fontWeight:700,cursor:'default'}
+                    }, act)
+                  )
                 );
               })
             )
