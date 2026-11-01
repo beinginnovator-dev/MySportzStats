@@ -8157,7 +8157,7 @@ function placeBoundaryAnimationOnStriker(toast){
             }
             server = String(server).replace(/\/+$/,'');
             try { localStorage.setItem(LIVE_SERVER_KEY, server); localStorage.setItem('cricket_live_server', server); } catch(eSrv){}
-            var url = server + '/live-react.html?match=' + encodeURIComponent(matchId || getLiveMatchId() || 'current');
+            var url = server + '/live?match=' + encodeURIComponent(matchId || getLiveMatchId());
             if (viewKey) url += '&key=' + encodeURIComponent(viewKey);
             return url;
         } catch(e) {
