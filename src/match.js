@@ -519,15 +519,30 @@ export class MatchDO {
     const now = Date.now();
     // Merge WS sessions as online into log snapshot
     try {
+      const onlineIds = new Set();
       for (const s of this.sessions.values()) {
         if (s.role && s.role !== "viewer") continue;
         const id = s.uid || ("ws:" + (s.name || "Fan") + ":" + (s.joinedAt || 0));
+        onlineIds.add(id);
         const prev = this.viewerLog.get(id) || {};
         this.viewerLog.set(id, Object.assign({}, prev, {
           id, name: s.name || prev.name || "Fan",
           joinedAt: prev.joinedAt || s.joinedAt || now,
           lastSeen: now, online: true, leftAt: null,
+          activity: prev.activity || "watching",
         }));
+      }
+      // Mark others offline (keep history)
+      for (const [id, prev] of this.viewerLog.entries()) {
+        if (onlineIds.has(id)) continue;
+        if (prev && prev.online) {
+          this.viewerLog.set(id, Object.assign({}, prev, {
+            online: false,
+            leftAt: prev.leftAt || now,
+            lastSeen: prev.lastSeen || now,
+            activity: prev.activity && prev.activity !== "watching" ? prev.activity : "left",
+          }));
+        }
       }
     } catch (_) {}
     if (this.viewerLog && this.viewerLog.size) {
@@ -570,21 +585,36 @@ export class MatchDO {
     // Live viewer count = active WS viewers + recent HTTP heartbeats (not offline log)
     try {
       this.expireHttpViewers(Date.now());
+      // Online = open WS viewer sessions + HTTP heartbeats < 90s (unique by name/uid)
+      const seen = new Set();
       let n = 0;
       for (const s of this.sessions.values()) {
-        if (s.role === 'viewer' || !s.role) n++;
+        if (s.role && s.role !== 'viewer') continue;
+        const key = String(s.uid || s.name || '') + '|ws';
+        if (seen.has(key)) continue;
+        seen.add(key);
+        n++;
       }
-      for (const v of this.httpViewers.values()) {
-        if (v && v.ts && Date.now() - v.ts < 90000) n++;
+      for (const [hid, v] of this.httpViewers.entries()) {
+        if (!v || !v.ts || Date.now() - v.ts >= 90000) continue;
+        const key = String(v.uid || v.name || hid) + '|http';
+        // skip if same name already counted as WS
+        const nameKey = String(v.name || '');
+        let dup = false;
+        for (const s of this.sessions.values()) {
+          if ((s.role === 'viewer' || !s.role) && s.name && nameKey && String(s.name) === nameKey) { dup = true; break; }
+        }
+        if (dup || seen.has(key)) continue;
+        seen.add(key);
+        n++;
       }
-      // de-dup rough: prefer max of WS sessions vs http
-      const wsOnly = [...this.sessions.values()].filter(s => s.role === 'viewer' || !s.role).length;
-      out.viewerCount = Math.max(wsOnly, n > wsOnly ? n : wsOnly);
-      out.watching = out.viewerCount;
-      out.viewersOnline = out.viewerCount;
+      out.viewerCount = n;
+      out.watching = n;
+      out.viewersOnline = n;
     } catch (_) {
       out.viewerCount = 0;
       out.watching = 0;
+      out.viewersOnline = 0;
     }
     out.ts = L.ts || Date.now();
     out.runs = L.runs != null ? L.runs : (L.score && L.score.runs) || 0;
