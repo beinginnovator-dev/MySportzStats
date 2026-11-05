@@ -3928,6 +3928,7 @@ body[data-theme="dark"] #cup-sub-create h3 {
     const SUPER_OVERS_KEY = 'cricket_super_overs';
     let firstInningsScore = null, firstInningsWickets = null, firstInningsOvers = null, firstInningsBalls = null, targetScore = null, matchEnded = false, tossWinnerTeam = null, tossChoice = null, matchWinner = null;
     let abandonReason = null;
+    var matchSessionId = 'ms-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
     var dualBattingMode = false; // 2 players batting + auto strike rotate
 
     
@@ -10080,14 +10081,30 @@ function updateView() {
             var hist = [];
             try { hist = JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch(e){ hist = []; }
             if (!Array.isArray(hist)) hist = [];
-            // Avoid double-write only if same match saved in last 15 seconds (was blocking new matches)
+            // Strong de-dupe: same matchSessionId already saved? Update it instead of adding duplicate
             try {
+                var sid = (typeof matchSessionId !== 'undefined') ? matchSessionId : '';
+                if (sid) {
+                    for (var di = hist.length - 1; di >= 0; di--) {
+                        if (hist[di] && hist[di].matchSessionId === sid) {
+                            // Already saved this match — update scores/result if needed, then return
+                            hist[di].score = totalScore|0;
+                            hist[di].wickets = totalWickets|0;
+                            hist[di].winner = winner;
+                            hist[di].matchResult = (typeof getMatchResultText==='function'?getMatchResultText():'');
+                            hist[di]._savedAt = Date.now();
+                            try { localStorage.setItem(HKEY, JSON.stringify(hist)); } catch(eU){}
+                            try { if (typeof renderHistory === 'function') renderHistory(); } catch(eR){}
+                            return;
+                        }
+                    }
+                }
+                // Fallback short-window de-dupe
                 var last = hist[hist.length - 1];
                 var nowTs = Date.now();
-                if (last && last._savedAt && (nowTs - (last._savedAt|0)) < 15000
+                if (last && last._savedAt && (nowTs - (last._savedAt|0)) < 8000
                     && String(last.teamA) === String(teamConfig.A.name) && String(last.teamB) === String(teamConfig.B.name)
-                    && (last.score|0) === (totalScore|0) && String(last.winner) === String(winner)
-                    && (last.firstInningsScore|0) === (firstInningsScore|0)) {
+                    && (last.score|0) === (totalScore|0) && String(last.winner) === String(winner)) {
                     return;
                 }
             } catch(eDup){}
@@ -10159,6 +10176,7 @@ function updateView() {
                 umpires: (typeof currentUmpires!=='undefined'?currentUmpires:'') || '',
                 commentators: (typeof currentCommentators!=='undefined'?currentCommentators:'') || '',
                 venue: (typeof currentVenue!=='undefined'?currentVenue:'') || '',
+                matchSessionId: (typeof matchSessionId !== 'undefined') ? matchSessionId : ('ms-' + Date.now().toString(36)),
                 _savedAt: Date.now(),
                 id: 'm-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8)
             };
@@ -10510,6 +10528,8 @@ function updateView() {
 
     // "Start New Match" — offer PDF history download + reset, or just reset
     function performNewMatchReset() {
+        // New unique session for this match so history de-dupe works
+        matchSessionId = 'ms-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
         try { hideWinnerScreen(); } catch(eH){}
         // Prevent player list auto-popup after New Match
         try { modalQueue = []; } catch(eQ){}
@@ -11655,11 +11675,11 @@ function computeManOfTheMatch(plist) {
                 if (Array.isArray(arr)) hist = hist.concat(arr);
             } catch(e){}
         });
-        // de-dupe by unique id / save time (do not collapse separate matches)
+        // de-dupe: prefer matchSessionId so the same match is never listed twice
         var map = {};
         hist.forEach(function(m){
             if (!m) return;
-            var id = m.id || (String(m._savedAt||'') + '|' + (m.date||'') + '|' + (m.time||'') + '|' + (m.teamA||'') + '|' + (m.teamB||'') + '|' + (m.score||'') + '|' + (m.winner||''));
+            var id = m.matchSessionId || m.id || (String(m._savedAt||'') + '|' + (m.date||'') + '|' + (m.time||'') + '|' + (m.teamA||'') + '|' + (m.teamB||'') + '|' + (m.score||'') + '|' + (m.winner||''));
             if (!map[id] || ((m.players&&m.players.length) > ((map[id].players&&map[id].players.length)||0))) map[id] = m;
         });
         var out = Object.keys(map).map(function(k){ return map[k]; });
