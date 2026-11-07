@@ -4412,7 +4412,15 @@ body[data-theme="dark"] #cup-sub-create h3 {
     }
 
     function saveCupTeams() {
-        try { localStorage.setItem(CUP_TEAMS_KEY, JSON.stringify(cupTeams)); } catch(e){}
+        try {
+            var json = JSON.stringify(cupTeams || []);
+            localStorage.setItem(CUP_TEAMS_KEY, json);
+            localStorage.setItem('cricket_cup_teams_v1', json);
+            localStorage.setItem('cricket_cup_teams_bak', json);
+            try { sessionStorage.setItem(CUP_TEAMS_KEY, json); } catch(eS){}
+        } catch(e){
+            console.log('saveCupTeams failed', e);
+        }
     }
     function cupTeamNames() { return cupTeams.map(function(t){ return t.name; }); }
     function findCupTeam(name) {
@@ -4472,6 +4480,15 @@ body[data-theme="dark"] #cup-sub-create h3 {
         if (armEl) armEl.value = 'right';
         cupRenderNewPlayersList();
         try { nameEl.focus(); } catch (e) {}
+        // Immediate save so name appears in one go
+        try {
+            if (typeof saveCupTeams === 'function') saveCupTeams();
+            var aSel = (document.getElementById('cup-team-a') || {}).value;
+            var bSel = (document.getElementById('cup-team-b') || {}).value;
+            if (aSel || bSel) {
+                if (typeof syncCupPlayersToScoreboard === 'function') syncCupPlayersToScoreboard(aSel, bSel);
+            }
+        } catch(eSync){}
     }
     function cupRemoveNewPlayerRow(i) {
         __cupNewPlayers.splice(i, 1);
@@ -5012,8 +5029,8 @@ function cupRenameTeam(idx) {
             var tA = findCupTeam(aName);
             var tB = findCupTeam(bName);
             // Cup roster is source of truth — never fall back to previous scoreboard names
-            var aNames = (tA && Array.isArray(tA.players) && tA.players.length) ? tA.players.map(function(p){ return typeof normalizeCupPlayer==='function'?normalizeCupPlayer(p):p; }).filter(function(p){ var n=typeof p==='object'?p.name:p; return n && !isDefaultPlayerName(n); }) : [];
-            var bNames = (tB && Array.isArray(tB.players) && tB.players.length) ? tB.players.map(function(p){ return typeof normalizeCupPlayer==='function'?normalizeCupPlayer(p):p; }).filter(function(p){ var n=typeof p==='object'?p.name:p; return n && !isDefaultPlayerName(n); }) : [];
+            var aNames = (tA && Array.isArray(tA.players) && tA.players.length) ? tA.players.map(function(p){ return typeof normalizeCupPlayer==='function'?normalizeCupPlayer(p):p; }).filter(function(p){ var n=typeof p==='object'?p.name:p; return n && String(n).trim() && n!=='-' && n!=='—' && !isDefaultPlayerName(n); }) : [];
+            var bNames = (tB && Array.isArray(tB.players) && tB.players.length) ? tB.players.map(function(p){ return typeof normalizeCupPlayer==='function'?normalizeCupPlayer(p):p; }).filter(function(p){ var n=typeof p==='object'?p.name:p; return n && String(n).trim() && n!=='-' && n!=='—' && !isDefaultPlayerName(n); }) : [];
             if (!aNames.length) { aNames = []; }
             if (!bNames.length) { bNames = []; }
             if (aNames.length > 20) aNames = aNames.slice(0, 20);
@@ -6242,7 +6259,14 @@ function switchTab(tabId) {
         document.getElementById('toss-summary-text').innerText = `${tossWinnerTeam === 'A' ? teamConfig.A.name : teamConfig.B.name} won toss & elected to ${choice}.`;
         toggleHidden('toss-result-zone', false);
         toggleHidden('toss-summary-banner', true);
-        updateInningsBanner(); setSbSwipe(0); switchTab('scoring'); saveMatchState();
+        // Lock roster from cup teams after toss (prevents default Player 1/2 overwrite)
+        try {
+            var aN = teamConfig.A.name, bN = teamConfig.B.name;
+            if (typeof syncCupPlayersToScoreboard === 'function') syncCupPlayersToScoreboard(aN, bN);
+            if (typeof saveCupTeams === 'function') saveCupTeams();
+        } catch(eToss){ console.log('post-toss roster sync', eToss); }
+        updateInningsBanner(); setSbSwipe(0); switchTab('scoring');
+        try { saveMatchState(true); } catch(eS){}
         // After toss → scoring, bring pad into view (keyboard / long forms can hide buttons)
         try {
             setTimeout(function() {
@@ -6461,7 +6485,9 @@ function switchTab(tabId) {
         if (ns) ns.innerHTML = '<option value="">Non-striker</option>';
         for (var i=0;i<players.length;i++){
             var p = players[i];
-            var opt = '<option value="' + p.id + '">' + p.name + '</option>';
+            var nm = String(p.name || '').trim();
+            if (!nm || nm === '-' || nm === '—' || /^player\s*\d*/i.test(nm)) continue;
+            var opt = '<option value="' + p.id + '">' + nm + '</option>';
             if(p.team === batT && !p.isOut) {
                 ss.insertAdjacentHTML('beforeend', opt);
                 if (ns) ns.insertAdjacentHTML('beforeend', opt);
@@ -6671,7 +6697,7 @@ function switchTab(tabId) {
             if (wR) exBits.push('W-' + wR);
             if (nR) exBits.push('N-' + nR);
             if (lR) exBits.push('L-' + lR);
-            var exStr = exBits.length ? exBits.join(',') : '—';
+            var exStr = exBits.length ? exBits.join(',') : '0';
             return '<tr class="cursor-pointer hover:bg-black/5" onclick="showPlayerDetail(\'' + esc(p.name) + '\')"><td class="p-2">' + p.name + '</td><td class="p-2 text-center">' + formatOvers(p.bowlBalls) + '</td><td class="p-2 text-center">' + p.bowlRuns + '</td><td class="p-2 text-center text-red-600 font-bold">' + p.wickets + '</td><td class="p-2 text-center">' + (p.dots || 0) + '</td><td class="p-2 text-center text-[10px] text-fuchsia-700 font-bold">' + exStr + '</td><td class="p-2 text-center text-blue-800 font-bold">' + calcEcon(p.bowlRuns, p.bowlBalls) + '</td></tr>';
         }).join('');
     }
@@ -6836,7 +6862,12 @@ function howOutLabel(name, isOut, howOut, outFielder) {
         return '—';
     }
     function calcSR(r, b) { return b === 0 ? "0.0" : ((r/b)*100).toFixed(1); }
-    function calcEcon(r, b) { return b === 0 ? "0.00" : ((r/b)*6).toFixed(2); }
+    function calcEcon(r, b) {
+        r = Number(r) || 0;
+        b = Number(b) || 0;
+        if (b <= 0) return r > 0 ? "—" : "0.00";
+        return ((r / b) * 6).toFixed(2);
+    }
 
     // ===== ANIMATIONS FOR 4, 6, WICKET, HAT-TRICK =====
     function queueAnimation(fn){ animationQueue.push(fn); if(!animationPlaying) playNextAnimation(); }
@@ -9977,6 +10008,8 @@ function updateView() {
         } catch(eH0) {
             try { if (typeof saveMatchToHistorySafe === 'function') saveMatchToHistorySafe(winner); } catch(eH1){}
         }
+        try { saveMatchState(true); } catch(eS){}
+        try { if (typeof saveCupTeams === 'function') saveCupTeams(); } catch(eC){}
         try { saveMatchState(true); } catch(eS0){}
         try { showWinnerOverlay(); pinScoringPad(false); } catch(eUI) { console.log('endMatch UI', eUI); }
         try {
@@ -10087,13 +10120,16 @@ function updateView() {
                 if (sid) {
                     for (var di = hist.length - 1; di >= 0; di--) {
                         if (hist[di] && hist[di].matchSessionId === sid) {
-                            // Already saved this match — update scores/result if needed, then return
+                            // Already saved this match — update scores/result, then return
                             hist[di].score = totalScore|0;
                             hist[di].wickets = totalWickets|0;
                             hist[di].winner = winner;
                             hist[di].matchResult = (typeof getMatchResultText==='function'?getMatchResultText():'');
                             hist[di]._savedAt = Date.now();
-                            try { localStorage.setItem(HKEY, JSON.stringify(hist)); } catch(eU){}
+                            try {
+                                if (typeof persistHistoryArray === 'function') persistHistoryArray(hist);
+                                else localStorage.setItem(HKEY, JSON.stringify(hist));
+                            } catch(eU){}
                             try { if (typeof renderHistory === 'function') renderHistory(); } catch(eR){}
                             return;
                         }

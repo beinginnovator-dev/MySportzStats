@@ -3142,9 +3142,10 @@ function excitingHindi(d, ev){
                 fx.slice(0,12).map(function(f,i){
                   var st=dayStatus(f);
                   var label=(f.teamA||'?')+' vs '+(f.teamB||'?');
-                  var href=f.liveLink||liveLink;
-                  return h('a',{key:'fx'+i,className:'tour-card',href:liveScoringUrl('current'),target:'_blank',rel:'noopener noreferrer',
-                    onClick:function(e){ e.preventDefault(); window.open(liveScoringUrl('current'),'_blank','noopener,noreferrer'); }},
+                  var mid = f.matchId || f.id || (f.liveLink && (f.liveLink.match(/match=([^&]+)/)||[])[1]) || 'current';
+                  var href = f.liveLink || liveScoringUrl(mid);
+                  return h('a',{key:'fx'+i,className:'tour-card',href:href,target:'_blank',rel:'noopener noreferrer',
+                    onClick:function(e){ e.preventDefault(); window.open(href,'_blank','noopener,noreferrer'); }},
                     h('div',{className:'body'},
                       h('span',{className:'badge '+(st.kind==='live'?'live':st.kind==='today'?'today':'up')}, st.label),
                       h('div',{style:{fontWeight:800}}, label),
