@@ -6677,13 +6677,14 @@ function switchTab(tabId) {
                 + '<td class="p-2 text-center text-[10px] align-top '+(p.isOut?'text-red-600 font-semibold':'text-slate-400')+'">'+how+'</td></tr>';
         }).join('');
     }
-        function buildBowlingRowsHTML(list) {
+        function buildBowlingRowsHTML(list, deliveries) {
         list = list.filter(function (p) { return p.bowlBalls > 0; });
         if (!list.length) return '<tr><td colspan="7" class="p-2 text-center text-xs italic text-slate-400">No bowling data yet</td></tr>';
+        var dels = deliveries || deliveryHistory || [];
         return list.map(function (p) {
             var wR = 0, nR = 0, lR = 0;
             try {
-                (deliveryHistory || []).forEach(function (d) {
+                dels.forEach(function (d) {
                     var same = (d.bowlerId && p.id && d.bowlerId === p.id) || (d.bowler && p.name && String(d.bowler) === String(p.name));
                     if (!same) return;
                     var lab = String(d.chipLabel || '');
@@ -6727,7 +6728,7 @@ function howOutLabel(name, isOut, howOut, outFielder) {
         }
         return label;
     }
-    function buildTeamStatsBlockHTML(teamName, teamList, forcePlayerList) {
+    function buildTeamStatsBlockHTML(teamName, teamList, forcePlayerList, deliveries) {
         return '<div class="rounded-xl overflow-hidden mb-3 border border-slate-200 bg-white shadow-sm">' +
             '<div class="bg-indigo-50 px-3 py-2 border-b border-slate-200"><h4 class="font-bold text-sm text-indigo-900">' + teamName + '</h4></div>' +
             '<div class="overflow-x-hidden">' +
@@ -6739,8 +6740,8 @@ function howOutLabel(name, isOut, howOut, outFielder) {
             buildBattingRowsHTML(teamList, null, !!forcePlayerList) +
             '<tr class="sc-sec-bowl border-t"><td colspan="7" class="px-3 py-1.5 text-right font-bold text-[10px] tracking-wide sc-sec-title-bowl">🎯 BOWLING</td></tr>' +
             '<tr class="font-bold text-indigo-700 border-b border-slate-200 text-[10px] uppercase tracking-wide">' +
-            '<td class="p-2 text-left">Bowler</td><td class="p-2 text-center">O</td><td class="p-2 text-center">R</td><td class="p-2 text-center">W</td><td class="p-2 text-center">Dots</td><td class="p-2 text-center">Econ</td></tr>' +
-            buildBowlingRowsHTML(teamList) +
+            '<td class="p-2 text-left">Bowler</td><td class="p-2 text-center">O</td><td class="p-2 text-center">R</td><td class="p-2 text-center">W</td><td class="p-2 text-center">Dots</td><td class="p-2 text-center">Extras</td><td class="p-2 text-center">Econ</td></tr>' +
+            buildBowlingRowsHTML(teamList, deliveries || null) +
             '</table></div></div>';
     }
     function renderStatsTables() {
@@ -10168,10 +10169,12 @@ function updateView() {
                     isOut:!!p.isOut, howOut:p.howOut||'', outFielder:p.outFielder||''
                 };
             });
-            var slimDeliv = (deliveryHistory||[]).slice(-80).map(function(d){
+            var slimDeliv = (deliveryHistory||[]).slice(-120).map(function(d){
                 return {
-                    batsman:d.batsman, bowler:d.bowler, runs:d.runs|0, runsConceded:d.runsConceded|0,
-                    legal:!!d.legal, isWicket:!!d.isWicket, chipLabel:d.chipLabel||'', zone:d.zone||null,
+                    batsman:d.batsman, bowler:d.bowler, bowlerId:d.bowlerId||'',
+                    runs:d.runs|0, runsConceded:d.runsConceded|0,
+                    legal:!!d.legal, isWicket:!!d.isWicket, isWide:!!d.isWide, isNoBall:!!d.isNoBall, isLegBye:!!d.isLegBye,
+                    chipLabel:d.chipLabel||'', zone:d.zone||null,
                     innings:d.innings||1, bound:d.bound|0,
                     over: d.over != null ? String(d.over) : '',
                     overNum: d.over != null ? String(d.over).split('.')[0] : ''
@@ -11784,7 +11787,7 @@ function computeManOfTheMatch(plist) {
                 }
                 applyFow(teamAList); applyFow(teamBList);
             })();
-            var playersHtml = buildTeamStatsBlockHTML(m.teamA, teamAList, true) + buildTeamStatsBlockHTML(m.teamB, teamBList, true);
+            var playersHtml = buildTeamStatsBlockHTML(m.teamA, teamAList, true, m.deliveryHistory) + buildTeamStatsBlockHTML(m.teamB, teamBList, true, m.deliveryHistory);
             var fowHtml = '<h4 class="font-bold text-sm mt-4 mb-2 text-slate-900">Fall of Wickets</h4>';
             if(!m.fallOfWickets || m.fallOfWickets.length===0) fowHtml += '<p class="italic text-slate-500 text-sm">No wickets fell</p>';
             else fowHtml += buildFowTableHtml(m.fallOfWickets);
