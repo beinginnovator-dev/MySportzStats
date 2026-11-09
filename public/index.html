@@ -9604,6 +9604,7 @@ function updateView() {
             }
             var b4El = document.getElementById('live-batsman-4s'); if (b4El) b4El.textContent = st ? (st.fours || 0) : 0;
             var b6El = document.getElementById('live-batsman-6s'); if (b6El) b6El.textContent = st ? (st.sixes || 0) : 0;
+            var bdEl = document.getElementById('live-batsman-dots'); if (bdEl) bdEl.textContent = st ? (st.dots || 0) : 0;
             var bsrEl = document.getElementById('live-batsman-sr'); if (bsrEl) bsrEl.textContent = st ? calcSR(st.runs, st.balls) : '0.0';
             ['live-batsman-4s','live-batsman-6s','live-batsman-sr','live-bowler-runs','live-bowler-dots','live-bowler-econ','live-extra-count'].forEach(function(id){
                 var el = document.getElementById(id); if (el) { el.style.color = '#ffffff'; el.style.opacity = '1'; el.style.webkitTextFillColor = '#ffffff'; }
@@ -9631,7 +9632,10 @@ function updateView() {
             } catch(eNS){}
 
             var bwWEl = document.getElementById('live-bowler-wickets'); if (bwWEl) {
-                bwWEl.textContent = (bw ? (bw.wickets || 0) : 0) + ' (' + formatOvers(bw ? (bw.bowlBalls || 0) : 0) + ')';
+                var bRuns = bw ? (bw.bowlRuns|0) : 0;
+                var bBalls = bw ? (bw.bowlBalls|0) : 0;
+                var bWkts = bw ? (bw.wickets|0) : 0;
+                bwWEl.textContent = bRuns + ' (' + bBalls + ')/' + bWkts;
                 bwWEl.style.color = '#ffffff'; bwWEl.style.opacity = '1'; bwWEl.style.display = 'block';
                 bwWEl.style.webkitTextFillColor = '#ffffff'; bwWEl.style.visibility = 'visible';
             }
@@ -11681,7 +11685,7 @@ function computeManOfTheMatch(plist) {
                 if (m.venue) officials += '<p class="text-[11px] theme-muted mt-0.5">📍 Venue: '+m.venue+'</p>';
                 if (m.umpires) officials += '<p class="text-[11px] theme-muted mt-0.5">Umpires: '+m.umpires+'</p>';
                 if (m.commentators) officials += '<p class="text-[11px] theme-muted">Commentators: '+m.commentators+'</p>';
-                return '<div class="theme-card border theme-border rounded-xl p-3 shadow-sm history-print-card"><div class="flex justify-between items-start"><div class="flex-1 pr-2"><p class="text-[11px] font-black uppercase tracking-widest theme-muted">Match #'+m.matchNo+' • '+m.date+' '+m.time+'</p><span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase text-white '+badgeCls+'">'+desc+'</span><p class="font-bold text-sm mt-1 theme-text">'+m.teamA+' vs '+m.teamB+'</p><p class="text-xs theme-muted mt-1">'+m.score+'/'+m.wickets+' in '+m.overs+'/'+m.maxOvers+' ov • Target '+(m.targetScore||'-')+'</p><p class="text-xs font-bold text-emerald-600 mt-1">'+winText+'</p>'+officials+'</div><div class="flex flex-col gap-1.5 shrink-0 no-print"><button onclick="openHistoryDetail('+m.matchNo+')" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[11px] font-bold uppercase">View 📋</button><button onclick="downloadMatchCommentaryFile('+m.matchNo+')" class="px-3 py-1 bg-slate-700 text-white rounded-lg text-[10px] font-bold uppercase">🎙️ Comm</button><button onclick="deleteHistoryEntry('+m.matchNo+')" class="px-3 py-1 bg-red-50 text-red-600 border border-red-200 rounded-lg text-[10px] font-bold uppercase">🗑️ Delete</button></div></div></div>';
+                return '<div class="theme-card border theme-border rounded-2xl p-4 shadow-md history-print-card" style="background:linear-gradient(180deg,rgba(255,255,255,0.04),transparent)"><div class="flex justify-between items-start"><div class="flex-1 pr-2"><p class="text-[11px] font-bold uppercase tracking-wider" style="color:#94a3b8">Match #'+m.matchNo+' · '+m.date+' · '+m.time+'</p><span class="inline-block mt-1.5 px-2.5 py-0.5 text-[10px] font-semibold rounded-full" style="background:rgba(59,130,246,0.15);color:#60a5fa">.5 rounded-full text-[10px] font-black uppercase text-white '+badgeCls+'">'+desc+'</span><p class="font-bold text-sm mt-1 theme-text">'+m.teamA+' vs '+m.teamB+'</p><p class="text-xs theme-muted mt-1">'+m.score+'/'+m.wickets+' in '+m.overs+'/'+m.maxOvers+' ov • Target '+(m.targetScore||'-')+'</p><p class="text-xs font-bold text-emerald-600 mt-1">'+winText+'</p>'+officials+'</div><div class="flex flex-col gap-1.5 shrink-0 no-print"><button onclick="openHistoryDetail('+m.matchNo+')" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[11px] font-bold uppercase">View 📋</button><button onclick="downloadMatchCommentaryFile('+m.matchNo+')" class="px-3 py-1 bg-slate-700 text-white rounded-lg text-[10px] font-bold uppercase">🎙️ Comm</button><button onclick="deleteHistoryEntry('+m.matchNo+')" class="px-3 py-1 bg-red-50 text-red-600 border border-red-200 rounded-lg text-[10px] font-bold uppercase">🗑️ Delete</button></div></div></div>';
             }).join('');
             container.innerHTML = html;
         }catch(e){}
