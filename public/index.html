@@ -3959,6 +3959,34 @@ body[data-theme="dark"] #cup-sub-create h3 {
     // Global tournament meta for balls, wickets, dots, extras, dismissal types
     let globalMeta = JSON.parse(localStorage.getItem('scorer_global_meta') || '{"totalBalls":0,"totalWickets":0,"dotBalls":0,"wides":0,"noballs":0,"extras":0,"dismissals":{}}');
     // Rank / Players / Insights are derived from Match History. Rebuild from history on load and after any history change.
+    function saveRankMatchBackup(entry) {
+        try {
+            if (!entry || !entry.matchSessionId) return;
+            var KEY = 'cricket_rank_match_backups';
+            var arr = [];
+            try { arr = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch(e){ arr = []; }
+            if (!Array.isArray(arr)) arr = [];
+            var idx = arr.findIndex(function(m){ return m && m.matchSessionId === entry.matchSessionId; });
+            var snap = {
+                matchSessionId: entry.matchSessionId,
+                matchNo: entry.matchNo,
+                date: entry.date, time: entry.time,
+                teamA: entry.teamA, teamB: entry.teamB,
+                winner: entry.winner,
+                players: (entry.players || []).map(function(p){
+                    return {
+                        name:p.name, team:p.team,
+                        runs:p.runs|0, balls:p.balls|0, fours:p.fours|0, sixes:p.sixes|0,
+                        bowlBalls:p.bowlBalls|0, bowlRuns:p.bowlRuns|0, wickets:p.wickets|0, dots:p.dots|0,
+                        wides:p.wides|0, noballs:p.noballs|0, extras:p.extras|0, economy:p.economy||'0.00'
+                    };
+                })
+            };
+            if (idx >= 0) arr[idx] = snap; else arr.push(snap);
+            if (arr.length > 100) arr = arr.slice(-100);
+            localStorage.setItem(KEY, JSON.stringify(arr));
+        } catch(e){ console.log('rank backup', e); }
+    }
     function rebuildStatsFromHistory() {
         try {
             var hist = [];
@@ -3975,6 +4003,14 @@ body[data-theme="dark"] #cup-sub-create h3 {
                 if (!m) return;
                 // Prefer full players; fall back to orange/purple cap snapshots
                 var plist = (m.players && m.players.length) ? m.players : [];
+                // Prefer rank backup if history players lack economy
+                try {
+                    var baks = JSON.parse(localStorage.getItem('cricket_rank_match_backups') || '[]');
+                    var bak = (baks || []).find(function(b){ return b && b.matchSessionId === m.matchSessionId; });
+                    if (bak && bak.players && bak.players.length && (!plist.length || !plist[0].economy)) {
+                        plist = bak.players;
+                    }
+                } catch(eB){}
                 if (!plist.length && (m.orangeCap || m.purpleCap)) {
                     var seen = {};
                     (m.orangeCap || []).forEach(function(p){
@@ -6698,8 +6734,9 @@ function switchTab(tabId) {
             if (wR) exBits.push('W-' + wR);
             if (nR) exBits.push('N-' + nR);
             if (lR) exBits.push('L-' + lR);
-            var exStr = exBits.length ? exBits.join(',') : '0';
-            return '<tr class="cursor-pointer hover:bg-black/5" onclick="showPlayerDetail(\'' + esc(p.name) + '\')"><td class="p-2">' + p.name + '</td><td class="p-2 text-center">' + formatOvers(p.bowlBalls) + '</td><td class="p-2 text-center">' + p.bowlRuns + '</td><td class="p-2 text-center text-red-600 font-bold">' + p.wickets + '</td><td class="p-2 text-center">' + (p.dots || 0) + '</td><td class="p-2 text-center text-[10px] text-fuchsia-700 font-bold">' + exStr + '</td><td class="p-2 text-center text-blue-800 font-bold">' + calcEcon(p.bowlRuns, p.bowlBalls) + '</td></tr>';
+            var exStr = exBits.length ? exBits.join(',') : (p.extras ? String(p.extras) : '0');
+            var econ = p.economy || calcEcon(p.bowlRuns, p.bowlBalls);
+            return '<tr class="cursor-pointer hover:bg-black/5" onclick="showPlayerDetail(\'' + esc(p.name) + '\')"><td class="p-2">' + p.name + '</td><td class="p-2 text-center">' + formatOvers(p.bowlBalls) + '</td><td class="p-2 text-center">' + p.bowlRuns + '</td><td class="p-2 text-center text-red-600 font-bold">' + p.wickets + '</td><td class="p-2 text-center">' + (p.dots || 0) + '</td><td class="p-2 text-center text-[10px] text-fuchsia-700 font-bold">' + exStr + '</td><td class="p-2 text-center text-blue-800 font-bold">' + econ + '</td></tr>';
         }).join('');
     }
 function howOutLabel(name, isOut, howOut, outFielder) {
@@ -10162,10 +10199,15 @@ function updateView() {
                 localStorage.setItem(commKey, JSON.stringify({ matchNo: matchNo, lines: lines, ts: Date.now() }));
             } catch(eC) { commKey = ''; }
             var slimPlayers = (players||[]).map(function(p){
+                var bb = p.bowlBalls|0, br = p.bowlRuns|0;
+                var econ = bb > 0 ? ((br / bb) * 6).toFixed(2) : '0.00';
+                var wd = (p.wides|0) || (p.bowlWides|0) || 0;
+                var nb = (p.noballs|0) || (p.bowlNoballs|0) || 0;
                 return {
                     id:p.id, name:p.name, team:p.team,
                     runs:p.runs|0, balls:p.balls|0, fours:p.fours|0, sixes:p.sixes|0,
-                    bowlBalls:p.bowlBalls|0, bowlRuns:p.bowlRuns|0, wickets:p.wickets|0, dots:p.dots|0,
+                    bowlBalls:bb, bowlRuns:br, wickets:p.wickets|0, dots:p.dots|0,
+                    wides:wd, noballs:nb, extras:(wd+nb), economy:econ,
                     isOut:!!p.isOut, howOut:p.howOut||'', outFielder:p.outFielder||''
                 };
             });
@@ -10220,6 +10262,7 @@ function updateView() {
                 id: 'm-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8)
             };
             hist.push(entry);
+            try { if (typeof saveRankMatchBackup === 'function') saveRankMatchBackup(entry); } catch(eB){}
             // Cap to last 50 matches
             if (hist.length > 50) {
                 var drop = hist.splice(0, hist.length - 50);
