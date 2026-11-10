@@ -2677,6 +2677,7 @@ body[data-theme="dark"] #cup-sub-create h3 {
                             <option value="light" selected>Light</option>
                             <option value="amazon">Amazon Light</option>
                             <option value="dark">Dark</option>
+                            <option value="amazing">Amazing Theme</option>
                             <option value="bluewhite">Blue White</option>
                         </select>
                     </div>
@@ -6022,7 +6023,7 @@ function switchTab(tabId) {
                 _th = 'light';
                 if (_thEl) _thEl.value = 'light';
             }
-            if (['light','amazon','dark'].indexOf(_th) < 0) _th = 'light';
+            if (['light','amazon','dark','amazing'].indexOf(_th) < 0) _th = 'light';
             document.body.setAttribute('data-theme', _th);
             try { localStorage.setItem('cup-theme', _th); localStorage.setItem('cricket_theme', _th); } catch(eT){}
         } catch(eMig){}
@@ -19703,6 +19704,182 @@ body[data-theme="dark"] #quickinfo-content .text-emerald-400 {
   }
 })();
 </script>
+
+
+<style id="amazing-theme-v1">
+/* AMAZING THEME — broadcast-grade dark scorer with vivid scoring controls */
+body[data-theme="amazing"] {
+  --bg-body: #070d18;
+  --bg-card: #111c2d;
+  --bg-panel: #17263b;
+  --text-main: #f8fafc;
+  --text-muted: #b6c5d8;
+  --border-c: #2b405b;
+  --accent: #38bdf8;
+  --accent-btn: #2563eb;
+  background:
+    radial-gradient(ellipse at 10% 0%, rgba(14,165,233,.16), transparent 38%),
+    radial-gradient(ellipse at 95% 12%, rgba(168,85,247,.13), transparent 34%),
+    #070d18 !important;
+  background-attachment: fixed !important;
+  color: #f8fafc !important;
+}
+body[data-theme="amazing"] .app-shell { background: transparent !important; }
+body[data-theme="amazing"] .theme-card,
+body[data-theme="amazing"] .theme-panel {
+  background: linear-gradient(145deg,#14243a,#0e192a) !important;
+  color: #f8fafc !important;
+  border: 1px solid #2b405b !important;
+  box-shadow: 0 10px 28px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.035) !important;
+}
+body[data-theme="amazing"] .theme-text,
+body[data-theme="amazing"] #page-tournament,
+body[data-theme="amazing"] #page-toss,
+body[data-theme="amazing"] #page-stats,
+body[data-theme="amazing"] #page-rankings,
+body[data-theme="amazing"] #page-history,
+body[data-theme="amazing"] #page-players,
+body[data-theme="amazing"] #page-quickinfo,
+body[data-theme="amazing"] #page-livefeed,
+body[data-theme="amazing"] #page-reports { color:#f1f5f9 !important; }
+body[data-theme="amazing"] .theme-muted,
+body[data-theme="amazing"] #page-rankings .text-slate-500,
+body[data-theme="amazing"] #page-rankings .text-slate-400 { color:#b6c5d8 !important; }
+body[data-theme="amazing"] .espn-header {
+  background:linear-gradient(120deg,#101b2d,#1b3150 58%,#111c30) !important;
+  color:#fff !important; border:1px solid #304968 !important;
+}
+body[data-theme="amazing"] .espn-header * { color:inherit; }
+body[data-theme="amazing"] .espn-tabbar,
+body[data-theme="amazing"] #main-tabbar {
+  background:#0c1728 !important; border:1px solid #2a405d !important;
+}
+body[data-theme="amazing"] .espn-tab-inactive,
+body[data-theme="amazing"] #main-tabbar button { color:#c3d1e2 !important; }
+body[data-theme="amazing"] .espn-tab-active {
+  background:linear-gradient(135deg,#0ea5e9,#4f46e5) !important;
+  color:#fff !important; box-shadow:0 4px 16px rgba(14,165,233,.28) !important;
+}
+body[data-theme="amazing"] #scoreboard-card {
+  background:linear-gradient(155deg,#081321,#172a43 58%,#0b1728) !important;
+  color:#f8fafc !important; border:1px solid #36516f !important;
+  box-shadow:0 16px 40px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.06) !important;
+}
+body[data-theme="amazing"] #scoreboard-card * { color:inherit; }
+body[data-theme="amazing"] #scoreboard-card .text-slate-400,
+body[data-theme="amazing"] #scoreboard-card .text-slate-500 { color:#a9bdd4 !important; }
+body[data-theme="amazing"] #scoreboard-card .text-emerald-400,
+body[data-theme="amazing"] #scoreboard-card .text-emerald-300 { color:#6ee7b7 !important; }
+body[data-theme="amazing"] #scoreboard-card .text-amber-300,
+body[data-theme="amazing"] #scoreboard-card .text-amber-200 { color:#fcd34d !important; }
+body[data-theme="amazing"] #striker-card,
+body[data-theme="amazing"] #bowler-card {
+  background:linear-gradient(145deg,#172b45,#101d30) !important;
+  border:1px solid #34516f !important; color:#f8fafc !important;
+}
+body[data-theme="amazing"] #striker-card *,
+body[data-theme="amazing"] #bowler-card * { color:inherit; }
+body[data-theme="amazing"] #select-striker,
+body[data-theme="amazing"] #select-nonstriker,
+body[data-theme="amazing"] #select-bowler,
+body[data-theme="amazing"] #striker-card select,
+body[data-theme="amazing"] #bowler-card select {
+  background:#091525 !important; color:#f8fafc !important; border:1px solid #45617f !important;
+}
+body[data-theme="amazing"] #scoring-controls-panel {
+  background:linear-gradient(145deg,#101d30,#0a1423) !important;
+  color:#f8fafc !important; border:1px solid #304968 !important;
+  box-shadow:0 -12px 34px rgba(0,0,0,.42) !important;
+}
+body[data-theme="amazing"] #scoring-controls-panel .score-btn {
+  color:#fff !important; border:1px solid rgba(255,255,255,.22) !important;
+  font-weight:900 !important; min-height:46px;
+  box-shadow:0 4px 0 rgba(0,0,0,.24),0 8px 16px rgba(0,0,0,.2) !important;
+}
+/* Individual scoring actions: bright, distinct, high-contrast colours */
+body[data-theme="amazing"] #scoring-controls-panel button[onclick*="recordDelivery(0"] {
+  background:linear-gradient(180deg,#64748b,#334155) !important;
+}
+body[data-theme="amazing"] #scoring-controls-panel button[onclick*="promptDirWheel(1"],
+body[data-theme="amazing"] #scoring-controls-panel button[onclick*="promptDirWheel(2"],
+body[data-theme="amazing"] #scoring-controls-panel button[onclick*="promptDirWheel(3"] {
+  background:linear-gradient(180deg,#38bdf8,#0369a1) !important;
+}
+body[data-theme="amazing"] #scoring-controls-panel button[onclick*="promptDirWheel(4"] {
+  background:linear-gradient(180deg,#34d399,#047857) !important;
+  border-color:#6ee7b7 !important;
+}
+body[data-theme="amazing"] #scoring-controls-panel button[onclick*="promptDirWheel(6"] {
+  background:linear-gradient(180deg,#fbbf24,#d97706) !important;
+  border-color:#fde68a !important; color:#111827 !important;
+}
+body[data-theme="amazing"] #scoring-controls-panel button[onclick*="wide"],
+body[data-theme="amazing"] #scoring-controls-panel button[onclick*="promptNoBall"] {
+  background:linear-gradient(180deg,#a78bfa,#6d28d9) !important;
+}
+body[data-theme="amazing"] #scoring-controls-panel button[onclick*="promptLegBye"] {
+  background:linear-gradient(180deg,#f472b6,#be185d) !important;
+}
+body[data-theme="amazing"] #scoring-controls-panel button[onclick*="initiateWicket"] {
+  background:linear-gradient(180deg,#fb5252,#b91c1c) !important;
+  border-color:#fca5a5 !important; color:#fff !important;
+}
+body[data-theme="amazing"] #scoring-controls-panel .score-btn:active {
+  filter:brightness(1.14) !important; transform:translateY(2px) scale(.97) !important;
+}
+body[data-theme="amazing"] #page-rankings #rankings-orange-full {
+  background:linear-gradient(145deg,#713b0c,#a84a0b 55%,#7c2d12) !important;
+  color:#fff !important; border:1px solid #fb923c !important;
+}
+body[data-theme="amazing"] #page-rankings #rankings-purple-full {
+  background:linear-gradient(145deg,#3b1d68,#512a91 55%,#31205f) !important;
+  color:#fff !important; border:1px solid #a78bfa !important;
+}
+body[data-theme="amazing"] #rankings-orange-cap > *,
+body[data-theme="amazing"] #rankings-purple-cap > * {
+  color:#fff !important; background:rgba(5,12,24,.42) !important;
+  border:1px solid rgba(255,255,255,.16) !important;
+  border-radius:12px !important; padding:10px 12px !important;
+}
+body[data-theme="amazing"] #page-rankings .rank-tab-active {
+  background:#0ea5e9 !important; color:#fff !important;
+}
+body[data-theme="amazing"] #page-rankings .rank-tab-inactive {
+  background:#172a43 !important; color:#dbeafe !important;
+}
+body[data-theme="amazing"] #page-quickinfo {
+  background:transparent !important; color:#f8fafc !important;
+}
+body[data-theme="amazing"] #page-quickinfo .theme-card,
+body[data-theme="amazing"] #page-quickinfo .rounded-2xl,
+body[data-theme="amazing"] #page-quickinfo .rounded-xl,
+body[data-theme="amazing"] #quickinfo-content > div,
+body[data-theme="amazing"] .qi-hero {
+  background:linear-gradient(145deg,#172a43,#101d30) !important;
+  color:#f8fafc !important; border:1px solid #34516f !important;
+}
+body[data-theme="amazing"] #page-quickinfo h2,
+body[data-theme="amazing"] #page-quickinfo h3,
+body[data-theme="amazing"] #page-quickinfo p,
+body[data-theme="amazing"] #page-quickinfo span,
+body[data-theme="amazing"] #quickinfo-content h2,
+body[data-theme="amazing"] #quickinfo-content h3,
+body[data-theme="amazing"] #quickinfo-content p,
+body[data-theme="amazing"] #quickinfo-content span { color:#eaf2ff !important; }
+body[data-theme="amazing"] #page-quickinfo button,
+body[data-theme="amazing"] #quickinfo-content button {
+  background:#1d4ed8 !important; color:#fff !important; border-color:#60a5fa !important;
+}
+body[data-theme="amazing"] input,
+body[data-theme="amazing"] select,
+body[data-theme="amazing"] textarea {
+  background:#0b1728 !important; color:#f8fafc !important; border-color:#3a5574 !important;
+}
+body[data-theme="amazing"] .app-modal-card {
+  background:#132238 !important; color:#f8fafc !important; border-color:#36516f !important;
+}
+body[data-theme="amazing"] .app-modal-card * { color:inherit; }
+</style>
 
 </body>
 </html>
