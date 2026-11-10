@@ -1805,6 +1805,19 @@ function excitingHindi(d, ev){
     var _w=useState(true),welcome=_w[0],setWelcome=_w[1];
     var _act=useState(false),showActivity=_act[0],setShowActivity=_act[1];
     var _wn=useState(function(){ try{ return localStorage.getItem('react_viewer_name')||''; }catch(e){ return ''; } }),welcomeName=_wn[0],setWelcomeName=_wn[1];
+    // Record meaningful live-page navigation in the same server-side viewer activity log.
+    useEffect(function(){
+      var nm=welcomeName||viewerDisplayName();
+      if(!nm) return;
+      var match='current';
+      try{ match=new URLSearchParams(location.search).get('match')||'current'; }catch(e){}
+      var msg={type:'activity',id:viewerUid(),uid:viewerUid(),name:nm,match:match,tab:tab,text:'Opened '+String(tab||'live').toUpperCase(),activityType:'tab'};
+      try{
+        var ws=window.__liveWs||null;
+        if(ws&&ws.readyState===1){ws.send(JSON.stringify(msg));return;}
+      }catch(e){}
+      fetch('/api/viewer-activity?match='+encodeURIComponent(match),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:viewerUid(),uid:viewerUid(),name:nm,match:match,tab:tab,text:msg.text,type:'tab'}),cache:'no-store'}).catch(function(){});
+    },[tab,welcomeName]);
     // Returning viewers with a saved name skip the welcome prompt immediately.
     useEffect(function(){
       var existing='';
@@ -3240,7 +3253,7 @@ function excitingHindi(d, ev){
 
         tab==='viewers'?h('div',{className:'card'},
           h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}},
-            h('h3',{style:{margin:0}},'Viewers · last 2 weeks'),
+            h('h3',{style:{margin:0}},'Viewers · last 2 weeks · '+(viewers||[]).filter(function(v){return v&&v.online===true;}).length+' watching now'),
             h('button',{
               type:'button',
               className:'btn',
