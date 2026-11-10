@@ -1805,14 +1805,13 @@ function excitingHindi(d, ev){
     var _w=useState(true),welcome=_w[0],setWelcome=_w[1];
     var _act=useState(false),showActivity=_act[0],setShowActivity=_act[1];
     var _wn=useState(function(){ try{ return localStorage.getItem('react_viewer_name')||''; }catch(e){ return ''; } }),welcomeName=_wn[0],setWelcomeName=_wn[1];
-    // welcome-auto-close: if name already saved, close after 6s
+    // Returning viewers with a saved name skip the welcome prompt immediately.
     useEffect(function(){
       var existing='';
       try{ existing=localStorage.getItem('react_viewer_name')||localStorage.getItem('viewer_name')||''; }catch(e){}
       if(existing && String(existing).trim()){
         setWelcomeName(String(existing).trim());
-        var t=setTimeout(function(){ setWelcome(false); }, 6000);
-        return function(){ clearTimeout(t); };
+        setWelcome(false);
       }
     },[]);
     var _tts=useState(function(){return lsGet('cricket_tts_on','1')!=='0';}),ttsOn=_tts[0],setTtsOn=_tts[1];
@@ -2363,6 +2362,7 @@ function excitingHindi(d, ev){
                 var nm=assignViewerName(welcomeName);
                 try{ localStorage.setItem('react_viewer_name', nm); localStorage.setItem('viewer_name', nm); }catch(ex){}
                 try{ setWelcomeName(nm); }catch(eN){}
+                try{ window.__viewerPing && window.__viewerPing(nm); }catch(eP){}
                 setWelcome(false);
               }
             }
