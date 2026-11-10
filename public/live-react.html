@@ -2710,9 +2710,10 @@ function excitingHindi(d, ev){
         var score = (data&&data.score!=null)?Number(data.score):0;
         var balls = (data&&data.balls!=null)?Number(data.balls):0;
         var maxOv = (data&&data.maxOvers!=null)?Number(data.maxOvers):20;
-        if(target==null || score>=target) return null;
+        if(target==null || isNaN(target) || isNaN(score) || score>=target) return null;
         var need = target - score;
-        var ballsLeft = Math.max(0, maxOv*6 - balls);
+        if(isNaN(need) || need<=0) return null;
+        var ballsLeft = Math.max(0, (isNaN(maxOv)?20:maxOv)*6 - (isNaN(balls)?0:balls));
         var ovLeft = (ballsLeft/6).toFixed(1);
         return h('div',{className:'chase-banner',key:'chase'},
           h('span',{className:'chase-icon'},'⚡'),
