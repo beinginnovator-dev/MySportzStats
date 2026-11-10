@@ -2704,17 +2704,32 @@ function excitingHindi(d, ev){
         ):null
       ),
 
-      /* Chase banner — same breathing style as scorer */
+      /* Chase banner — use the same flat/nested fields published by MatchDO */
       (function(){
-        var target = (data&&data.targetScore!=null)?Number(data.targetScore):null;
-        var score = (data&&data.score!=null)?Number(data.score):0;
-        var balls = (data&&data.balls!=null)?Number(data.balls):0;
-        var maxOv = (data&&data.maxOvers!=null)?Number(data.maxOvers):20;
-        if(target==null || isNaN(target) || isNaN(score) || score>=target) return null;
-        var need = target - score;
-        if(isNaN(need) || need<=0) return null;
-        var ballsLeft = Math.max(0, (isNaN(maxOv)?20:maxOv)*6 - (isNaN(balls)?0:balls));
-        var ovLeft = (ballsLeft/6).toFixed(1);
+        if(!data || data.matchEnded) return null;
+        var scoreObj=(data.score && typeof data.score==='object')?data.score:{};
+        var targetRaw=data.targetScore!=null?data.targetScore:
+          (data.target!=null?data.target:
+          (data.firstInningsScore!=null?Number(data.firstInningsScore)+1:null));
+        var target=targetRaw==null?null:Number(targetRaw);
+        var scoreRaw=data.runs!=null?data.runs:
+          (data.totalScore!=null?data.totalScore:
+          (scoreObj.runs!=null?scoreObj.runs:
+          (typeof data.score==='number'?data.score:0)));
+        var score=Number(scoreRaw);
+        var balls=Number(data.balls!=null?data.balls:
+          (data.legalBalls!=null?data.legalBalls:(scoreObj.balls!=null?scoreObj.balls:0)));
+        var maxOv=Number(data.maxOvers!=null?data.maxOvers:
+          (data.totalOvers!=null?data.totalOvers:
+          (data.oversLimit!=null?data.oversLimit:
+          (data.matchOvers!=null?data.matchOvers:20))));
+        if(!isFinite(target) || target<=0 || !isFinite(score) || score>=target) return null;
+        if(!isFinite(balls) || balls<0) balls=0;
+        if(!isFinite(maxOv) || maxOv<=0) maxOv=20;
+        var need=Math.max(0,Math.ceil(target-score));
+        if(need<=0) return null;
+        var ballsLeft=Math.max(0,Math.round(maxOv*6)-balls);
+        var ovLeft=Math.floor(ballsLeft/6)+'.'+(ballsLeft%6);
         return h('div',{className:'chase-banner',key:'chase'},
           h('span',{className:'chase-icon'},'⚡'),
           ' Need ', h('b',null,need), ' run'+(need!==1?'s':''),
