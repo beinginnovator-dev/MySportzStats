@@ -82,6 +82,27 @@ export class MatchDO {
           this.live.micName = "";
           this.broadcast({ type: "mic", data: { live: false } });
         }
+        const closedSession = this.sessions.get(server);
+        if (closedSession && (closedSession.role === "viewer" || !closedSession.role) && closedSession.uid) {
+          const rec = this.viewerLog.get(closedSession.uid);
+          if (rec) {
+            const now = Date.now();
+            rec.online = false;
+            rec.leftAt = now;
+            rec.lastSeen = now;
+            rec.activity = "left";
+            rec.activities = rec.activities || [];
+            rec.activities.push({ type: "leave", text: "Left live match", ts: now });
+            if (rec.activities.length > 80) rec.activities = rec.activities.slice(-80);
+            if (rec.sessions && rec.sessions.length) {
+              const last = rec.sessions[rec.sessions.length - 1];
+              if (last && !last.leftAt) last.leftAt = now;
+            }
+            this.viewerLog.set(closedSession.uid, rec);
+            this.httpViewers.delete(closedSession.uid);
+            this.scheduleSaveViewerLog();
+          }
+        }
         this.sessions.delete(server);
         this.broadcastPresence();
       });
@@ -587,29 +608,22 @@ export class MatchDO {
     // Live viewer count = active WS viewers + recent HTTP heartbeats (not offline log)
     try {
       this.expireHttpViewers(Date.now());
-      // Online = open WS viewer sessions + HTTP heartbeats < 90s (unique by name/uid)
+      // Count unique viewer identities only; scorer/admin sockets never count as viewers.
       const seen = new Set();
-      let n = 0;
+      const now = Date.now();
       for (const s of this.sessions.values()) {
-        if (s.role && s.role !== 'viewer') continue;
-        const key = String(s.uid || s.name || '') + '|ws';
-        if (seen.has(key)) continue;
-        seen.add(key);
-        n++;
+        if (s.role !== "viewer") continue;
+        if (s.lastPing && now - s.lastPing > 90000) continue;
+        const key = String(s.uid || ("name:" + (s.name || "").trim().toLowerCase()));
+        if (key !== "name:") seen.add(key);
       }
       for (const [hid, v] of this.httpViewers.entries()) {
-        if (!v || !v.ts || Date.now() - v.ts >= 90000) continue;
-        const key = String(v.uid || v.name || hid) + '|http';
-        // skip if same name already counted as WS
-        const nameKey = String(v.name || '');
-        let dup = false;
-        for (const s of this.sessions.values()) {
-          if ((s.role === 'viewer' || !s.role) && s.name && nameKey && String(s.name) === nameKey) { dup = true; break; }
-        }
-        if (dup || seen.has(key)) continue;
-        seen.add(key);
-        n++;
+        const last = v && (v.lastSeen || v.ts);
+        if (!last || now - last >= 90000) continue;
+        const key = String(v.id || hid);
+        if (key) seen.add(key);
       }
+      const n = seen.size;
       out.viewerCount = n;
       out.watching = n;
       out.viewersOnline = n;
@@ -649,20 +663,50 @@ export class MatchDO {
       case "ping":
       case "heartbeat":
       case "viewer": {
-        // Presence over WebSocket — avoids HTTP /viewer-activity DO hits
+        // WebSocket heartbeat updates durable viewer history without an HTTP request.
         const name = String((msg && msg.name) || session.name || "Fan").slice(0, 40);
         const id = String((msg && (msg.id || msg.uid)) || "").slice(0, 64);
+        const now = Date.now();
+        const matchId = String(msg.match || this.matchId || "current").slice(0, 80);
         session.name = name;
-        session.lastPing = Date.now();
+        session.lastPing = now;
         if (id) session.uid = id;
-        try {
-          const now = Date.now();
-          const key = id || name;
-          this.httpViewers.set(key, { id: key, name, ts: now, via: "ws" });
-        } catch (_) {}
-        try {
-          ws.send(JSON.stringify({ type: "pong", ts: Date.now() }));
-        } catch (_) {}
+        if (session.role === "viewer" || !session.role) {
+          const key = id || ("ws:" + name + ":" + (session.joinedAt || now));
+          const existed = this.viewerLog.has(key);
+          this.touchViewer(key, name, matchId, now, "");
+          const rec = this.viewerLog.get(key);
+          if (rec) {
+            rec.activity = "watching";
+            if (!existed) {
+              rec.activities = rec.activities || [];
+              rec.activities.push({ type: "join", text: "Joined live match", tab: msg.tab || "live", ts: now });
+              this.viewerLog.set(key, rec);
+              this.scheduleSaveViewerLog();
+            }
+          }
+          this.httpViewers.set(key, { id: key, name, lastSeen: now, ts: now, via: "ws", online: true });
+        }
+        try { ws.send(JSON.stringify({ type: "pong", ts: now })); } catch (_) {}
+        break;
+      }
+      case "activity": {
+        if (session.role === "viewer" || !session.role) {
+          const id = String(session.uid || msg.id || msg.uid || "").slice(0, 64);
+          if (id) {
+            const now = Date.now();
+            this.touchViewer(id, session.name || msg.name || "Fan", String(msg.match || this.matchId || "current").slice(0, 80), now, "");
+            const rec = this.viewerLog.get(id);
+            if (rec) {
+              rec.activities = rec.activities || [];
+              rec.activities.push({ type: String(msg.activityType || "activity").slice(0, 24), text: String(msg.text || msg.tab || "Viewed live page").slice(0, 120), tab: String(msg.tab || "").slice(0, 24), ts: now });
+              if (rec.activities.length > 80) rec.activities = rec.activities.slice(-80);
+              rec.activity = String(msg.text || msg.tab || "watching").slice(0, 80);
+              this.viewerLog.set(id, rec);
+              this.scheduleSaveViewerLog();
+            }
+          }
+        }
         break;
       }
       case "sync": {
