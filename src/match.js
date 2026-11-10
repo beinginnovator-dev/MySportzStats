@@ -68,7 +68,7 @@ export class MatchDO {
 
       server.send(JSON.stringify({ type: "full", data: this.publicPayload() }));
 
-      server.addEventListener("message", (ev) => {
+      server.addEventListener("message", async (ev) => {
         try {
           const msg = JSON.parse(ev.data);
           await this.handleMessage(server, msg);
