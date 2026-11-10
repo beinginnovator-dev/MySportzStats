@@ -377,7 +377,7 @@ export default {
         try {
           const tryPaths = isScorer
             ? ["/index.html"]
-            : ["/live-react.html", "/viewer.html", "/live.html"];
+            : ["/live-react.html"];
           for (const assetPath of tryPaths) {
             const res = await env.ASSETS.fetch("https://assets.local" + assetPath);
             if (res && res.status < 400) {
