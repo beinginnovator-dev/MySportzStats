@@ -10047,6 +10047,10 @@ function updateView() {
         try {
             if (typeof saveMatchToHistorySafe === 'function') saveMatchToHistorySafe(winner);
             else if (typeof saveMatchToHistory === 'function') saveMatchToHistory(winner);
+            // Force a second pass so update path refreshes full player data
+            setTimeout(function(){
+                try { if (typeof saveMatchToHistorySafe === 'function') saveMatchToHistorySafe(winner); } catch(e2){}
+            }, 300);
         } catch(eH0) {
             try { if (typeof saveMatchToHistorySafe === 'function') saveMatchToHistorySafe(winner); } catch(eH1){}
         }
@@ -10150,42 +10154,7 @@ function updateView() {
             });
         return { orange: orange, purple: purple };
     }
-    function saveMatchToHistorySafe(winner) {
-        try {
-            var HKEY = (typeof HISTORY_KEY !== 'undefined' && HISTORY_KEY) ? HISTORY_KEY : 'cricket_match_history';
-            var hist = [];
-            try { hist = JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch(e){ hist = []; }
-            if (!Array.isArray(hist)) hist = [];
-            // Strong de-dupe: same matchSessionId already saved? Update it instead of adding duplicate
-            try {
-                var sid = (typeof matchSessionId !== 'undefined') ? matchSessionId : '';
-                if (sid) {
-                    for (var di = hist.length - 1; di >= 0; di--) {
-                        if (hist[di] && hist[di].matchSessionId === sid) {
-                            // Already saved this match — update scores/result, then return
-                            hist[di].score = totalScore|0;
-                            hist[di].wickets = totalWickets|0;
-                            hist[di].winner = winner;
-                            hist[di].matchResult = (typeof getMatchResultText==='function'?getMatchResultText():'');
-                            hist[di]._savedAt = Date.now();
-                            try {
-                                if (typeof persistHistoryArray === 'function') persistHistoryArray(hist);
-                                else localStorage.setItem(HKEY, JSON.stringify(hist));
-                            } catch(eU){}
-                            try { if (typeof renderHistory === 'function') renderHistory(); } catch(eR){}
-                            return;
-                        }
-                    }
-                }
-                // Fallback short-window de-dupe
-                var last = hist[hist.length - 1];
-                var nowTs = Date.now();
-                if (last && last._savedAt && (nowTs - (last._savedAt|0)) < 8000
-                    && String(last.teamA) === String(teamConfig.A.name) && String(last.teamB) === String(teamConfig.B.name)
-                    && (last.score|0) === (totalScore|0) && String(last.winner) === String(winner)) {
-                    return;
-                }
-            } catch(eDup){}
+    function buildHistoryEntry(winner, matchNo) {
             var caps = buildMatchOrangePurple();
             var mom = '';
             try {
@@ -10200,7 +10169,7 @@ function updateView() {
             // Store commentary separately so history list stays small
             try {
                 var lines = (commentaryLog || []).slice(-80);
-                localStorage.setItem(commKey, JSON.stringify({ matchNo: matchNo, lines: lines, ts: Date.now() }));
+                localStorage.setItem(commKey, JSON.stringify({ matchNo: matchNo || 0, lines: lines, ts: Date.now() }));
             } catch(eC) { commKey = ''; }
             var slimPlayers = (players||[]).map(function(p){
                 var bb = p.bowlBalls|0, br = p.bowlRuns|0;
@@ -10227,7 +10196,7 @@ function updateView() {
                 };
             });
             var entry = {
-                matchNo: matchNo,
+                matchNo: matchNo || 0,
                 date: new Date().toLocaleDateString(),
                 time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
                 teamA: teamConfig.A.name, teamB: teamConfig.B.name,
@@ -10265,6 +10234,55 @@ function updateView() {
                 _savedAt: Date.now(),
                 id: 'm-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8)
             };
+            
+            return entry;
+        }
+
+    function saveMatchToHistorySafe(winner) {
+        try {
+            var HKEY = (typeof HISTORY_KEY !== 'undefined' && HISTORY_KEY) ? HISTORY_KEY : 'cricket_match_history';
+            var hist = [];
+            try { hist = JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch(e){ hist = []; }
+            if (!Array.isArray(hist)) hist = [];
+            // Strong de-dupe: same matchSessionId already saved? Update it instead of adding duplicate
+            try {
+                var sid = (typeof matchSessionId !== 'undefined') ? matchSessionId : '';
+                if (sid) {
+                    for (var di = hist.length - 1; di >= 0; di--) {
+                        if (hist[di] && hist[di].matchSessionId === sid) {
+                            // Already saved — refresh FULL data (players, deliveries, result)
+                            var full = buildHistoryEntry(winner, hist[di].matchNo || (di+1));
+                            if (full) {
+                                full.matchNo = hist[di].matchNo || full.matchNo;
+                                full.matchSessionId = sid;
+                                hist[di] = full;
+                            } else {
+                                hist[di].score = totalScore|0;
+                                hist[di].wickets = totalWickets|0;
+                                hist[di].winner = winner;
+                                hist[di].matchResult = (typeof getMatchResultText==='function'?getMatchResultText():'');
+                                hist[di]._savedAt = Date.now();
+                            }
+                            try {
+                                if (typeof persistHistoryArray === 'function') persistHistoryArray(hist);
+                                else localStorage.setItem(HKEY, JSON.stringify(hist));
+                            } catch(eU){}
+                            try { if (typeof renderHistory === 'function') renderHistory(); } catch(eR){}
+                            try { if (typeof saveRankMatchBackup === 'function' && full) saveRankMatchBackup(full); } catch(eB){}
+                            return;
+                        }
+                    }
+                }
+                // Fallback short-window de-dupe
+                var last = hist[hist.length - 1];
+                var nowTs = Date.now();
+                if (last && last._savedAt && (nowTs - (last._savedAt|0)) < 8000
+                    && String(last.teamA) === String(teamConfig.A.name) && String(last.teamB) === String(teamConfig.B.name)
+                    && (last.score|0) === (totalScore|0) && String(last.winner) === String(winner)) {
+                    return;
+                }
+            } catch(eDup){}
+            var entry = buildHistoryEntry(winner, matchNo);
             hist.push(entry);
             try { if (typeof saveRankMatchBackup === 'function') saveRankMatchBackup(entry); } catch(eB){}
             // Cap to last 50 matches
