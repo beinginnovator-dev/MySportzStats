@@ -8158,30 +8158,45 @@ body[data-theme="sports1"] #fow-body th {
         if($('v-bowl-econ'))$('v-bowl-econ').textContent=econ;
       })();
       try{paintPlayerCheers()}catch(ePc){}
-      // Chase flash (like scorer)
+      // Chase flash — mirror the scorer's live chase message.
       (function(){
         var el=$('chase-flash');
         if(!el) return;
-        if(data.matchEnded){ el.classList.remove('show'); el.style.display='none'; el.textContent=''; return; }
-        var tgt = null;
-        if(data.targetScore!=null && !isNaN(Number(data.targetScore))) tgt = Number(data.targetScore);
-        else if(data.target!=null && !isNaN(Number(data.target))) tgt = Number(data.target);
-        else if(data.firstInningsScore!=null && !isNaN(Number(data.firstInningsScore))) tgt = Number(data.firstInningsScore)+1;
-        var runs = (data.runs!=null)?Number(data.runs):(data.totalScore!=null?Number(data.totalScore):(data.score!=null?Number(data.score):0));
-        var inn = (data.innings|0) || (data.currentInnings|0) || (data.firstInningsScore!=null?2:0);
-        // Show if we have a target and runs are below it (any innings indicator)
-        if(tgt!=null && !isNaN(tgt) && !isNaN(runs) && runs<tgt && (inn>=2 || data.firstInningsScore!=null)){
-          var need=Math.max(0,tgt-runs);
-          var maxBalls=(data.maxOvers|0)*6 || 120;
-          var ballsLeft=Math.max(0,maxBalls-(data.balls|0));
-          var ovLeft=((ballsLeft/6)|0)+'.'+(ballsLeft%6);
-          if(need>0){
-            el.textContent='⚡ Need '+need+' runs in '+ballsLeft+' balls ('+ovLeft+' ov left)';
-            el.classList.add('show');
-            el.style.display='block';
-            el.style.visibility='visible';
-          } else { el.classList.remove('show'); el.style.display='none'; }
-        } else { el.classList.remove('show'); el.style.display='none'; }
+        function hide(){
+          el.classList.remove('show');
+          el.style.display='none';
+          el.style.visibility='hidden';
+          el.textContent='';
+        }
+        if(data.matchEnded){ hide(); return; }
+
+        // Scorer payloads may use either targetScore or target. An explicit
+        // target is authoritative even if the innings counter is stale.
+        var tgt=null;
+        if(data.targetScore!=null && isFinite(Number(data.targetScore))) tgt=Number(data.targetScore);
+        else if(data.target!=null && isFinite(Number(data.target))) tgt=Number(data.target);
+        else if(data.firstInningsScore!=null && isFinite(Number(data.firstInningsScore))) tgt=Number(data.firstInningsScore)+1;
+
+        var scoreObj=(data.score && typeof data.score==='object')?data.score:{};
+        var runs=Number(data.runs!=null?data.runs:(data.totalScore!=null?data.totalScore:(scoreObj.runs!=null?scoreObj.runs:(typeof data.score==='number'?data.score:0))));
+        var balls=Number(data.balls!=null?data.balls:(data.legalBalls!=null?data.legalBalls:0));
+        var innings=Number(data.innings!=null?data.innings:(data.currentInnings!=null?data.currentInnings:0));
+        var isChase=(tgt!=null) && (data.targetScore!=null || data.target!=null || data.firstInningsScore!=null || innings>=2);
+
+        if(!isChase || !isFinite(runs) || runs>=tgt){ hide(); return; }
+
+        var oversLimit=Number(data.maxOvers!=null?data.maxOvers:(data.totalOvers!=null?data.totalOvers:(data.oversLimit!=null?data.oversLimit:data.matchOvers)));
+        if(!isFinite(oversLimit) || oversLimit<=0) oversLimit=20;
+        var maxBalls=Math.round(oversLimit*6);
+        var ballsLeft=Math.max(0,maxBalls-Math.max(0,balls));
+        var need=Math.max(0,Math.ceil(tgt-runs));
+        if(need<=0){ hide(); return; }
+
+        var oversLeft=Math.floor(ballsLeft/6)+'.'+(ballsLeft%6);
+        el.textContent='⚡ Need '+need+' runs in '+ballsLeft+' balls ('+oversLeft+' ov left)';
+        el.classList.add('show');
+        el.style.display='block';
+        el.style.visibility='visible';
       })();
       
       // Team logos (letter badges or image URL)
