@@ -1523,6 +1523,12 @@ function excitingHindi(d, ev){
     useEffect(function(){
       var match=new URLSearchParams(location.search).get('match')||localStorage.getItem('cricket_live_match_id')||'current';
       if(!match || match==='undefined' || match==='null' || match==='0') match='current';
+      // Restore the last persisted SQL snapshot immediately; the live WebSocket sync
+      // below remains authoritative and replaces this snapshot with current state.
+      fetch('/api/history/'+encodeURIComponent(match),{cache:'no-store'})
+        .then(function(r){return r.ok?r.json():null;})
+        .then(function(j){if(j&&j.ok&&j.match){try{apply(j.match);}catch(e){}}})
+        .catch(function(){});
       var dead=false,retry=0,pollTimer;
       function connect(){
         if(dead)return;
