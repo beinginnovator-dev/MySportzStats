@@ -8168,8 +8168,9 @@ body[data-theme="sports1"] #fow-body th {
         else if(data.target!=null && !isNaN(Number(data.target))) tgt = Number(data.target);
         else if(data.firstInningsScore!=null && !isNaN(Number(data.firstInningsScore))) tgt = Number(data.firstInningsScore)+1;
         var runs = (data.runs!=null)?Number(data.runs):(data.totalScore!=null?Number(data.totalScore):(data.score!=null?Number(data.score):0));
-        var inn = (data.innings|0) || (data.currentInnings|0) || 0;
-        if(tgt!=null && !isNaN(tgt) && !isNaN(runs) && runs<tgt && inn>=2){
+        var inn = (data.innings|0) || (data.currentInnings|0) || (data.firstInningsScore!=null?2:0);
+        // Show if we have a target and runs are below it (any innings indicator)
+        if(tgt!=null && !isNaN(tgt) && !isNaN(runs) && runs<tgt && (inn>=2 || data.firstInningsScore!=null)){
           var need=Math.max(0,tgt-runs);
           var maxBalls=(data.maxOvers|0)*6 || 120;
           var ballsLeft=Math.max(0,maxBalls-(data.balls|0));
