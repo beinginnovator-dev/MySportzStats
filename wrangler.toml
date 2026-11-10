@@ -4,6 +4,12 @@ main = "src/index.js"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
+[[d1_databases]]
+binding = "DB"
+database_name = "mysportzstats-match-history"
+database_id = "316aaea3-f581-4e00-bc90-036d91cbef08"
+migrations_dir = "migrations"
+
 [[durable_objects.bindings]]
 name = "MATCH"
 class_name = "MatchDO"
