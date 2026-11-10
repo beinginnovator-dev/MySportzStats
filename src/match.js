@@ -7,6 +7,7 @@ export class MatchDO {
     this.viewerLog = new Map(); // session history (persisted to DO storage)
     this.viewerDayKey = ''; // YYYY-MM-DD for daily total
     this._saveTimer = null;
+    this.matchId = "current";
     this.ready = this.state.blockConcurrencyWhile(() => this.loadPersistedState());
     this.live = {
       ts: 0,
@@ -48,6 +49,7 @@ export class MatchDO {
   async fetch(request) {
     try { await this.ready; } catch (_) {}
     const url = new URL(request.url);
+    this.matchId = String(url.searchParams.get("match") || this.matchId || "current").slice(0, 120);
 
     if (request.headers.get("Upgrade") === "websocket") {
       const pair = new WebSocketPair();
@@ -69,7 +71,7 @@ export class MatchDO {
       server.addEventListener("message", (ev) => {
         try {
           const msg = JSON.parse(ev.data);
-          this.handleMessage(server, msg);
+          await this.handleMessage(server, msg);
         } catch (_) {}
       });
 
@@ -98,7 +100,7 @@ export class MatchDO {
     ) {
       try {
         const body = await request.json();
-        this.applyUpdate(body && body.data ? body.data : body);
+        await this.applyUpdate(body && body.data ? body.data : body);
         return new Response(JSON.stringify({ ok: true, ts: this.live.ts }), {
           headers: cors,
         });
@@ -639,7 +641,7 @@ export class MatchDO {
     return out;
   }
 
-  handleMessage(ws, msg) {
+  async handleMessage(ws, msg) {
     const session = this.sessions.get(ws);
     if (!session) return;
 
@@ -693,7 +695,7 @@ export class MatchDO {
 
       case "score":
         if (session.role === "scorer") {
-          this.applyUpdate(msg.data || msg);
+          await this.applyUpdate(msg.data || msg);
         }
         break;
 
@@ -771,7 +773,7 @@ export class MatchDO {
     }
   }
 
-  applyUpdate(data) {
+  async applyUpdate(data) {
     if (!data || typeof data !== "object") return;
 
     Object.assign(this.live, data);
@@ -819,8 +821,28 @@ export class MatchDO {
     }
 
     const payload = this.publicPayload();
+    // Persist the full scorer payload so History can reopen the entire stats page.
+    await this.saveMatchHistory(payload);
     // Single push message for all WS viewers (push-only fanout)
     this.broadcast({ type: "full", data: payload, ts: payload.ts || this.live.ts });
+  }
+
+  async saveMatchHistory(payload) {
+    if (!this.env.DB || !payload) return;
+    const now = Date.now();
+    const matchId = String(this.matchId || payload.matchId || "current").slice(0, 120);
+    const teamA = String(payload.teamAName || payload.teamA || "").slice(0, 100);
+    const teamB = String(payload.teamBName || payload.teamB || "").slice(0, 100);
+    const matchName = String(payload.matchDesc || payload.matchName || (teamA + (teamA && teamB ? " vs " : "") + teamB) || matchId).slice(0, 180);
+    const ended = !!(payload.matchEnded || payload.status === "completed" || payload.status === "finished");
+    const startedAt = Number(payload.matchStartTime || payload.startedAt || payload.createdAt || now);
+    const completedAt = ended ? Number(payload.completedAt || payload.endedAt || now) : null;
+    const snapshot = JSON.stringify(Object.assign({}, payload, { matchId, historySavedAt: now, historyVersion: 1 }));
+    await this.env.DB.prepare(
+      "INSERT INTO match_history (match_id, team_a, team_b, match_name, status, result, started_at, updated_at, completed_at, payload_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(match_id) DO UPDATE SET team_a=excluded.team_a, team_b=excluded.team_b, match_name=excluded.match_name, status=excluded.status, result=excluded.result, started_at=COALESCE(match_history.started_at, excluded.started_at), updated_at=excluded.updated_at, completed_at=COALESCE(excluded.completed_at, match_history.completed_at), payload_json=excluded.payload_json"
+    ).bind(matchId, teamA, teamB, matchName, ended ? "completed" : "live",
+      String(payload.matchResult || payload.result || "").slice(0, 300),
+      startedAt, now, completedAt, snapshot).run();
   }
 
   oversLeft() {
