@@ -10282,7 +10282,27 @@ function updateView() {
                     return;
                 }
             } catch(eDup){}
-            var entry = buildHistoryEntry(winner, matchNo);
+            var entry = null;
+            try { entry = buildHistoryEntry(winner, matchNo); } catch(eBuild){ console.log('history build', eBuild); }
+            if (!entry) {
+                entry = {
+                    matchNo: matchNo,
+                    date: new Date().toLocaleDateString(),
+                    time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+                    teamA: (teamConfig&&teamConfig.A&&teamConfig.A.name)||'Team A',
+                    teamB: (teamConfig&&teamConfig.B&&teamConfig.B.name)||'Team B',
+                    score: totalScore|0, wickets: totalWickets|0,
+                    overs: (typeof formatOvers==='function'?formatOvers(totalBalls):'0.0'),
+                    winner: winner,
+                    players: (players||[]).map(function(p){
+                        return { id:p.id, name:p.name, team:p.team, runs:p.runs|0, balls:p.balls|0,
+                                 fours:p.fours|0, sixes:p.sixes|0, bowlBalls:p.bowlBalls|0, bowlRuns:p.bowlRuns|0,
+                                 wickets:p.wickets|0, dots:p.dots|0, economy: (p.bowlBalls>0?((p.bowlRuns/p.bowlBalls)*6).toFixed(2):'0.00') };
+                    }),
+                    matchSessionId: (typeof matchSessionId!=='undefined'?matchSessionId:('ms-'+Date.now().toString(36))),
+                    _savedAt: Date.now()
+                };
+            }
             hist.push(entry);
             try { if (typeof saveRankMatchBackup === 'function') saveRankMatchBackup(entry); } catch(eB){}
             // Cap to last 50 matches

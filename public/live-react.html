@@ -591,6 +591,11 @@ body.theme-light .comm-sticky,body.theme-iccpro .comm-sticky{background:linear-g
   font-size:12px;font-weight:800;padding:6px 12px;border-radius:999px;cursor:pointer
 }
 .comm-lang-toggle button.on{background:#2563eb;border-color:#3b82f6;color:#fff}
+.chase-banner{margin:8px 12px;padding:10px 14px;border-radius:12px;background:linear-gradient(90deg,#f59e0b,#d97706);color:#fff;font-weight:800;font-size:14px;text-align:center;animation:chaseBreath 1.4s ease-in-out infinite;box-shadow:0 0 18px rgba(245,158,11,0.45);}
+.chase-banner b{color:#fff;font-size:16px;}
+.chase-icon{margin-right:4px;}
+.chase-ov{opacity:0.85;font-size:11px;margin-left:4px;}
+@keyframes chaseBreath{0%,100%{transform:scale(1);box-shadow:0 0 12px rgba(245,158,11,0.3);}50%{transform:scale(1.03);box-shadow:0 0 22px rgba(245,158,11,0.7);}}
 </style>
 </head>
 <body class="theme-dark">
@@ -2698,6 +2703,24 @@ function excitingHindi(d, ev){
           )
         ):null
       ),
+
+      /* Chase banner — same breathing style as scorer */
+      (function(){
+        var target = (data&&data.targetScore!=null)?Number(data.targetScore):null;
+        var score = (data&&data.score!=null)?Number(data.score):0;
+        var balls = (data&&data.balls!=null)?Number(data.balls):0;
+        var maxOv = (data&&data.maxOvers!=null)?Number(data.maxOvers):20;
+        if(target==null || score>=target) return null;
+        var need = target - score;
+        var ballsLeft = Math.max(0, maxOv*6 - balls);
+        var ovLeft = (ballsLeft/6).toFixed(1);
+        return h('div',{className:'chase-banner',key:'chase'},
+          h('span',{className:'chase-icon'},'⚡'),
+          ' Need ', h('b',null,need), ' run'+(need!==1?'s':''),
+          ' in ', h('b',null,ballsLeft), ' ball'+(ballsLeft!==1?'s':''),
+          h('span',{className:'chase-ov'},' ('+ovLeft+' ov left)')
+        );
+      })(),
 
       /* panel ad below scoreboard — all tabs (Live, Commentary, …) */
       (function(){
