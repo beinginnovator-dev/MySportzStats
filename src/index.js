@@ -449,6 +449,33 @@ export default {
       return handlePlatform(request, env, url);
     }
 
+    // SQL-backed full match history. The payload stores every stats tab and innings.
+    if (url.pathname === "/api/history" && request.method === "GET") {
+      if (!env.DB) return json({ ok: false, error: "D1 database binding DB is not configured" }, 503);
+      try {
+        const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") || 50)));
+        const { results = [] } = await env.DB.prepare(
+          "SELECT match_id AS matchId, team_a AS teamA, team_b AS teamB, match_name AS matchName, status, result, started_at AS startedAt, updated_at AS updatedAt, completed_at AS completedAt FROM match_history ORDER BY updated_at DESC LIMIT ?"
+        ).bind(limit).all();
+        return json({ ok: true, matches: results });
+      } catch (e) {
+        return json({ ok: false, error: String(e && e.message || e) }, 500);
+      }
+    }
+    if (url.pathname.startsWith("/api/history/") && request.method === "GET") {
+      if (!env.DB) return json({ ok: false, error: "D1 database binding DB is not configured" }, 503);
+      const matchId = decodeURIComponent(url.pathname.slice("/api/history/".length)).slice(0, 120);
+      try {
+        const row = await env.DB.prepare(
+          "SELECT payload_json FROM match_history WHERE match_id = ?"
+        ).bind(matchId).first();
+        if (!row) return json({ ok: false, error: "Match history not found" }, 404);
+        return json({ ok: true, match: JSON.parse(row.payload_json) });
+      } catch (e) {
+        return json({ ok: false, error: String(e && e.message || e) }, 500);
+      }
+    }
+
     // WebSocket + match DO routes
     if (url.pathname === "/ws" || url.pathname.startsWith("/ws/")) {
       const matchId = url.searchParams.get("match") || "current";
