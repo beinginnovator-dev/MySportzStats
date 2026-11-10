@@ -118,9 +118,9 @@
     .crr-line .live-inline{color:#34d399;font-weight:900}
     .crr-line .live-inline.lost{color:#f87171}
     .crr-line .view-inline{color:#34d399;font-weight:900}
-    .chase-flash{display:none;margin:8px 0;padding:10px 12px;border-radius:12px;background:linear-gradient(135deg,#7c2d12,#9a3412);border:1px solid rgba(251,191,36,.4);color:#fef3c7;font-weight:900;font-size:14px;text-align:center;animation:chasePulse 1.4s ease-in-out infinite}
-    .chase-flash.show{display:block!important}
-    @keyframes chasePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.82;transform:scale(1.02)}}
+    .chase-flash{display:none;margin:10px 12px;padding:12px 16px;border-radius:14px;background:linear-gradient(90deg,#f59e0b,#d97706);border:none;color:#fff;font-weight:900;font-size:15px;text-align:center;box-shadow:0 0 16px rgba(245,158,11,0.5);position:relative;z-index:30}
+    .chase-flash.show{display:block!important;animation:chasePulse 1.2s ease-in-out infinite}
+    @keyframes chasePulse{0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 12px rgba(245,158,11,0.4)}50%{opacity:1;transform:scale(1.04);box-shadow:0 0 28px rgba(245,158,11,0.85)};transform:scale(1.02)}}
     .comm-popup{display:none!important;margin:8px 0 0;z-index:5;position:relative}
     .comm-popup.show{display:block;animation:commPopIn .28s ease}
     @keyframes commPopIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
@@ -8163,17 +8163,18 @@ body[data-theme="sports1"] #fow-body th {
         var el=$('chase-flash');
         if(!el) return;
         if(data.matchEnded){ el.classList.remove('show'); el.textContent=''; return; }
-        if((data.innings|0)>=2 && data.targetScore!=null){
-          var need=Math.max(0,(data.targetScore|0)-(data.runs|0));
-          var maxBalls=(data.maxOvers|0)*6;
-          var ballsLeft=maxBalls>0?Math.max(0,maxBalls-(data.balls|0)):null;
-          var ovLeft=ballsLeft!=null?((ballsLeft/6)|0)+'.'+(ballsLeft%6):'';
-          if(need>0 && ballsLeft!=null){
+        var tgt = (data.targetScore!=null)?Number(data.targetScore):(data.target!=null?Number(data.target):null);
+          var runs = (data.runs!=null)?Number(data.runs):(data.score!=null?Number(data.score):0);
+          var inn = (data.innings|0);
+          if(tgt!=null && !isNaN(tgt) && !isNaN(runs) && runs<tgt && (inn>=2 || tgt>0)){
+          var need=Math.max(0,tgt-runs);
+          var maxBalls=(data.maxOvers|0)*6 || 120;
+          var ballsLeft=Math.max(0,maxBalls-(data.balls|0));
+          var ovLeft=((ballsLeft/6)|0)+'.'+(ballsLeft%6);
+          if(need>0){
             el.textContent='⚡ Need '+need+' runs in '+ballsLeft+' balls ('+ovLeft+' ov left)';
             el.classList.add('show');
-          } else if(need>0){
-            el.textContent='⚡ Need '+need+' runs to win';
-            el.classList.add('show');
+            el.style.display='block';
           } else { el.classList.remove('show'); }
         } else { el.classList.remove('show'); }
       })();
