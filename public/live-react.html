@@ -2992,16 +2992,19 @@ function excitingHindi(d, ev){
             h('button',{className:capSub==='purple'?'on':'',onClick:function(){setCapSub('purple');}},'Purple Cap')
           ),
           capSub==='orange'?h('table',null,
-            h('thead',null,h('tr',null,h('th',null,'#'),h('th',null,'Player'),h('th',null,'Runs'),h('th',null,'Balls'),h('th',null,'Avg'),h('th',null,'SR'))),
+            h('thead',null,h('tr',null,h('th',null,'#'),h('th',null,'Player'),h('th',null,'Runs'),h('th',null,'Balls'),h('th',null,'4s'),h('th',null,'6s'),h('th',null,'Avg'),h('th',null,'SR'))),
             h('tbody',null,
               (data&&(data.cumulativeOrangeCap||data.orangeCap)?(data.cumulativeOrangeCap||data.orangeCap).slice(0,20):[]).map(function(p,i){
+                var fours=n(p.fours!=null?p.fours:p.four), sixes=n(p.sixes!=null?p.sixes:p.six);
+                var balls=n(p.balls!=null?p.balls:p.batBalls);
+                var runs=n(p.runs);
+                var avg=p.avg!=null?p.avg:(p.average!=null?p.average:(p.dismissals? (runs/n(p.dismissals)).toFixed(2):'-'));
                 return h('tr',{key:i},
-                  h('td',null,i+1),h('td',null,p.name),h('td',null,p.runs||0),h('td',null,p.balls||0),h('td',null,p.avg!=null?p.avg:(p.SR||p.sr||'-')),h('td',null,p.SR||p.sr||'-'),
-                  h('td',null,p.avg!=null?p.avg:(p.average!=null?p.average:'-')),
-                  h('td',null,p.sr!=null?p.sr:sr(p.runs,p.balls))
+                  h('td',null,i+1),h('td',null,p.name||p.player||'-'),h('td',null,runs),h('td',null,balls),
+                  h('td',null,fours),h('td',null,sixes),h('td',null,avg),h('td',null,p.sr!=null?p.sr:(p.SR!=null?p.SR:sr(runs,balls)))
                 );
               }),
-              !(data&&data.orangeCap&&data.orangeCap.length)?h('tr',null,h('td',{colSpan:6,className:'muted'},'No data')):null
+              !(data&&(data.cumulativeOrangeCap||data.orangeCap)&& (data.cumulativeOrangeCap||data.orangeCap).length)?h('tr',null,h('td',{colSpan:8,className:'muted'},'No data')):null
             )
           ):h('table',null,
             h('thead',null,h('tr',null,h('th',null,'#'),h('th',null,'Player'),h('th',null,'W'),h('th',null,'Runs'),h('th',null,'Overs'),h('th',null,'Econ'))),
