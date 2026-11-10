@@ -1727,12 +1727,19 @@ function excitingHindi(d, ev){
     }catch(e){ return null; }
   }
   function liveScoringUrl(matchId){
-    var id = matchId || 'current';
+    var id = String(matchId || 'current').trim();
     if(!id || id==='undefined' || id==='null' || id==='0') id = 'current';
-    // Prefer same live-react page so scores stay on this viewer
-    var path = location.pathname.indexOf('live-react')>=0 ? location.pathname : (location.pathname.replace(/\/[^\/]*$/,'/') + 'live-react.html');
-    if(location.pathname.indexOf('live-react')>=0) path = location.pathname;
-    return path + '?match=' + encodeURIComponent(id);
+    // Always use the Worker's canonical live route; it serves live-react.html.
+    return new URL('/live?match=' + encodeURIComponent(id), location.origin).toString();
+  }
+  function fixtureMatchId(f){
+    f=f||{};
+    var id=f.matchId||f.id||f.match_id||'';
+    var supplied=String(f.liveLink||f.link||'');
+    if(!id && supplied){
+      try{ id=new URL(supplied,location.origin).searchParams.get('match')||''; }catch(e){}
+    }
+    return String(id||'current');
   }
   function matchCardsFromData(d){
     var list = [];
@@ -3168,7 +3175,7 @@ function excitingHindi(d, ev){
                     h('div',{style:{fontWeight:800}}, (tour&&tour.name)||'Tournament'),
                     h('div',{className:'muted'}, ((tour&&tour.start)||'')+' — '+((tour&&tour.end)||'')),
                     h('div',{className:'row',style:{marginTop:8,gap:8}},
-                      h('a',{className:'badge today',href:liveScoringUrl('current'),target:'_blank',rel:'noopener noreferrer'},'Open live'),
+                      h('a',{className:'badge today',href:liveScoringUrl((fx.find(function(f){return f&&String(f.status||'').toLowerCase()==='live';})||{}).matchId||'current'),target:'_blank',rel:'noopener noreferrer'},'Open live'),
                       h('button',{className:'badge up',onClick:function(){
                         try{
                           var title = (tour&&tour.name)||'Tournament invite';
@@ -3203,10 +3210,10 @@ function excitingHindi(d, ev){
                 fx.slice(0,12).map(function(f,i){
                   var st=dayStatus(f);
                   var label=(f.teamA||'?')+' vs '+(f.teamB||'?');
-                  var mid = f.matchId || f.id || (f.liveLink && (f.liveLink.match(/match=([^&]+)/)||[])[1]) || 'current';
-                  var href = f.liveLink || liveScoringUrl(mid);
-                  return h('a',{key:'fx'+i,className:'tour-card',href:href,target:'_blank',rel:'noopener noreferrer',
-                    onClick:function(e){ e.preventDefault(); window.open(href,'_blank','noopener,noreferrer'); }},
+                  var mid = fixtureMatchId(f);
+                  // Do not trust stale/custom fixture URLs: route every fixture to its own match on this Worker.
+                  var href = liveScoringUrl(mid);
+                  return h('a',{key:'fx'+i,className:'tour-card',href:href,target:'_blank',rel:'noopener noreferrer'},
                     h('div',{className:'body'},
                       h('span',{className:'badge '+(st.kind==='live'?'live':st.kind==='today'?'today':'up')}, st.label),
                       h('div',{style:{fontWeight:800}}, label),
