@@ -8167,8 +8167,8 @@ body[data-theme="sports1"] #fow-body th {
         if(data.targetScore!=null && !isNaN(Number(data.targetScore))) tgt = Number(data.targetScore);
         else if(data.target!=null && !isNaN(Number(data.target))) tgt = Number(data.target);
         else if(data.firstInningsScore!=null && !isNaN(Number(data.firstInningsScore))) tgt = Number(data.firstInningsScore)+1;
-        var runs = (data.runs!=null)?Number(data.runs):(data.score!=null?Number(data.score):0);
-        var inn = (data.innings|0);
+        var runs = (data.runs!=null)?Number(data.runs):(data.totalScore!=null?Number(data.totalScore):(data.score!=null?Number(data.score):0));
+        var inn = (data.innings|0) || (data.currentInnings|0) || 0;
         if(tgt!=null && !isNaN(tgt) && !isNaN(runs) && runs<tgt && inn>=2){
           var need=Math.max(0,tgt-runs);
           var maxBalls=(data.maxOvers|0)*6 || 120;
