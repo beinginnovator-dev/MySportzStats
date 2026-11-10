@@ -822,7 +822,7 @@ export class MatchDO {
 
     const payload = this.publicPayload();
     // Persist the full scorer payload so History can reopen the entire stats page.
-    await this.saveMatchHistory(payload);
+    await this.saveMatchHistory(this.live);
     // Single push message for all WS viewers (push-only fanout)
     this.broadcast({ type: "full", data: payload, ts: payload.ts || this.live.ts });
   }
@@ -838,11 +838,15 @@ export class MatchDO {
     const startedAt = Number(payload.matchStartTime || payload.startedAt || payload.createdAt || now);
     const completedAt = ended ? Number(payload.completedAt || payload.endedAt || now) : null;
     const snapshot = JSON.stringify(Object.assign({}, payload, { matchId, historySavedAt: now, historyVersion: 1 }));
-    await this.env.DB.prepare(
+    try {
+      await this.env.DB.prepare(
       "INSERT INTO match_history (match_id, team_a, team_b, match_name, status, result, started_at, updated_at, completed_at, payload_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(match_id) DO UPDATE SET team_a=excluded.team_a, team_b=excluded.team_b, match_name=excluded.match_name, status=excluded.status, result=excluded.result, started_at=COALESCE(match_history.started_at, excluded.started_at), updated_at=excluded.updated_at, completed_at=COALESCE(excluded.completed_at, match_history.completed_at), payload_json=excluded.payload_json"
     ).bind(matchId, teamA, teamB, matchName, ended ? "completed" : "live",
       String(payload.matchResult || payload.result || "").slice(0, 300),
       startedAt, now, completedAt, snapshot).run();
+    } catch (e) {
+      console.error("D1 match history save failed", matchId, e && e.message || e);
+    }
   }
 
   oversLeft() {
