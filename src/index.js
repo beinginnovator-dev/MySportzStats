@@ -3,7 +3,7 @@ import { MatchDO } from "./match.js";
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Publish-Key, X-Admin-Key, x-admin-key",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Publish-Key, X-Admin-Key, x-admin-key, X-Publisher-Key",
 };
 
 function json(data, status = 200) {
@@ -128,6 +128,12 @@ function adminOk(request, env, bodyToken) {
   if (token === key) return true;
   if (token === "mysportz-admin-2024" && (!env || !env.ADMIN_KEY || String(env.ADMIN_KEY).trim() === "mysportz-admin-2024")) return true;
   return false;
+}
+
+function historyBackupKeyOk(request, env) {
+  const expected = String((env && (env.HISTORY_BACKUP_KEY || env.PUBLISH_KEY)) || "PUBLISH_2026").trim();
+  const supplied = String(request.headers.get("X-Publisher-Key") || "").trim();
+  return !!supplied && supplied === expected;
 }
 
 function shortCode(n) {
@@ -447,6 +453,49 @@ export default {
       url.pathname.startsWith("/api/ads")
     ) {
       return handlePlatform(request, env, url);
+    }
+
+    // One rolling cloud backup for the scorer's complete local history archive.
+    // The backup is a single D1 row and is deliberately not changed by history deletes/resets.
+    if (url.pathname === "/api/history/backup" && request.method === "GET") {
+      if (!env.DB) return json({ ok: false, error: "D1 database binding DB is not configured" }, 503);
+      if (!historyBackupKeyOk(request, env)) return json({ ok: false, error: "unauthorized" }, 401);
+      try {
+        const row = await env.DB.prepare(
+          "SELECT saved_at AS savedAt, match_count AS matchCount, payload_json AS payloadJson FROM scorer_cloud_backup WHERE backup_id = ?"
+        ).bind("scorer-history").first();
+        if (!row) return json({ ok: true, backup: null });
+        return json({ ok: true, backup: {
+          savedAt: row.savedAt,
+          matchCount: row.matchCount,
+          payload: JSON.parse(row.payloadJson)
+        }});
+      } catch (e) {
+        return json({ ok: false, error: String(e && e.message || e) }, 500);
+      }
+    }
+    if (url.pathname === "/api/history/backup" && request.method === "POST") {
+      if (!env.DB) return json({ ok: false, error: "D1 database binding DB is not configured" }, 503);
+      if (!historyBackupKeyOk(request, env)) return json({ ok: false, error: "unauthorized" }, 401);
+      try {
+        const body = await request.json();
+        const history = Array.isArray(body && body.history) ? body.history : null;
+        if (!history || history.length > 100) return json({ ok: false, error: "history must be an array of at most 100 matches" }, 400);
+        const payload = JSON.stringify({
+          schemaVersion: 1,
+          savedAt: Date.now(),
+          history,
+          commentaryFiles: body.commentaryFiles && typeof body.commentaryFiles === "object" ? body.commentaryFiles : {}
+        });
+        if (payload.length > 7_500_000) return json({ ok: false, error: "Backup is too large (7.5 MB limit)" }, 413);
+        const now = Date.now();
+        await env.DB.prepare(
+          "INSERT INTO scorer_cloud_backup (backup_id, saved_at, match_count, payload_json) VALUES (?, ?, ?, ?) ON CONFLICT(backup_id) DO UPDATE SET saved_at = excluded.saved_at, match_count = excluded.match_count, payload_json = excluded.payload_json"
+        ).bind("scorer-history", now, history.length, payload).run();
+        return json({ ok: true, savedAt: now, matchCount: history.length, backupId: "scorer-history" });
+      } catch (e) {
+        return json({ ok: false, error: String(e && e.message || e) }, 500);
+      }
     }
 
     // SQL-backed full match history. The payload stores every stats tab and innings.
