@@ -11830,7 +11830,9 @@ function computeManOfTheMatch(plist) {
                 if (raw != null) commentaryFiles[key] = raw;
             } catch(e) {}
         });
-        return { schemaVersion: 1, history: history, commentaryFiles: commentaryFiles };
+        var liveSnapshot = null;
+        try { liveSnapshot = JSON.parse(localStorage.getItem('cricket_cloud_live_snapshot_v1') || 'null'); } catch(e) {}
+        return { schemaVersion: 1, history: history, commentaryFiles: commentaryFiles, liveSnapshot: liveSnapshot };
     }
     async function backupHistoryToCloud(silent) {
         var status = document.getElementById('history-cloud-status');
@@ -11893,6 +11895,10 @@ function computeManOfTheMatch(plist) {
             Object.keys(files).forEach(function(key) {
                 try { localStorage.setItem(key, files[key]); } catch(e) {}
             });
+            // Preserve the full latest live scorer snapshot alongside the compact history list.
+            if (backup.liveSnapshot) {
+                try { localStorage.setItem('cricket_cloud_live_snapshot_v1', JSON.stringify(backup.liveSnapshot)); } catch(e) {}
+            }
             try { rebuildStatsFromHistory(); } catch(e) {}
             try { renderHistory(); } catch(e) {}
             try { if (typeof renderInfoPage === 'function') renderInfoPage(); } catch(e) {}
