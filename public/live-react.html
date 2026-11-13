@@ -1849,16 +1849,25 @@ function excitingHindi(d, ev){
     },[data&&data.floatAd&&data.floatAd.image, data&&data.floatAd&&data.floatAd.displayMode, data&&data.floatAd&&data.floatAd.enabled]);
 
     useEffect(function(){
-      try{ window.__viewerPing && window.__viewerPing(welcomeName||viewerDisplayName()); }catch(e){}
-      var t=setInterval(function(){ try{ window.__viewerPing && window.__viewerPing(); }catch(e){} }, 60000);
-      // reconnect WS so server presence uses SD7 etc name
+      var pingNow=function(){ try{ if(document.visibilityState==='visible' && window.__viewerPing) window.__viewerPing(welcomeName||viewerDisplayName()); }catch(e){} };
+      pingNow();
+      // 20-second heartbeat keeps scorer and live-page counts in sync.
+      var t=setInterval(pingNow,20000);
+      var onVisible=function(){ if(document.visibilityState==='visible') pingNow(); };
+      document.addEventListener('visibilitychange',onVisible);
+      window.addEventListener('online',pingNow);
+      // reconnect WS so server presence uses the current viewer name
       try{
         var nm=(welcomeName||viewerDisplayName()||'').trim();
         if(nm && wsRef.current && wsRef.current.readyState===1){
           try{ wsRef.current.close(); }catch(eC){}
         }
       }catch(e2){}
-      return function(){ clearInterval(t); };
+      return function(){
+        clearInterval(t);
+        document.removeEventListener('visibilitychange',onVisible);
+        window.removeEventListener('online',pingNow);
+      };
     },[welcomeName]);
     var _th=useState(function(){return lsGet('react_theme','ipl')||lsGet('react_live_theme','ipl')||'ipl';}),theme=_th[0],setTheme=_th[1];
     var _lang=useState(function(){return lsGet('react_comm_lang','en')||'en';}),commLang=_lang[0],setCommLangState=_lang[1];
