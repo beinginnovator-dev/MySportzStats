@@ -210,6 +210,7 @@ export class MatchDO {
             this.scheduleSaveViewerLog();
           }
         }
+        this.broadcastPresence();
         return new Response(JSON.stringify({ ok: true }), { headers: cors });
       } catch (_) {
         return new Response(JSON.stringify({ ok: false }), { status: 400, headers: cors });
@@ -687,6 +688,7 @@ export class MatchDO {
             }
           }
           this.httpViewers.set(key, { id: key, name, lastSeen: now, ts: now, via: "ws", online: true });
+          this.broadcastPresence();
         }
         try { ws.send(JSON.stringify({ type: "pong", ts: now })); } catch (_) {}
         break;
