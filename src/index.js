@@ -481,14 +481,26 @@ export default {
         const body = await request.json();
         const history = Array.isArray(body && body.history) ? body.history : null;
         if (!history || history.length > 100) return json({ ok: false, error: "history must be an array of at most 100 matches" }, 400);
+        const priorRow = await env.DB.prepare(
+          "SELECT payload_json FROM scorer_cloud_backup WHERE backup_id = ?"
+        ).bind("scorer-history").first();
+        let prior = {};
+        try { prior = priorRow ? JSON.parse(priorRow.payload_json) : {}; } catch (_) {}
+        const commentaryFiles = Object.assign(
+          {},
+          prior.commentaryFiles && typeof prior.commentaryFiles === "object" ? prior.commentaryFiles : {},
+          body.commentaryFiles && typeof body.commentaryFiles === "object" ? body.commentaryFiles : {}
+        );
+        const liveSnapshot = body.liveSnapshot || prior.liveSnapshot || null;
+        const now = Date.now();
         const payload = JSON.stringify({
           schemaVersion: 1,
-          savedAt: Date.now(),
+          savedAt: now,
           history,
-          commentaryFiles: body.commentaryFiles && typeof body.commentaryFiles === "object" ? body.commentaryFiles : {}
+          commentaryFiles,
+          liveSnapshot
         });
         if (payload.length > 7_500_000) return json({ ok: false, error: "Backup is too large (7.5 MB limit)" }, 413);
-        const now = Date.now();
         await env.DB.prepare(
           "INSERT INTO scorer_cloud_backup (backup_id, saved_at, match_count, payload_json) VALUES (?, ?, ?, ?) ON CONFLICT(backup_id) DO UPDATE SET saved_at = excluded.saved_at, match_count = excluded.match_count, payload_json = excluded.payload_json"
         ).bind("scorer-history", now, history.length, payload).run();
