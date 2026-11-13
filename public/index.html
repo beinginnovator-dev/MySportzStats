@@ -2431,18 +2431,24 @@ body[data-theme="dark"] #cup-sub-create h3 {
 .history-pro-hero p{font-size:11px;color:#cbd5e1;margin-top:7px;line-height:1.5}
 .history-pro-stats{display:flex;align-items:center;gap:7px;margin-top:14px;font-size:9px;font-weight:900;letter-spacing:.08em;color:#99f6e4;flex-wrap:wrap}
 .history-toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.history-action{min-height:40px;padding:9px 10px;border-radius:12px;border:1px solid var(--border-c,#cbd5e1);background:var(--card-bg,#fff);color:var(--text-c,#0f172a);font-size:10px;font-weight:900;letter-spacing:.03em}
-.history-action-primary{background:#0f766e;color:#fff;border-color:#0f766e}
-.history-action-danger{color:#dc2626;border-color:#fecaca}
+.history-action{min-height:44px;padding:10px 10px;border-radius:12px;border:1px solid #cbd5e1;background:#fff;color:#0f172a!important;font-size:11px;font-weight:900;letter-spacing:.03em;opacity:1!important;text-shadow:none!important}
+.history-action-primary{background:#0f766e!important;color:#fff!important;border-color:#0f766e!important}
+.history-action-danger{background:#fff!important;color:#dc2626!important;border-color:#fecaca!important}
+.history-pro-actions button{color:#0f172a!important;background:#fff!important;opacity:1!important;text-shadow:none!important}
+.history-pro-actions .view{background:#1d4ed8!important;color:#fff!important;border-color:#1d4ed8!important}
+.history-pro-actions .delete{color:#dc2626!important;background:#fff!important;border-color:#fecaca!important}
 .history-page{min-height:0;padding-bottom:24px}
-.history-pro-hero{position:sticky;top:0;z-index:20;background:var(--card-bg,#fff);padding:12px 4px 10px;border-bottom:1px solid var(--border-c,#dbe3ec)}
 .history-list-pro{display:flex;flex-direction:column;gap:11px;padding-bottom:18px}
 .history-date-group{display:flex;flex-direction:column;gap:9px}
 .history-date-heading{position:sticky;top:76px;z-index:10;padding:8px 11px;border-radius:10px;background:#eaf1ff;color:#1d4ed8;font-size:11px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;border:1px solid #c7d7fe}
 .history-pro-card{border:1px solid var(--border-c,#dbe3ec);border-radius:17px;padding:14px;background:var(--card-bg,#fff);box-shadow:0 5px 18px rgba(15,23,42,.07)}
-#history-detail-modal{align-items:flex-start!important;overflow-y:auto!important;padding:max(12px,env(safe-area-inset-top)) 12px max(24px,env(safe-area-inset-bottom))!important;-webkit-overflow-scrolling:touch}
-#history-detail-modal>.bg-white{width:100%;max-height:none!important;min-height:0;overflow:visible!important;margin:auto 0}
+#history-detail-modal{align-items:flex-start!important;overflow-y:auto!important;padding:max(10px,env(safe-area-inset-top)) 10px max(18px,env(safe-area-inset-bottom))!important;-webkit-overflow-scrolling:touch}
+#history-detail-modal>.bg-white{width:100%;max-height:calc(100dvh - 28px)!important;min-height:0;overflow-y:auto!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;margin:0 auto}
+#history-detail-modal #history-detail-content{overflow:visible!important}
 #history-detail-title{color:#1d4ed8!important;font-size:17px;line-height:1.35}
+#app-modal{align-items:flex-start!important;justify-content:center!important;overflow-y:auto!important;padding: max(10px,env(safe-area-inset-top)) 12px max(18px,env(safe-area-inset-bottom))!important;-webkit-overflow-scrolling:touch}
+#app-modal>.app-modal-card{max-height:calc(100dvh - 28px)!important;overflow-y:auto!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;margin:0 auto!important}
+#app-modal #modal-message{max-height:none!important;overflow:visible!important;flex:0 0 auto!important}
 #history-detail-content{overflow:visible!important;padding-bottom:16px}
 #history-detail-content .history-scorecard-table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
 #history-detail-content table.history-scorecard-table{width:100%;min-width:540px;table-layout:fixed}
@@ -10254,7 +10260,7 @@ function updateView() {
                 }
             } catch(e){}
             if (!mom && caps.orange[0]) mom = caps.orange[0].name;
-            var matchNo = hist.length + 1;
+            matchNo = Number(matchNo) || (function(){ try { var saved = JSON.parse(localStorage.getItem(HISTORY_KEY || 'cricket_match_history') || '[]'); return (Array.isArray(saved) ? saved.length : 0) + 1; } catch(e){ return 1; } })();
             var commKey = 'cricket_match_comm_' + matchNo + '_' + Date.now();
             // Store commentary separately so history list stays small
             try {
@@ -10382,7 +10388,7 @@ function updateView() {
                 }
             } catch(eDup){}
             var entry = null;
-            try { entry = buildHistoryEntry(winner, matchNo); } catch(eBuild){ console.log('history build', eBuild); }
+            try { entry = buildHistoryEntry(winner, hist.length + 1); } catch(eBuild){ console.log('history build', eBuild); }
             if (!entry) {
                 entry = {
                     matchNo: matchNo,
