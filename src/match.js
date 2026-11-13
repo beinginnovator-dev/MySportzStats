@@ -181,7 +181,7 @@ export class MatchDO {
       return new Response(JSON.stringify({ ok: true, ...hist }), { headers: cors });
     }
 
-    if (url.pathname === "/viewer-activity" && request.method === "POST") {
+    if ((url.pathname === "/viewer-activity" || url.pathname === "/api/viewer-activity") && request.method === "POST") {
       try {
         const body = await request.json().catch(() => ({}));
         const id = String((body && (body.id || body.uid)) || "").slice(0, 64);
@@ -483,7 +483,7 @@ export class MatchDO {
   expireHttpViewers(now) {
     now = now || Date.now();
     for (const [k, v] of [...this.httpViewers.entries()]) {
-      if (now - (v.lastSeen || 0) > 45000) {
+      if (now - (v.lastSeen || 0) > 90000) {
         this.httpViewers.delete(k);
         const rec = this.viewerLog.get(k);
         if (rec && rec.online) {
@@ -498,7 +498,7 @@ export class MatchDO {
       }
     }
     for (const [k, rec] of [...this.viewerLog.entries()]) {
-      if (rec.online && now - (rec.lastSeen || 0) > 45000) {
+      if (rec.online && now - (rec.lastSeen || 0) > 90000) {
         rec.online = false;
         rec.leftAt = rec.lastSeen || now;
         if (rec.sessions && rec.sessions.length) {
@@ -545,6 +545,7 @@ export class MatchDO {
       const onlineIds = new Set();
       for (const s of this.sessions.values()) {
         if (s.role && s.role !== "viewer") continue;
+        if (s.lastPing && now - s.lastPing > 90000) continue;
         const id = s.uid || ("ws:" + (s.name || "Fan") + ":" + (s.joinedAt || 0));
         onlineIds.add(id);
         const prev = this.viewerLog.get(id) || {};
@@ -588,7 +589,7 @@ export class MatchDO {
       map.set(id, { id, name: s.name || "Fan", joinedAt: s.joinedAt || now, online: true, coins: 10 });
     }
     for (const [k, v] of this.httpViewers) {
-      if (now - (v.lastSeen || 0) > 45000) continue;
+      if (now - (v.lastSeen || 0) > 90000) continue;
       map.set(v.id || k, {
         id: v.id || k,
         name: v.name || "Fan",
