@@ -2423,6 +2423,36 @@ body[data-theme="dark"] #cup-sub-create h3 {
 }
 </style>
 
+<style id="mysportz-history-pro">
+#page-history.history-page{padding:4px 2px 110px!important}
+.history-pro-hero{position:relative;overflow:hidden;padding:22px 18px 18px;border-radius:20px;color:#f8fafc;background:radial-gradient(circle at 90% 0%,rgba(45,212,191,.24),transparent 38%),linear-gradient(135deg,#071b2c 0%,#102d42 55%,#123b43 100%);border:1px solid rgba(148,216,218,.2);box-shadow:0 12px 28px rgba(2,8,23,.2)}
+.history-pro-kicker{font-size:9px;font-weight:900;letter-spacing:.2em;color:#5eead4}
+.history-pro-title{font-size:24px;font-weight:1000;letter-spacing:-.04em;margin-top:7px;line-height:1.1}
+.history-pro-hero p{font-size:11px;color:#cbd5e1;margin-top:7px;line-height:1.5}
+.history-pro-stats{display:flex;align-items:center;gap:7px;margin-top:14px;font-size:9px;font-weight:900;letter-spacing:.08em;color:#99f6e4;flex-wrap:wrap}
+.history-toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.history-action{min-height:40px;padding:9px 10px;border-radius:12px;border:1px solid var(--border-c,#cbd5e1);background:var(--card-bg,#fff);color:var(--text-c,#0f172a);font-size:10px;font-weight:900;letter-spacing:.03em}
+.history-action-primary{background:#0f766e;color:#fff;border-color:#0f766e}
+.history-action-danger{color:#dc2626;border-color:#fecaca}
+.history-list-pro{display:flex;flex-direction:column;gap:11px}
+.history-pro-card{border:1px solid var(--border-c,#dbe3ec);border-radius:17px;padding:14px;background:var(--card-bg,#fff);box-shadow:0 5px 18px rgba(15,23,42,.07)}
+.history-pro-top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.history-pro-meta{font-size:9px;font-weight:900;letter-spacing:.08em;color:#64748b;text-transform:uppercase}
+.history-pro-stage{font-size:9px;font-weight:900;padding:5px 8px;border-radius:999px;background:rgba(13,148,136,.12);color:#0f766e;white-space:nowrap}
+.history-pro-teams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:7px;margin:13px 0 10px}
+.history-pro-team{font-size:13px;font-weight:1000;line-height:1.25;color:var(--text-c,#0f172a);overflow-wrap:anywhere}
+.history-pro-team:last-child{text-align:right}
+.history-pro-vs{font-size:9px;font-weight:1000;color:#94a3b8}
+.history-pro-score{display:flex;justify-content:space-between;gap:8px;padding:10px 11px;border-radius:11px;background:rgba(100,116,139,.09);font-size:11px;font-weight:900;color:var(--text-c,#0f172a)}
+.history-pro-result{font-size:11px;font-weight:900;color:#059669;margin-top:9px}
+.history-pro-actions{display:flex;gap:7px;margin-top:12px}
+.history-pro-actions button{flex:1;min-width:0;padding:9px 5px;border:1px solid var(--border-c,#cbd5e1);border-radius:10px;font-size:9px;font-weight:900;color:var(--text-c,#0f172a);background:transparent}
+.history-pro-actions .view{background:#0f766e;color:#fff;border-color:#0f766e}
+.history-pro-actions .delete{color:#dc2626;border-color:#fecaca}
+body[data-theme="dark"] .history-pro-card,body.theme-dark .history-pro-card{--card-bg:#101d2c;--text-c:#f8fafc;--border-c:#334155}
+body[data-theme="pitch"] .history-pro-card{--card-bg:#10352e;--text-c:#f0fdf4;--border-c:#276354}
+@media(min-width:520px){.history-toolbar{grid-template-columns:repeat(5,minmax(0,1fr))}}
+</style>
 </head>
 <body class="p-0 m-0" data-theme="light">
 <div id="boundary-toast-container" class="boundary-toast-container"></div>
@@ -3874,17 +3904,21 @@ body[data-theme="dark"] #cup-sub-create h3 {
         </div>
 
         <!-- PAGE: MATCH HISTORY -->
-<div id="page-history" class="hidden space-y-4">
-            <div class="history-hero rounded-xl p-4 text-center shadow-lg" style="background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%);color:#fff">
-                <h2 class="text-base font-black uppercase tracking-widest mb-1" style="color:#fff !important">📚 Match History</h2>
-                <p class="text-xs" style="color:rgba(255,255,255,0.85) !important">Every completed match with date/time, score, and full stats. Print or reset.</p>
+<div id="page-history" class="history-page hidden space-y-4">
+            <div class="history-pro-hero">
+                <div class="history-pro-kicker">MYSPORTZSTATS · ARCHIVE</div>
+                <div class="history-pro-title">Match History</div>
+                <p>Every completed match, scorecard and match report in one place.</p>
+                <div class="history-pro-stats"><span id="history-match-count">0 MATCHES</span><span>·</span><span id="history-cloud-status">Cloud backup not checked</span></div>
             </div>
-            <div class="flex flex-wrap gap-2">
-                <button onclick="appPrint()" class="flex-1 min-w-[100px] bg-slate-800 text-white font-bold py-2.5 rounded-lg text-xs uppercase">🖨️ Print</button>
-                <button onclick="downloadMatchHistoryPDF()" class="flex-1 min-w-[100px] bg-indigo-600 text-white font-bold py-2.5 rounded-lg text-xs uppercase">📄 PDF</button>
-                <button onclick="resetMatchHistory()" class="flex-1 min-w-[100px] bg-red-600 text-white font-bold py-2.5 rounded-lg text-xs uppercase">🗑️ Reset</button>
+            <div class="history-toolbar">
+                <button onclick="backupHistoryToCloud(false)" class="history-action history-action-primary">☁ Backup to Cloud</button>
+                <button onclick="restoreHistoryFromCloud()" class="history-action">↧ Restore Cloud</button>
+                <button onclick="appPrint()" class="history-action">Print</button>
+                <button onclick="downloadMatchHistoryPDF()" class="history-action">PDF</button>
+                <button onclick="resetMatchHistory()" class="history-action history-action-danger">Reset</button>
             </div>
-            <div id="history-list" class="space-y-3">
+            <div id="history-list" class="history-list-pro">
                 <p class="text-sm italic text-slate-400 text-center py-6">No matches saved yet.</p>
             </div>
             <div id="history-detail-modal" class="hidden fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" style="z-index:9999" onclick="if(event.target===this)closeHistoryDetail()">
@@ -10410,6 +10444,8 @@ function updateView() {
                 }
             }
             writeHist(hist);
+            // Keep the single cloud recovery snapshot current after a completed match.
+            try { backupHistoryToCloud(true); } catch(eCloud) {}
             // Verify save stuck
             try {
               var check = JSON.parse(localStorage.getItem(HKEY) || '[]');
@@ -11744,28 +11780,137 @@ function computeManOfTheMatch(plist) {
         } catch(e){ console.log('history save err', e); }
     }
     function renderHistory(){
-        try{
+        try {
             var container = document.getElementById('history-list');
-            if(!container) return;
-            var hist = (typeof loadAllMatchHistory === 'function') ? loadAllMatchHistory() : JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-            if(!hist || hist.length===0){ container.innerHTML = '<p class="text-sm italic text-slate-400 text-center py-6">No matches saved yet. Complete a match to see it here.</p>'; return; }
+            if (!container) return;
+            var hist = (typeof loadAllMatchHistory === 'function') ? loadAllMatchHistory() : [];
+            var count = document.getElementById('history-match-count');
+            if (count) count.textContent = hist.length + (hist.length === 1 ? ' MATCH' : ' MATCHES');
+            if (!hist.length) {
+                container.innerHTML = '<div class="history-pro-card"><p class="text-sm theme-muted text-center py-8">No matches saved on this device. Use Restore Cloud to recover your archive.</p></div>';
+                return;
+            }
+            function esc(v) {
+                return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+            }
             var sorted = hist.slice().reverse();
-            var stageColors = { normal: 'bg-slate-600', knockout: 'bg-rose-600', quarter: 'bg-indigo-600', semi: 'bg-purple-600', final: 'bg-amber-500 text-slate-900', qualifier: 'bg-slate-600', friendly: 'bg-slate-500' };
-            var html = sorted.map(function(m){
-                var winText = m.winner==='Tie' ? 'Match Tied' : (m.winner==='Abandoned' ? 'Abandoned' + (m.abandonReason ? ' ('+m.abandonReason+')' : '') : (m.winner==='A' ? m.teamA+' Won' : m.winner==='B' ? m.teamB+' Won' : m.winner));
-                var st = m.stage || 'normal';
-                var stLab = m.stageLabel || stageLabel(st);
-                var badgeCls = stageColors[st] || 'bg-slate-500';
-                var desc = m.matchDescription || stLab;
-                var officials = '';
-                if (m.venue) officials += '<p class="text-[11px] theme-muted mt-0.5">📍 Venue: '+m.venue+'</p>';
-                if (m.umpires) officials += '<p class="text-[11px] theme-muted mt-0.5">Umpires: '+m.umpires+'</p>';
-                if (m.commentators) officials += '<p class="text-[11px] theme-muted">Commentators: '+m.commentators+'</p>';
-                return '<div class="theme-card border theme-border rounded-2xl p-4 shadow-md history-print-card" style="background:linear-gradient(180deg,rgba(255,255,255,0.04),transparent)"><div class="flex justify-between items-start"><div class="flex-1 pr-2"><p class="text-[11px] font-bold uppercase tracking-wider" style="color:#94a3b8">Match #'+m.matchNo+' · '+m.date+' · '+m.time+'</p><span class="inline-block mt-1.5 px-2.5 py-0.5 text-[10px] font-semibold rounded-full" style="background:rgba(59,130,246,0.15);color:#60a5fa">.5 rounded-full text-[10px] font-black uppercase text-white '+badgeCls+'">'+desc+'</span><p class="font-bold text-sm mt-1 theme-text">'+m.teamA+' vs '+m.teamB+'</p><p class="text-xs theme-muted mt-1">'+m.score+'/'+m.wickets+' in '+m.overs+'/'+m.maxOvers+' ov • Target '+(m.targetScore||'-')+'</p><p class="text-xs font-bold text-emerald-600 mt-1">'+winText+'</p>'+officials+'</div><div class="flex flex-col gap-1.5 shrink-0 no-print"><button onclick="openHistoryDetail('+m.matchNo+')" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[11px] font-bold uppercase">View 📋</button><button onclick="downloadMatchCommentaryFile('+m.matchNo+')" class="px-3 py-1 bg-slate-700 text-white rounded-lg text-[10px] font-bold uppercase">🎙️ Comm</button><button onclick="deleteHistoryEntry('+m.matchNo+')" class="px-3 py-1 bg-red-50 text-red-600 border border-red-200 rounded-lg text-[10px] font-bold uppercase">🗑️ Delete</button></div></div></div>';
+            container.innerHTML = sorted.map(function(m) {
+                var winText = m.winner === 'Tie' ? 'Match tied' :
+                    m.winner === 'Abandoned' ? 'Match abandoned' :
+                    m.winner === 'A' ? (m.teamA || 'Team A') + ' won' :
+                    m.winner === 'B' ? (m.teamB || 'Team B') + ' won' : (m.winner || m.matchResult || 'Result unavailable');
+                var stage = m.matchDescription || m.stageLabel || stageLabel(m.stage || 'normal');
+                var score = (m.score != null ? m.score : '-') + '/' + (m.wickets != null ? m.wickets : '-');
+                var overs = (m.overs || '-') + (m.maxOvers ? ' / ' + m.maxOvers : '') + ' overs';
+                var matchNo = Number(m.matchNo) || 0;
+                return '<article class="history-pro-card">' +
+                    '<div class="history-pro-top"><div class="history-pro-meta">MATCH #' + esc(matchNo) + ' · ' + esc(m.date || '') + ' · ' + esc(m.time || '') + '</div><span class="history-pro-stage">' + esc(stage) + '</span></div>' +
+                    '<div class="history-pro-teams"><div class="history-pro-team">' + esc(m.teamA || 'Team A') + '</div><div class="history-pro-vs">VS</div><div class="history-pro-team">' + esc(m.teamB || 'Team B') + '</div></div>' +
+                    '<div class="history-pro-score"><span>' + esc(score) + '</span><span>' + esc(overs) + '</span><span>Target ' + esc(m.targetScore || '-') + '</span></div>' +
+                    '<div class="history-pro-result">' + esc(winText) + '</div>' +
+                    '<div class="history-pro-actions no-print"><button class="view" onclick="openHistoryDetail(' + matchNo + ')">VIEW SCORECARD</button><button onclick="downloadMatchCommentaryFile(' + matchNo + ')">COMMENTARY</button><button class="delete" onclick="deleteHistoryEntry(' + matchNo + ')">DELETE</button></div>' +
+                '</article>';
             }).join('');
-            container.innerHTML = html;
-        }catch(e){}
+        } catch(e) { console.log('renderHistory', e); }
     }
+    // One rolling D1 backup. It is written after a successful completed-match save,
+    // never after deleting/resetting the visible local history.
+    function cloudBackupKey() {
+        try { return localStorage.getItem(LIVE_PUBLISH_KEY) || 'PUBLISH_2026'; }
+        catch(e) { return 'PUBLISH_2026'; }
+    }
+    function cloudBackupPayload() {
+        var history = (typeof loadAllMatchHistory === 'function') ? loadAllMatchHistory() : [];
+        var commentaryFiles = {};
+        history.forEach(function(m) {
+            var key = m && m.commentaryFileKey;
+            if (!key) return;
+            try {
+                var raw = localStorage.getItem(key);
+                if (raw != null) commentaryFiles[key] = raw;
+            } catch(e) {}
+        });
+        return { schemaVersion: 1, history: history, commentaryFiles: commentaryFiles };
+    }
+    async function backupHistoryToCloud(silent) {
+        var status = document.getElementById('history-cloud-status');
+        try {
+            var payload = cloudBackupPayload();
+            if (!payload.history.length) {
+                if (status) status.textContent = 'Nothing to back up yet';
+                if (!silent) showModal({ title:'Cloud backup', message:'Complete at least one match before creating the archive.', icon:'☁️' });
+                return false;
+            }
+            if (status) status.textContent = 'Saving cloud backup…';
+            var response = await fetch('/api/history/backup', {
+                method: 'POST',
+                headers: { 'Content-Type':'application/json', 'X-Publisher-Key':cloudBackupKey() },
+                body: JSON.stringify(payload),
+                cache: 'no-store'
+            });
+            var result = await response.json().catch(function(){ return {}; });
+            if (!response.ok || !result.ok) throw new Error(result.error || ('HTTP ' + response.status));
+            if (status) status.textContent = 'Cloud backup saved · ' + result.matchCount + ' matches';
+            if (!silent) showModal({ title:'Cloud backup saved', message:result.matchCount + ' matches are now stored in the single cloud recovery backup.', icon:'☁️' });
+            return true;
+        } catch(e) {
+            if (status) status.textContent = 'Cloud backup failed · ' + String(e.message || e);
+            if (!silent) showModal({ title:'Cloud backup failed', message:String(e.message || e), icon:'⚠️' });
+            console.log('cloud history backup failed', e);
+            return false;
+        }
+    }
+    async function restoreHistoryFromCloud() {
+        var status = document.getElementById('history-cloud-status');
+        try {
+            if (status) status.textContent = 'Fetching cloud backup…';
+            var response = await fetch('/api/history/backup', {
+                method: 'GET',
+                headers: { 'X-Publisher-Key':cloudBackupKey() },
+                cache: 'no-store'
+            });
+            var result = await response.json().catch(function(){ return {}; });
+            if (!response.ok || !result.ok) throw new Error(result.error || ('HTTP ' + response.status));
+            var backup = result.backup && result.backup.payload;
+            var cloudHistory = backup && Array.isArray(backup.history) ? backup.history : [];
+            if (!cloudHistory.length) {
+                if (status) status.textContent = 'No cloud backup found';
+                showModal({ title:'No cloud backup', message:'There is no saved cloud archive yet. Complete a match or use Backup to Cloud.', icon:'ℹ️' });
+                return false;
+            }
+            var localHistory = (typeof loadAllMatchHistory === 'function') ? loadAllMatchHistory() : [];
+            var merged = [], byId = {};
+            localHistory.concat(cloudHistory).forEach(function(m) {
+                if (!m) return;
+                var id = String(m.matchSessionId || m.id || (m.date||'')+'|'+(m.time||'')+'|'+(m.teamA||'')+'|'+(m.teamB||'')+'|'+(m.score||'')+'|'+(m.winner||''));
+                if (!byId[id] || ((m.players && m.players.length) > ((byId[id].players && byId[id].players.length) || 0))) byId[id] = m;
+            });
+            merged = Object.keys(byId).map(function(k){ return byId[k]; });
+            merged.sort(function(a,b){ return (a._savedAt||0) - (b._savedAt||0); });
+            if (merged.length > 100) merged = merged.slice(-100);
+            if (typeof persistHistoryArray === 'function') persistHistoryArray(merged);
+            var files = backup.commentaryFiles || {};
+            Object.keys(files).forEach(function(key) {
+                try { localStorage.setItem(key, files[key]); } catch(e) {}
+            });
+            try { rebuildStatsFromHistory(); } catch(e) {}
+            try { renderHistory(); } catch(e) {}
+            try { if (typeof renderInfoPage === 'function') renderInfoPage(); } catch(e) {}
+            if (status) status.textContent = 'Restored · ' + cloudHistory.length + ' cloud matches';
+            showModal({ title:'Cloud backup restored', message:cloudHistory.length + ' cloud matches were recovered. ' + merged.length + ' matches are now available in History.', icon:'✅' });
+            return true;
+        } catch(e) {
+            if (status) status.textContent = 'Cloud restore failed · ' + String(e.message || e);
+            showModal({ title:'Cloud restore failed', message:String(e.message || e), icon:'⚠️' });
+            console.log('cloud history restore failed', e);
+            return false;
+        }
+    }
+    try {
+        window.backupHistoryToCloud = backupHistoryToCloud;
+        window.restoreHistoryFromCloud = restoreHistoryFromCloud;
+    } catch(e) {}
+
     function historyStorageKeys(){
         var keys = ['cricket_match_history', 'cricket_match_history_v1', 'cricket_match_history_bak'];
         try { if (typeof HISTORY_KEY !== 'undefined' && HISTORY_KEY) { keys.unshift(HISTORY_KEY); keys.push(HISTORY_KEY + '_bak'); } } catch(e){}
