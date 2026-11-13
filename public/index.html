@@ -2434,8 +2434,26 @@ body[data-theme="dark"] #cup-sub-create h3 {
 .history-action{min-height:40px;padding:9px 10px;border-radius:12px;border:1px solid var(--border-c,#cbd5e1);background:var(--card-bg,#fff);color:var(--text-c,#0f172a);font-size:10px;font-weight:900;letter-spacing:.03em}
 .history-action-primary{background:#0f766e;color:#fff;border-color:#0f766e}
 .history-action-danger{color:#dc2626;border-color:#fecaca}
-.history-list-pro{display:flex;flex-direction:column;gap:11px}
+.history-page{min-height:0;padding-bottom:24px}
+.history-pro-hero{position:sticky;top:0;z-index:20;background:var(--card-bg,#fff);padding:12px 4px 10px;border-bottom:1px solid var(--border-c,#dbe3ec)}
+.history-list-pro{display:flex;flex-direction:column;gap:11px;padding-bottom:18px}
+.history-date-group{display:flex;flex-direction:column;gap:9px}
+.history-date-heading{position:sticky;top:76px;z-index:10;padding:8px 11px;border-radius:10px;background:#eaf1ff;color:#1d4ed8;font-size:11px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;border:1px solid #c7d7fe}
 .history-pro-card{border:1px solid var(--border-c,#dbe3ec);border-radius:17px;padding:14px;background:var(--card-bg,#fff);box-shadow:0 5px 18px rgba(15,23,42,.07)}
+#history-detail-modal{align-items:flex-start!important;overflow-y:auto!important;padding:max(12px,env(safe-area-inset-top)) 12px max(24px,env(safe-area-inset-bottom))!important;-webkit-overflow-scrolling:touch}
+#history-detail-modal>.bg-white{width:100%;max-height:none!important;min-height:0;overflow:visible!important;margin:auto 0}
+#history-detail-title{color:#1d4ed8!important;font-size:17px;line-height:1.35}
+#history-detail-content{overflow:visible!important;padding-bottom:16px}
+#history-detail-content .history-scorecard-table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+#history-detail-content table.history-scorecard-table{width:100%;min-width:540px;table-layout:fixed}
+#history-detail-content .history-scorecard-table col:nth-child(1){width:28%}
+#history-detail-content .history-scorecard-table col:nth-child(2){width:8%}
+#history-detail-content .history-scorecard-table col:nth-child(3){width:8%}
+#history-detail-content .history-scorecard-table col:nth-child(4){width:10%}
+#history-detail-content .history-scorecard-table col:nth-child(5){width:10%}
+#history-detail-content .history-scorecard-table col:nth-child(6){width:18%}
+#history-detail-content .history-scorecard-table col:nth-child(7){width:18%}
+@media(min-width:520px){.history-toolbar{grid-template-columns:repeat(5,minmax(0,1fr))}}
 .history-pro-top{display:flex;justify-content:space-between;gap:8px;align-items:center}
 .history-pro-meta{font-size:9px;font-weight:900;letter-spacing:.08em;color:#64748b;text-transform:uppercase}
 .history-pro-stage{font-size:9px;font-weight:900;padding:5px 8px;border-radius:999px;background:rgba(13,148,136,.12);color:#0f766e;white-space:nowrap}
@@ -6803,9 +6821,9 @@ function howOutLabel(name, isOut, howOut, outFielder) {
     function buildTeamStatsBlockHTML(teamName, teamList, forcePlayerList, deliveries) {
         return '<div class="rounded-xl overflow-hidden mb-3 border border-slate-200 bg-white shadow-sm">' +
             '<div class="bg-indigo-50 px-3 py-2 border-b border-slate-200"><h4 class="font-bold text-sm text-indigo-900">' + teamName + '</h4></div>' +
-            '<div class="overflow-x-hidden">' +
-            '<table class="w-full text-[11px] border-collapse" style="table-layout:fixed;width:100%">' +
-            '<colgroup><col style="width:32%"><col style="width:10%"><col style="width:10%"><col style="width:12%"><col style="width:14%"><col style="width:22%"></colgroup>' +
+            '<div class="history-scorecard-table-wrap">' +
+            '<table class="history-scorecard-table text-[11px] border-collapse">' +
+            '<colgroup><col><col><col><col><col><col><col></colgroup>' +
             '<tr class="sc-sec-bat"><td colspan="7" class="px-3 py-1.5 text-right font-bold text-[10px] tracking-wide sc-sec-title-bat">🏏 BATTING</td></tr>' +
             '<tr class="font-bold text-indigo-700 border-b border-slate-200 text-[10px] uppercase tracking-wide">' +
             '<td class="p-2 text-left">Batsman</td><td class="p-2 text-center">R</td><td class="p-2 text-center">B</td><td class="p-2 text-center">4/6</td><td class="p-2 text-center">Avg</td><td class="p-2 text-center">S/R</td><td class="p-2 text-center">How Out</td></tr>' +
@@ -10283,6 +10301,15 @@ function updateView() {
                 manOfTheMatch: mom,
                 abandonReason: abandonReason||'',
                 players: slimPlayers,
+                statsSnapshot: {
+                    players: slimPlayers.map(function(p){ return Object.assign({},p); }),
+                    teamA: teamConfig.A.name, teamB: teamConfig.B.name,
+                    firstInningsScore: firstInningsScore, firstInningsWickets: firstInningsWickets,
+                    firstInningsOvers: firstInningsOvers, firstInningsBalls: firstInningsBalls,
+                    secondInningsScore: totalScore|0, secondInningsWickets: totalWickets|0,
+                    secondInningsOvers: (typeof formatOvers==='function'?formatOvers(totalBalls):'0.0'),
+                    targetScore: targetScore, winner: winner
+                },
                 fallOfWickets: (fallOfWickets||[]).slice(),
                 deliveryHistory: slimDeliv,
                 commentaryFileKey: commKey,
@@ -11793,23 +11820,28 @@ function computeManOfTheMatch(plist) {
             function esc(v) {
                 return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
             }
-            var sorted = hist.slice().reverse();
-            container.innerHTML = sorted.map(function(m) {
-                var winText = m.winner === 'Tie' ? 'Match tied' :
-                    m.winner === 'Abandoned' ? 'Match abandoned' :
-                    m.winner === 'A' ? (m.teamA || 'Team A') + ' won' :
-                    m.winner === 'B' ? (m.teamB || 'Team B') + ' won' : (m.winner || m.matchResult || 'Result unavailable');
-                var stage = m.matchDescription || m.stageLabel || stageLabel(m.stage || 'normal');
-                var score = (m.score != null ? m.score : '-') + '/' + (m.wickets != null ? m.wickets : '-');
-                var overs = (m.overs || '-') + (m.maxOvers ? ' / ' + m.maxOvers : '') + ' overs';
-                var matchNo = Number(m.matchNo) || 0;
-                return '<article class="history-pro-card">' +
-                    '<div class="history-pro-top"><div class="history-pro-meta">MATCH #' + esc(matchNo) + ' · ' + esc(m.date || '') + ' · ' + esc(m.time || '') + '</div><span class="history-pro-stage">' + esc(stage) + '</span></div>' +
-                    '<div class="history-pro-teams"><div class="history-pro-team">' + esc(m.teamA || 'Team A') + '</div><div class="history-pro-vs">VS</div><div class="history-pro-team">' + esc(m.teamB || 'Team B') + '</div></div>' +
-                    '<div class="history-pro-score"><span>' + esc(score) + '</span><span>' + esc(overs) + '</span><span>Target ' + esc(m.targetScore || '-') + '</span></div>' +
-                    '<div class="history-pro-result">' + esc(winText) + '</div>' +
-                    '<div class="history-pro-actions no-print"><button class="view" onclick="openHistoryDetail(' + matchNo + ')">VIEW SCORECARD</button><button onclick="downloadMatchCommentaryFile(' + matchNo + ')">COMMENTARY</button><button class="delete" onclick="deleteHistoryEntry(' + matchNo + ')">DELETE</button></div>' +
-                '</article>';
+            var sorted = hist.slice().sort(function(a,b){ return (b._savedAt||0)-(a._savedAt||0) || String(b.date||'').localeCompare(String(a.date||'')); });
+            var groups = {};
+            sorted.forEach(function(m){ var day=String(m.date||'Date unavailable'); (groups[day]||(groups[day]=[])).push(m); });
+            container.innerHTML = Object.keys(groups).map(function(day){
+                var cards = groups[day].map(function(m) {
+                    var winText = m.winner === 'Tie' ? 'Match tied' :
+                        m.winner === 'Abandoned' ? 'Match abandoned' :
+                        m.winner === 'A' ? (m.teamA || 'Team A') + ' won' :
+                        m.winner === 'B' ? (m.teamB || 'Team B') + ' won' : (m.winner || m.matchResult || 'Result unavailable');
+                    var stage = m.matchDescription || m.stageLabel || stageLabel(m.stage || 'normal');
+                    var score = (m.score != null ? m.score : '-') + '/' + (m.wickets != null ? m.wickets : '-');
+                    var overs = (m.overs || '-') + (m.maxOvers ? ' / ' + m.maxOvers : '') + ' overs';
+                    var matchNo = Number(m.matchNo) || 0;
+                    return '<article class="history-pro-card">' +
+                        '<div class="history-pro-top"><div class="history-pro-meta">MATCH #' + esc(matchNo) + ' · ' + esc(m.time || '') + '</div><span class="history-pro-stage">' + esc(stage) + '</span></div>' +
+                        '<div class="history-pro-teams"><div class="history-pro-team">' + esc(m.teamA || 'Team A') + '</div><div class="history-pro-vs">VS</div><div class="history-pro-team">' + esc(m.teamB || 'Team B') + '</div></div>' +
+                        '<div class="history-pro-score"><span>' + esc(score) + '</span><span>' + esc(overs) + '</span><span>Target ' + esc(m.targetScore != null ? m.targetScore : '-') + '</span></div>' +
+                        '<div class="history-pro-result">' + esc(winText) + '</div>' +
+                        '<div class="history-pro-actions no-print"><button class="view" onclick="openHistoryDetail(' + matchNo + ')">VIEW SCORECARD</button><button onclick="downloadMatchCommentaryFile(' + matchNo + ')">COMMENTARY</button><button class="delete" onclick="deleteHistoryEntry(' + matchNo + ')">DELETE</button></div>' +
+                    '</article>';
+                }).join('');
+                return '<section class="history-date-group"><h3 class="history-date-heading">' + esc(day) + ' · ' + groups[day].length + ' MATCH' + (groups[day].length===1?'':'ES') + '</h3>' + cards + '</section>';
             }).join('');
         } catch(e) { console.log('renderHistory', e); }
     }
@@ -11820,7 +11852,20 @@ function computeManOfTheMatch(plist) {
         catch(e) { return 'PUBLISH_2026'; }
     }
     function cloudBackupPayload() {
-        var history = (typeof loadAllMatchHistory === 'function') ? loadAllMatchHistory() : [];
+        var cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+        var allHistory = (typeof loadAllMatchHistory === 'function') ? loadAllMatchHistory() : [];
+        var history = allHistory.filter(function(m){
+            var ts = Number(m && (m._savedAt || m.timestamp || m.completedAt)) || 0;
+            if (!ts && m && m.date) {
+                var parts = String(m.date).split(/[/. -]/);
+                if (parts.length === 3) {
+                    var dd = Number(parts[0]), mm = Number(parts[1])-1, yy = Number(parts[2]);
+                    if (yy < 100) yy += 2000;
+                    ts = new Date(yy,mm,dd,23,59,59).getTime();
+                }
+            }
+            return ts ? ts >= cutoff : true;
+        });
         var commentaryFiles = {};
         history.forEach(function(m) {
             var key = m && m.commentaryFileKey;
@@ -11832,7 +11877,7 @@ function computeManOfTheMatch(plist) {
         });
         var liveSnapshot = null;
         try { liveSnapshot = JSON.parse(localStorage.getItem('cricket_cloud_live_snapshot_v1') || 'null'); } catch(e) {}
-        return { schemaVersion: 1, history: history, commentaryFiles: commentaryFiles, liveSnapshot: liveSnapshot };
+        return { schemaVersion: 2, history: history, dateGroups: history.reduce(function(out,m){ var d=String(m.date||'Date unavailable'); (out[d]||(out[d]=[])).push(m); return out; },{}), commentaryFiles: commentaryFiles, liveSnapshot: liveSnapshot };
     }
     async function backupHistoryToCloud(silent) {
         var status = document.getElementById('history-cloud-status');
@@ -12014,7 +12059,7 @@ function computeManOfTheMatch(plist) {
             var title = document.getElementById('history-detail-title');
             var content = document.getElementById('history-detail-content');
             window._openHistoryMatchNo = matchNo;
-            if(title) title.innerText = 'Match #'+m.matchNo+' - '+(m.date||'')+' '+(m.time||'');
+            if(title) { title.innerText = 'Match #'+m.matchNo+' - '+(m.date||'')+' '+(m.time||''); title.style.color = '#1d4ed8'; }
             var bat2Team = m.firstBattingTeam === 'A' ? 'B' : 'A';
             var batTeamName2 = bat2Team === 'A' ? (m.teamA||'Team A') : (m.teamB||'Team B');
             var bowlTeamName1 = m.firstBattingTeam === 'A' ? (m.teamA||'Team A') : (m.teamB||'Team B');
