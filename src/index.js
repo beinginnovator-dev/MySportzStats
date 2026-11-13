@@ -136,6 +136,43 @@ function historyBackupKeyOk(request, env) {
   return !!supplied && supplied === expected;
 }
 
+function historyMatchTimestamp(match) {
+  const saved = Number(match && (match._savedAt || match.timestamp || match.completedAt)) || 0;
+  if (saved > 0) return saved;
+  const raw = String(match && match.date || "").trim();
+  const parts = raw.split(/[/. -]/);
+  if (parts.length === 3) {
+    let day = Number(parts[0]), month = Number(parts[1]) - 1, year = Number(parts[2]);
+    if (year < 100) year += 2000;
+    const parsed = new Date(year, month, day, 23, 59, 59).getTime();
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  const parsed = Date.parse(raw);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function trimHistoryBackup(payload, now = Date.now()) {
+  const cutoff = now - 30 * 24 * 60 * 60 * 1000;
+  const history = (Array.isArray(payload && payload.history) ? payload.history : [])
+    .filter((match) => {
+      const ts = historyMatchTimestamp(match);
+      return !ts || ts >= cutoff;
+    });
+  const keepKeys = new Set(history.map((match) => match && match.commentaryFileKey).filter(Boolean));
+  const commentaryFiles = {};
+  const sourceFiles = payload && payload.commentaryFiles && typeof payload.commentaryFiles === "object"
+    ? payload.commentaryFiles : {};
+  for (const [key, value] of Object.entries(sourceFiles)) {
+    if (keepKeys.has(key)) commentaryFiles[key] = value;
+  }
+  const dateGroups = {};
+  for (const match of history) {
+    const day = String(match && match.date || "Date unavailable");
+    (dateGroups[day] ||= []).push(match);
+  }
+  return { ...payload, schemaVersion: 2, history, dateGroups, commentaryFiles };
+}
+
 function shortCode(n) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
   let s = "";
@@ -465,10 +502,20 @@ export default {
           "SELECT saved_at AS savedAt, match_count AS matchCount, payload_json AS payloadJson FROM scorer_cloud_backup WHERE backup_id = ?"
         ).bind("scorer-history").first();
         if (!row) return json({ ok: true, backup: null });
+        const now = Date.now();
+        const original = JSON.parse(row.payloadJson);
+        const payload = trimHistoryBackup(original, now);
+        const matchCount = payload.history.length;
+        if (matchCount !== (Number(row.matchCount) || 0) || payload.schemaVersion !== original.schemaVersion) {
+          const cleaned = JSON.stringify({ ...payload, savedAt: now });
+          await env.DB.prepare(
+            "UPDATE scorer_cloud_backup SET saved_at = ?, match_count = ?, payload_json = ? WHERE backup_id = ?"
+          ).bind(now, matchCount, cleaned, "scorer-history").run();
+        }
         return json({ ok: true, backup: {
           savedAt: row.savedAt,
-          matchCount: row.matchCount,
-          payload: JSON.parse(row.payloadJson)
+          matchCount,
+          payload
         }});
       } catch (e) {
         return json({ ok: false, error: String(e && e.message || e) }, 500);
@@ -479,8 +526,8 @@ export default {
       if (!historyBackupKeyOk(request, env)) return json({ ok: false, error: "unauthorized" }, 401);
       try {
         const body = await request.json();
-        const history = Array.isArray(body && body.history) ? body.history : null;
-        if (!history || history.length > 100) return json({ ok: false, error: "history must be an array of at most 100 matches" }, 400);
+        const incomingHistory = Array.isArray(body && body.history) ? body.history : null;
+        if (!incomingHistory || incomingHistory.length > 100) return json({ ok: false, error: "history must be an array of at most 100 matches" }, 400);
         const priorRow = await env.DB.prepare(
           "SELECT payload_json FROM scorer_cloud_backup WHERE backup_id = ?"
         ).bind("scorer-history").first();
@@ -493,13 +540,9 @@ export default {
         );
         const liveSnapshot = body.liveSnapshot || prior.liveSnapshot || null;
         const now = Date.now();
-        const payload = JSON.stringify({
-          schemaVersion: 1,
-          savedAt: now,
-          history,
-          commentaryFiles,
-          liveSnapshot
-        });
+        const trimmed = trimHistoryBackup({ schemaVersion: 2, history: incomingHistory, commentaryFiles, liveSnapshot }, now);
+        const payload = JSON.stringify({ ...trimmed, savedAt: now });
+        const history = trimmed.history;
         if (payload.length > 7_500_000) return json({ ok: false, error: "Backup is too large (7.5 MB limit)" }, 413);
         await env.DB.prepare(
           "INSERT INTO scorer_cloud_backup (backup_id, saved_at, match_count, payload_json) VALUES (?, ?, ?, ?) ON CONFLICT(backup_id) DO UPDATE SET saved_at = excluded.saved_at, match_count = excluded.match_count, payload_json = excluded.payload_json"
