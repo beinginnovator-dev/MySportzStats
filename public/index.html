@@ -11915,7 +11915,7 @@ function computeManOfTheMatch(plist) {
                         '<div class="history-pro-top"><div class="history-pro-meta">MATCH #' + esc(matchNo) + ' · ' + esc(m.time || '') + '</div><span class="history-pro-stage">' + esc(stage) + '</span></div>' +
                         '<div class="history-pro-teams"><div class="history-pro-team">' + esc(m.teamA || 'Team A') + '</div><div class="history-pro-vs">VS</div><div class="history-pro-team">' + esc(m.teamB || 'Team B') + '</div></div>' +
                         '<div class="history-pro-score"><span>' + esc(score) + '</span><span>' + esc(overs) + '</span><span>Target ' + esc(m.targetScore != null ? m.targetScore : '-') + '</span></div>' +
-                        '<div class="history-pro-result">' + esc(winText) + '</div>' +
+                        '<div class="history-pro-result">' + esc(winText) + snapBadge + '</div>' +
                         '<div class="history-pro-actions no-print"><button class="view" onclick="openHistoryDetail(' + matchNo + ')">VIEW SCORECARD</button><button onclick="downloadMatchCommentaryFile(' + matchNo + ')">COMMENTARY</button><button class="delete" onclick="deleteHistoryEntry(' + matchNo + ')">DELETE</button></div>' +
                     '</article>';
                 }).join('');
