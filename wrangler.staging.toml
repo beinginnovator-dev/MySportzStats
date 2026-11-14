@@ -6,7 +6,7 @@ workers_dev = true
 
 [[d1_databases]]
 binding = "DB"
-database_name = "mysportzstats-e2e-staging"
+database_name = "mysportzstats-e2e-staging-20261114"
 database_id = "42a46c85-bce1-4a8e-a97e-4adc6f47f015"
 migrations_dir = "migrations"
 
