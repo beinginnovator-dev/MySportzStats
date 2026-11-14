@@ -60,10 +60,7 @@ export class MatchDO {
       const role = url.searchParams.get("role") || "viewer";
       const uid = String(url.searchParams.get("uid") || "").trim().slice(0, 64);
       // Assign Fan-1, Fan-2… when no real name/initials
-      if (!name || /^fan([-_\s]?\d+)?$/i.test(name) || name === "Fan") {
-        this._fanSeq = (this._fanSeq || 0) + 1;
-        name = "Fan-" + this._fanSeq;
-      }
+      if (!name || /^fan([-_\s]?\d+)?$/i.test(name) || name === "Fan") name = "Viewer";
       const joinedAt = Date.now();
       this.sessions.set(server, { name, role, uid, joinedAt });
       // Register the stable browser identity before broadcasting presence. Without
@@ -227,7 +224,7 @@ export class MatchDO {
       const hist = this.historyPayload();
       const fans = hist.list.map((v) => ({
         id: v.id || v.name,
-        name: v.name || "Fan",
+        name: v.name || "Viewer",
         points: v.coins != null ? v.coins : 10,
         correct: 0,
         online: !!v.online,
@@ -251,7 +248,7 @@ export class MatchDO {
         try {
           const body = await request.json();
           const entry = {
-            name: body.name || "Fan",
+            name: body.name || "Viewer",
             text: String(body.text || body.message || "").slice(0, 300),
             ts: Date.now(),
           };
@@ -435,7 +432,7 @@ export class MatchDO {
     if (!rec) {
       rec = {
         id,
-        name: name || "Fan",
+        name: name || "Viewer",
         firstSeen: now,
         joinedAt: now,
         lastSeen: now,
@@ -450,7 +447,7 @@ export class MatchDO {
       };
     } else {
       const wasOffline = !rec.online;
-      rec.name = name || rec.name || "Fan";
+      rec.name = name || rec.name || "Viewer";
       rec.lastSeen = now;
       rec.online = true;
       rec.leftAt = null;
@@ -553,7 +550,7 @@ export class MatchDO {
       for (const s of this.sessions.values()) {
         if (s.role && s.role !== "viewer") continue;
         if (s.lastPing && now - s.lastPing > 90000) continue;
-        const id = s.uid || ("ws:" + (s.name || "Fan") + ":" + (s.joinedAt || 0));
+        const id = s.uid || ("ws:" + (s.name || "Viewer") + ":" + (s.joinedAt || 0));
         onlineIds.add(id);
         const prev = this.viewerLog.get(id) || {};
         this.viewerLog.set(id, Object.assign({}, prev, {
@@ -704,7 +701,7 @@ export class MatchDO {
           const id = String(session.uid || msg.id || msg.uid || "").slice(0, 64);
           if (id) {
             const now = Date.now();
-            this.touchViewer(id, session.name || msg.name || "Fan", String(msg.match || this.matchId || "current").slice(0, 80), now, "");
+            this.touchViewer(id, session.name || msg.name || "Viewer", String(msg.match || this.matchId || "current").slice(0, 80), now, "");
             const rec = this.viewerLog.get(id);
             if (rec) {
               rec.activities = rec.activities || [];
