@@ -2363,7 +2363,7 @@ function excitingHindi(d, ev){
           h('div',{style:{fontSize:22,fontWeight:900,margin:'10px 0',color:'#ffffff'}},(data&&data.runs!=null?data.runs:'-')+'/'+(data&&data.wickets!=null?data.wickets:'-')),
           h('div',{className:'muted',style:{fontSize:12,color:'#f1f5f9'}},'Start '+startLabel+' · '+elapsed+(meta.venue?(' · '+meta.venue):'')),
           h('div',{style:{marginTop:14,fontSize:12,fontWeight:800,color:'#ffffff'}},'Enter your name or initials'),
-          h('div',{className:'muted',style:{fontSize:11,marginTop:4,color:'#cbd5e1'}},'Optional — blank becomes Fan-1, Fan-2…'),
+          h('div',{className:'muted',style:{fontSize:11,marginTop:4,color:'#cbd5e1'}},'Required — enter your name or initials to join'),
           h('input',{
             type:'text',
             maxLength:24,
@@ -2372,6 +2372,7 @@ function excitingHindi(d, ev){
             onChange:function(e){ setWelcomeName((e.target&&e.target.value)||''); },
             onKeyDown:function(e){
               if(e.key==='Enter'){
+                if(!String(welcomeName||'').trim()){ alert('Please enter your name or initials.'); return; }
                 var nm=assignViewerName(welcomeName);
                 try{ localStorage.setItem('react_viewer_name', nm); localStorage.setItem('viewer_name', nm); }catch(ex){}
                 try{ setWelcomeName(nm); }catch(eN){}
