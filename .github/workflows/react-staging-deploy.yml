@@ -1,0 +1,37 @@
+name: Deploy React to Cloudflare staging
+
+on:
+  push:
+    branches:
+      - react-redesign-2026-11-14
+    paths:
+      - "react-app/**"
+      - "src/**"
+      - "migrations/**"
+      - "package.json"
+      - "vite.react.config.js"
+      - "wrangler.staging.toml"
+      - ".github/workflows/react-staging-deploy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npm run build
+      - name: Deploy only to staging Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ba8a622afdfd4eb49e4f6ac443265ede
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing GitHub Actions secret CLOUDFLARE_API_TOKEN"; exit 1; }
+          npx wrangler deploy --config wrangler.staging.toml
