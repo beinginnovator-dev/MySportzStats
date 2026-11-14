@@ -3959,7 +3959,11 @@ body:has(#history-detail-modal:not(.hidden)) .espn-tabbar{
         </div>
 
         <!-- PAGE: QUICK INFO (live tournament-style analytics) -->
-        <div id="page-quickinfo" class="hidden space-y-4">
+        <div id="page-quickinfo" data-rank-source="local"
+            <div class="flex gap-2 mb-3 px-2 pt-2">
+                <button onclick="setRankSource('local')" class="flex-1 py-1.5 rounded text-xs font-bold bg-emerald-600 text-white">Rank from Local</button>
+                <button onclick="setRankSource('cloud')" class="flex-1 py-1.5 rounded text-xs font-bold bg-slate-200 text-slate-700">Rank from Cloud</button>
+            </div> class="hidden space-y-4">
             <div class="qi-hero rounded-xl p-4 shadow-lg" style="background:var(--sa-card,#132033);color:var(--sa-text,#f1f5f9);border:1.5px solid #4b5c72">
                 <h2 class="text-base font-black uppercase tracking-widest mb-1" style="color:#fff !important">⚡ Quick Info</h2>
                 <p class="text-xs" style="color:rgba(255,255,255,0.9) !important">Live match &amp; player stats — updates as you score. Series totals from History.</p>
@@ -3983,6 +3987,10 @@ body:has(#history-detail-modal:not(.hidden)) .espn-tabbar{
                 <button onclick="appPrint()" class="history-action">Print</button>
                 <button onclick="downloadMatchHistoryPDF()" class="history-action">PDF</button>
                 <button onclick="resetMatchHistory()" class="history-action history-action-danger">Reset</button>
+            </div>
+            <div class="flex gap-2 mb-3 px-1">
+                <button id="hist-tab-local" onclick="setHistorySource('local')" class="flex-1 py-2 rounded-lg text-sm font-bold bg-indigo-600 text-white">On Local</button>
+                <button id="hist-tab-cloud" onclick="setHistorySource('cloud')" class="flex-1 py-2 rounded-lg text-sm font-bold bg-slate-200 text-slate-700">On Cloud</button>
             </div>
             <div id="history-list" class="history-list-pro">
                 <p class="text-sm italic text-slate-400 text-center py-6">No matches saved yet.</p>
@@ -11885,11 +11893,31 @@ function computeManOfTheMatch(plist) {
             try { rebuildStatsFromHistory(); } catch(eS){}
         } catch(e){ console.log('history save err', e); }
     }
+    window.__historySource = window.__historySource || 'local';
+    window.__rankSource = window.__rankSource || 'local';
+    function setRankSource(src){
+        window.__rankSource = src || 'local';
+        try { if (typeof renderRankings === 'function') renderRankings(); } catch(e){}
+        try { if (typeof renderDash === 'function') renderDash(); } catch(e){}
+    }
+    function setHistorySource(src){
+        window.__historySource = src || 'local';
+        var localBtn = document.getElementById('hist-tab-local');
+        var cloudBtn = document.getElementById('hist-tab-cloud');
+        if(localBtn) localBtn.className = 'flex-1 py-2 rounded-lg text-sm font-bold ' + (src==='local'?'bg-indigo-600 text-white':'bg-slate-200 text-slate-700');
+        if(cloudBtn) cloudBtn.className = 'flex-1 py-2 rounded-lg text-sm font-bold ' + (src==='cloud'?'bg-indigo-600 text-white':'bg-slate-200 text-slate-700');
+        try { renderHistory(); } catch(e){}
+    }
     function renderHistory(){
         try {
             var container = document.getElementById('history-list');
             if (!container) { console.log('history-list missing'); return; }
-            var hist = (typeof loadAllMatchHistory === 'function') ? loadAllMatchHistory() : [];
+            var hist = [];
+            if (window.__historySource === 'cloud') {
+                hist = (typeof loadCloudHistory === 'function') ? loadCloudHistory() : [];
+            } else {
+                hist = (typeof loadAllMatchHistory === 'function') ? loadAllMatchHistory() : [];
+            }
             console.log('renderHistory', hist.length, 'matches');
             var count = document.getElementById('history-match-count');
             if (count) count.textContent = hist.length + (hist.length === 1 ? ' MATCH' : ' MATCHES');
@@ -12045,6 +12073,14 @@ function computeManOfTheMatch(plist) {
         window.restoreHistoryFromCloud = restoreHistoryFromCloud;
     } catch(e) {}
 
+    function loadCloudHistory(){
+        // Placeholder: cloud history is loaded via restoreHistoryFromCloud and stored locally under a cloud key
+        try {
+            var raw = localStorage.getItem('cricket_match_history_cloud') || '[]';
+            var arr = JSON.parse(raw);
+            return Array.isArray(arr) ? arr : [];
+        } catch(e){ return []; }
+    }
     function historyStorageKeys(){
         var keys = ['cricket_match_history', 'cricket_match_history_v1', 'cricket_match_history_bak'];
         try { if (typeof HISTORY_KEY !== 'undefined' && HISTORY_KEY) { keys.unshift(HISTORY_KEY); keys.push(HISTORY_KEY + '_bak'); } } catch(e){}
