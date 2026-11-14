@@ -56,14 +56,20 @@ export class MatchDO {
       const [client, server] = Object.values(pair);
       server.accept();
 
-      let name = (url.searchParams.get("name") || "").trim() || "Fan";
+      let name = (url.searchParams.get("name") || "").trim() || "Viewer";
       const role = url.searchParams.get("role") || "viewer";
+      const uid = String(url.searchParams.get("uid") || "").trim().slice(0, 64);
       // Assign Fan-1, Fan-2… when no real name/initials
       if (!name || /^fan([-_\s]?\d+)?$/i.test(name) || name === "Fan") {
         this._fanSeq = (this._fanSeq || 0) + 1;
         name = "Fan-" + this._fanSeq;
       }
-      this.sessions.set(server, { name, role, joinedAt: Date.now() });
+      const joinedAt = Date.now();
+      this.sessions.set(server, { name, role, uid, joinedAt });
+      // Register the stable browser identity before broadcasting presence. Without
+      // this, collectViewers() creates a temporary ws:name:time row, then the first
+      // heartbeat creates a second row under the real uid.
+      if (role === "viewer" && uid) this.touchViewer(uid, name, this.matchId, joinedAt, "");
       this.broadcastPresence();
 
       server.send(JSON.stringify({ type: "full", data: this.publicPayload() }));
