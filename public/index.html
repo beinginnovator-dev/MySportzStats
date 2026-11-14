@@ -5987,7 +5987,7 @@ function switchTab(tabId) {
         } catch(eSP){}
 
         var pages=['page-toss','page-tournament','page-scoring','page-stats','page-rankings','page-players','page-history','page-reports','page-quickinfo','page-livefeed'];
-        if (tabId === 'history' || tabId === 'page-history') { setTimeout(function(){ try { if (typeof renderHistory === 'function') renderHistory(); } catch(e){} }, 50); } for(var i=0;i<pages.length;i++){ var el=document.getElementById(pages[i]); if(el) el.classList.add('hidden'); }
+        if (tabId === 'history' || tabId === 'page-history') { setTimeout(function(){ try { if (typeof renderHistory === 'function') renderHistory(); } catch(e){ console.log('renderHistory err', e); } }, 80); } for(var i=0;i<pages.length;i++){ var el=document.getElementById(pages[i]); if(el) el.classList.add('hidden'); }
         var tabs=['tab-toss','tab-tournament','tab-scoring','tab-stats','tab-rankings','tab-history','tab-quickinfo']; for(var ti=0;ti<tabs.length;ti++){ var id=tabs[ti];
             var btn = document.getElementById(id);
             if(btn){ btn.className = "flex-1 py-2 px-0.5 rounded-xl text-center espn-tab-inactive transition-all"; btn.style.pointerEvents="auto"; }
@@ -11888,10 +11888,13 @@ function computeManOfTheMatch(plist) {
     function renderHistory(){
         try {
             var container = document.getElementById('history-list');
-            if (!container) return;
+            if (!container) { console.log('history-list missing'); return; }
             var hist = (typeof loadAllMatchHistory === 'function') ? loadAllMatchHistory() : [];
+            console.log('renderHistory', hist.length, 'matches');
             var count = document.getElementById('history-match-count');
             if (count) count.textContent = hist.length + (hist.length === 1 ? ' MATCH' : ' MATCHES');
+            // Force clear initial empty message
+            container.innerHTML = '';
             // Always show local storage history even if cloud fails
             if (!hist.length) {
                 container.innerHTML = '<div class="history-pro-card"><p class="text-sm theme-muted text-center py-8">No matches saved on this device. Use Restore Cloud to recover your archive.</p></div>';
