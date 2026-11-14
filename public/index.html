@@ -10156,6 +10156,23 @@ function updateView() {
     function endMatch(winner) {
         matchEnded = true;
         matchWinner = winner;
+        // Capture stats snapshot for history
+        try {
+            var snap = '';
+            var statsEl = document.getElementById('page-stats') || document.getElementById('stats-content') || document.querySelector('.stats-tables');
+            if (statsEl) snap = statsEl.innerHTML;
+            else {
+                // Build minimal snapshot from current players
+                var aList = (players||[]).filter(function(p){ return p.team==='A'; });
+                var bList = (players||[]).filter(function(p){ return p.team==='B'; });
+                snap = '<div class="stats-snap"><h4>Team A</h4><table class="w-full text-xs"><tr><th>Batsman</th><th>R</th><th>B</th><th>4</th><th>6</th></tr>';
+                aList.forEach(function(p){ snap += '<tr><td>'+ (p.name||'') +'</td><td>'+ (p.runs|0) +'</td><td>'+ (p.balls|0) +'</td><td>'+ (p.fours|0) +'</td><td>'+ (p.sixes|0) +'</td></tr>'; });
+                snap += '</table><h4>Team B</h4><table class="w-full text-xs"><tr><th>Batsman</th><th>R</th><th>B</th><th>4</th><th>6</th></tr>';
+                bList.forEach(function(p){ snap += '<tr><td>'+ (p.name||'') +'</td><td>'+ (p.runs|0) +'</td><td>'+ (p.balls|0) +'</td><td>'+ (p.fours|0) +'</td><td>'+ (p.sixes|0) +'</td></tr>'; });
+                snap += '</table></div>';
+            }
+            window.__lastStatsSnap = snap;
+        } catch(eSnap){ window.__lastStatsSnap = ''; }
         // Direct history write — always succeeds even if other paths fail
         try {
             var HKEY = (typeof HISTORY_KEY !== 'undefined' && HISTORY_KEY) ? HISTORY_KEY : 'cricket_match_history';
@@ -10184,7 +10201,8 @@ function updateView() {
                              isOut:!!p.isOut, howOut:p.howOut||'' };
                 }),
                 matchSessionId: (typeof matchSessionId!=='undefined'?matchSessionId:('ms-'+Date.now().toString(36))),
-                _savedAt: Date.now()
+                _savedAt: Date.now(),
+                statsSnap: window.__lastStatsSnap || ''
             };
             var sid = entry.matchSessionId;
             var di = -1;
@@ -12169,6 +12187,9 @@ function computeManOfTheMatch(plist) {
                 applyFow(teamAList); applyFow(teamBList);
             })();
             var playersHtml = buildTeamStatsBlockHTML(m.teamA, teamAList, true, m.deliveryHistory) + buildTeamStatsBlockHTML(m.teamB, teamBList, true, m.deliveryHistory);
+            if (m.statsSnap) {
+                playersHtml = '<div class="rounded-xl border p-3 mb-3 bg-slate-50"><h4 class="font-bold text-sm mb-2">📸 Stats Snapshot</h4><div class="text-xs overflow-x-auto">' + m.statsSnap + '</div></div>' + playersHtml;
+            }
             var fowHtml = '<h4 class="font-bold text-sm mt-4 mb-2 text-slate-900">Fall of Wickets</h4>';
             if(!m.fallOfWickets || m.fallOfWickets.length===0) fowHtml += '<p class="italic text-slate-500 text-sm">No wickets fell</p>';
             else fowHtml += buildFowTableHtml(m.fallOfWickets);
