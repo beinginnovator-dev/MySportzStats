@@ -626,14 +626,24 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
 <script>
 (function(){
   
+  var __viewerUidMemory='';
   function viewerUid(){
+    if(__viewerUidMemory) return __viewerUidMemory;
     try{
       var id=localStorage.getItem('react_viewer_uid');
-      if(id) return id;
-      id='v_'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);
-      localStorage.setItem('react_viewer_uid', id);
+      if(id){ __viewerUidMemory=id; return id; }
+      try{ id=sessionStorage.getItem('react_viewer_uid'); }catch(se){}
+      if(!id){
+        id='v_'+(window.crypto&&crypto.randomUUID?crypto.randomUUID().replace(/-/g,''):Math.random().toString(36).slice(2,12)+Date.now().toString(36));
+        try{ sessionStorage.setItem('react_viewer_uid',id); }catch(se){}
+      }
+      try{ localStorage.setItem('react_viewer_uid',id); }catch(le){}
+      __viewerUidMemory=id;
       return id;
-    }catch(e){ return 'v_'+String(Date.now()); }
+    }catch(e){
+      __viewerUidMemory='v_'+(window.crypto&&crypto.randomUUID?crypto.randomUUID().replace(/-/g,''):Math.random().toString(36).slice(2,12)+Date.now().toString(36));
+      return __viewerUidMemory;
+    }
   }
   function nextFanName(){
     try{
@@ -665,7 +675,7 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
         found.status='online';
         found.activity='watching';
       } else {
-        list.unshift({id:id,name:name||'Fan',joinedAt:now,lastSeen:now,status:'online',activity:'watching'});
+        list.unshift({id:id,name:name||'Viewer',joinedAt:now,lastSeen:now,status:'online',activity:'watching'});
       }
       localStorage.setItem(key, JSON.stringify(list.slice(0,200)));
     }catch(e1){}
@@ -711,7 +721,7 @@ window.onerror=function(msg,src,line){var e=document.getElementById('error');if(
 
   window.__viewerPing = function(forceName){
     try{
-      var name=(forceName||viewerDisplayName()||'Fan').slice(0,40);
+      var name=(forceName||viewerDisplayName()||'').trim().slice(0,40); if(!name) return;
       recordLocalViewer(name);
       var match='current';
       try{ match=new URLSearchParams(location.search).get('match')||'current'; }catch(e2){}
@@ -2349,7 +2359,10 @@ function excitingHindi(d, ev){
       return src.filter(function(v){
         if(!v) return false;
         var id=String(v.id||'').trim();
-        if(!id || seen[id]) return false;
+        var nm=String(v.name||v.displayName||'').trim();
+        // Hide legacy auto-generated anonymous Fan rows; new joins must identify
+        // themselves with a name or initials.
+        if(!id || !nm || /^fan(?:[-_\\s]?\\d+)?$/i.test(nm) || nm.toLowerCase()==='viewer' || seen[id]) return false;
         seen[id]=true;
         var t=v.lastSeen||v.joinedAt||v.firstSeen||v.leftAt||0;
         var num=typeof t==='number'?t:Date.parse(t);
@@ -2402,7 +2415,8 @@ function excitingHindi(d, ev){
             className:'go',
             type:'button',
             onClick:function(){
-              var nm=assignViewerName(welcomeName);
+              if(!String(welcomeName||'').trim()){ alert('Please enter your name or initials.'); return; }
+               var nm=assignViewerName(welcomeName);
               try{ localStorage.setItem('react_viewer_name', nm); localStorage.setItem('viewer_name', nm); }catch(ex){}
               try{ setWelcomeName(nm); }catch(eN){}
               try{ window.__viewerPing && window.__viewerPing(nm); }catch(eP){}
