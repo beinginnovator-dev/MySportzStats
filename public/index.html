@@ -3982,8 +3982,10 @@ body:has(#history-detail-modal:not(.hidden)) .espn-tabbar{
                 <div class="history-pro-stats"><span id="history-match-count">0 MATCHES</span><span>·</span><span id="history-cloud-status">Cloud backup not checked</span></div>
             </div>
             <div class="history-toolbar">
+                <span id="cloud-actions" style="display:none">
                 <button onclick="backupHistoryToCloud(false)" class="history-action history-action-primary">☁ Backup to Cloud</button>
                 <button onclick="restoreHistoryFromCloud()" class="history-action">↧ Restore Cloud</button>
+                </span>
                 <button onclick="appPrint()" class="history-action">Print</button>
                 <button onclick="downloadMatchHistoryPDF()" class="history-action">PDF</button>
                 <button onclick="resetMatchHistory()" class="history-action history-action-danger">Reset</button>
@@ -11906,6 +11908,8 @@ function computeManOfTheMatch(plist) {
         var cloudBtn = document.getElementById('hist-tab-cloud');
         if(localBtn) localBtn.className = 'flex-1 py-2 rounded-lg text-sm font-bold ' + (src==='local'?'bg-indigo-600 text-white':'bg-slate-200 text-slate-700');
         if(cloudBtn) cloudBtn.className = 'flex-1 py-2 rounded-lg text-sm font-bold ' + (src==='cloud'?'bg-indigo-600 text-white':'bg-slate-200 text-slate-700');
+        var cloudAct = document.getElementById('cloud-actions');
+        if(cloudAct) cloudAct.style.display = (src==='cloud') ? 'inline' : 'none';
         try { renderHistory(); } catch(e){}
     }
     function renderHistory(){
