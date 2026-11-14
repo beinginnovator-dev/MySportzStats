@@ -406,6 +406,7 @@ export default {
     // Never env.ASSETS.fetch(request) — that causes redirect loops.
     {
       const p = url.pathname;
+      const isReactApp = (p === "/react" || p === "/react/");
       const isScorer = (p === "/" || p === "/score" || p === "/index.html");
       const isViewer = (
         p === "/live" ||
@@ -416,11 +417,9 @@ export default {
         p === "/viewers" ||
         p === "/viewer.html"
       );
-      if ((isScorer || isViewer) && env.ASSETS) {
+      if ((isScorer || isViewer || isReactApp) && env.ASSETS) {
         try {
-          const tryPaths = isScorer
-            ? ["/index.html"]
-            : ["/live-react.html"];
+          const tryPaths = isReactApp ? ["/react/index.html"] : isScorer ? ["/index.html"] : ["/live-react.html"];
           for (const assetPath of tryPaths) {
             const res = await env.ASSETS.fetch("https://assets.local" + assetPath);
             if (res && res.status < 400) {
@@ -442,9 +441,7 @@ export default {
           });
         }
         return new Response(
-          isScorer
-            ? "Scorer missing: upload public/index.html"
-            : "Viewer missing: upload public/live-react.html",
+          isReactApp ? "React app missing: build public/react first" : isScorer ? "Scorer missing: upload public/index.html" : "Viewer missing: upload public/live-react.html",
           { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
         );
       }
