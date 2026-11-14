@@ -919,7 +919,43 @@ export class MatchDO {
   broadcastPresence() {
     const viewers = this.collectViewers();
     this.live.viewers = viewers;
-    this.broadcast({ type: "presence", data: viewers });
+
+    // One authoritative online count for both the /live viewer page and scorer
+    // scoreboard. Count unique IDs, not rows/names, and only active identities.
+    const now = Date.now();
+    this.expireHttpViewers(now);
+    const onlineIds = new Set();
+    for (const s of this.sessions.values()) {
+      if (s.role !== "viewer") continue;
+      if (s.lastPing && now - s.lastPing > 90000) continue;
+      const id = String(s.uid || ("name:" + (s.name || "").trim().toLowerCase()));
+      if (id !== "name:") onlineIds.add(id);
+    }
+    for (const [id, v] of this.httpViewers.entries()) {
+      const last = v && (v.lastSeen || v.ts);
+      if (!last || now - last >= 90000) continue;
+      onlineIds.add(String((v && v.id) || id));
+    }
+    const count = onlineIds.size;
+
+    // Keep the existing array payload for older viewer clients, while exposing
+    // the exact same count as metadata for the scorer app.
+    this.broadcast({
+      type: "presence",
+      data: viewers,
+      count,
+      viewerCount: count,
+      viewersOnline: count,
+      watching: count,
+    });
+
+    // Scorer scoreboard listens to full match snapshots. Push a fresh snapshot
+    // on join/leave/heartbeat so its LIVE count updates without waiting for a ball.
+    const payload = this.publicPayload();
+    payload.viewerCount = count;
+    payload.viewersOnline = count;
+    payload.watching = count;
+    this.broadcast({ type: "full", data: payload, ts: payload.ts || now });
   }
 
   scheduleSaveViewerLog() {
