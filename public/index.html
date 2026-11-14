@@ -10167,6 +10167,33 @@ function updateView() {
     function endMatch(winner) {
         matchEnded = true;
         matchWinner = winner;
+        // IMMEDIATE history write before any cleanup
+        try {
+            var HKEY = (typeof HISTORY_KEY !== 'undefined' && HISTORY_KEY) ? HISTORY_KEY : 'cricket_match_history';
+            var hist = JSON.parse(localStorage.getItem(HKEY) || '[]');
+            if (!Array.isArray(hist)) hist = [];
+            var entry = {
+                matchNo: hist.length + 1,
+                date: new Date().toLocaleDateString(),
+                time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+                teamA: (teamConfig&&teamConfig.A&&teamConfig.A.name)||'Team A',
+                teamB: (teamConfig&&teamConfig.B&&teamConfig.B.name)||'Team B',
+                score: totalScore|0, wickets: totalWickets|0,
+                overs: (typeof formatOvers==='function'?formatOvers(totalBalls):'0.0'),
+                winner: winner,
+                players: (players||[]).map(function(p){
+                    return {id:p.id, name:p.name||'', team:p.team||'A', runs:p.runs|0, balls:p.balls|0,
+                            fours:p.fours|0, sixes:p.sixes|0, bowlBalls:p.bowlBalls|0, bowlRuns:p.bowlRuns|0,
+                            wickets:p.wickets|0, dots:p.dots|0, economy:p.bowlBalls>0?((p.bowlRuns/p.bowlBalls)*6).toFixed(2):'0.00'};
+                }),
+                matchSessionId: 'ms-'+Date.now().toString(36),
+                _savedAt: Date.now()
+            };
+            hist.push(entry);
+            localStorage.setItem(HKEY, JSON.stringify(hist));
+            localStorage.setItem('cricket_match_history', JSON.stringify(hist));
+            console.log('IMMEDIATE history saved', hist.length);
+        } catch(eImm){ console.log('imm history', eImm); }
         // Capture stats snapshot for history
         try {
             var snap = '';
@@ -10220,7 +10247,11 @@ function updateView() {
             for (var i = hist.length-1; i>=0; i--) { if (hist[i] && hist[i].matchSessionId === sid) { di = i; break; } }
             if (di >= 0) hist[di] = entry; else hist.push(entry);
             localStorage.setItem(HKEY, JSON.stringify(hist));
+            try { localStorage.setItem(HKEY + '_bak', JSON.stringify(hist)); } catch(eB){}
+            try { localStorage.setItem('cricket_match_history', JSON.stringify(hist)); } catch(eC){}
+            try { localStorage.setItem('cricket_match_history_v1', JSON.stringify(hist)); } catch(eD){}
             try { if (typeof renderHistory === 'function') renderHistory(); } catch(eR){}
+            console.log('history saved', hist.length, 'matches');
         } catch(eDirect){ console.log('direct history', eDirect); }
         // History FIRST so app-switch / crash still has the match
         try {
