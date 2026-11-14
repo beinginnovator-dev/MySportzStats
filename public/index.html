@@ -162,7 +162,7 @@
                 var bag = {};
                 for (var i=0;i<localStorage.length;i++){
                   var kk = localStorage.key(i);
-                  if (kk && /cricket|scorer|match|cup|team|live/i.test(kk)) bag[kk] = localStorage.getItem(kk);
+                  if (kk && kk !== BACKUP_KEY && /cricket|scorer|match|cup|team|live/i.test(kk)) bag[kk] = localStorage.getItem(kk);
                 }
                 bag.__ts = Date.now();
                 _setItem(BACKUP_KEY, JSON.stringify(bag));
@@ -10480,6 +10480,11 @@ function updateView() {
                 });
                 written = writeAndVerify(hist);
             }
+            if (!written) {
+                // The app-wide snapshot duplicates local data and can consume the remaining quota.
+                try { localStorage.removeItem('cricket_score_backup_v1'); } catch(eBackupKey){}
+                written = writeAndVerify(hist);
+            }
             while (!written && hist.length > 1) {
                 var oldest = hist.shift();
                 try { if (oldest && oldest.commentaryFileKey) localStorage.removeItem(oldest.commentaryFileKey); } catch(eDrop){}
@@ -12010,7 +12015,7 @@ function computeManOfTheMatch(plist) {
         } catch(e){ return []; }
     }
     function historyStorageKeys(){
-        var keys = ['cricket_match_history', 'cricket_match_history_v1', 'cricket_match_history_bak'];
+        var keys = ['cricket_match_history', 'cricket_match_history_bak', 'cricket_match_history_v1'];
         try { if (typeof HISTORY_KEY !== 'undefined' && HISTORY_KEY) { keys.unshift(HISTORY_KEY); keys.push(HISTORY_KEY + '_bak'); } } catch(e){}
         var seen = {}, out = [];
         keys.forEach(function(k){ if (k && !seen[k]) { seen[k] = 1; out.push(k); } });
