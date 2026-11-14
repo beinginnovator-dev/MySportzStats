@@ -10432,67 +10432,85 @@ function updateView() {
             var hist = [];
             try { hist = JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch(e){ hist = []; }
             if (!Array.isArray(hist)) hist = [];
-            // Strong de-dupe: same matchSessionId already saved? Update it instead of adding duplicate
+            // Avoid double-write of the same finished match
             try {
-                var sid = (typeof matchSessionId !== 'undefined') ? matchSessionId : '';
-                if (sid) {
-                    for (var di = hist.length - 1; di >= 0; di--) {
-                        if (hist[di] && hist[di].matchSessionId === sid) {
-                            // Already saved — refresh FULL data (players, deliveries, result)
-                            var full = buildHistoryEntry(winner, hist[di].matchNo || (di+1));
-                            if (full) {
-                                full.matchNo = hist[di].matchNo || full.matchNo;
-                                full.matchSessionId = sid;
-                                hist[di] = full;
-                            } else {
-                                hist[di].score = totalScore|0;
-                                hist[di].wickets = totalWickets|0;
-                                hist[di].winner = winner;
-                                hist[di].matchResult = (typeof getMatchResultText==='function'?getMatchResultText():'');
-                                hist[di]._savedAt = Date.now();
-                            }
-                            try {
-                                if (typeof persistHistoryArray === 'function') persistHistoryArray(hist);
-                                else localStorage.setItem(HKEY, JSON.stringify(hist));
-                            } catch(eU){}
-                            try { if (typeof renderHistory === 'function') renderHistory(); } catch(eR){}
-                            try { if (typeof saveRankMatchBackup === 'function' && full) saveRankMatchBackup(full); } catch(eB){}
-                            return;
-                        }
-                    }
-                }
-                // Fallback short-window de-dupe
                 var last = hist[hist.length - 1];
-                var nowTs = Date.now();
-                if (last && last._savedAt && (nowTs - (last._savedAt|0)) < 8000
-                    && String(last.teamA) === String(teamConfig.A.name) && String(last.teamB) === String(teamConfig.B.name)
-                    && (last.score|0) === (totalScore|0) && String(last.winner) === String(winner)) {
+                if (last && String(last.teamA) === String(teamConfig.A.name) && String(last.teamB) === String(teamConfig.B.name)
+                    && (last.score|0) === (totalScore|0) && String(last.winner) === String(winner)
+                    && (last.firstInningsScore|0) === (firstInningsScore|0)) {
                     return;
                 }
             } catch(eDup){}
-            var entry = null;
-            try { entry = buildHistoryEntry(winner, hist.length + 1); } catch(eBuild){ console.log('history build', eBuild); }
-            if (!entry) {
-                entry = {
-                    matchNo: matchNo,
-                    date: new Date().toLocaleDateString(),
-                    time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
-                    teamA: (teamConfig&&teamConfig.A&&teamConfig.A.name)||'Team A',
-                    teamB: (teamConfig&&teamConfig.B&&teamConfig.B.name)||'Team B',
-                    score: totalScore|0, wickets: totalWickets|0,
-                    overs: (typeof formatOvers==='function'?formatOvers(totalBalls):'0.0'),
-                    winner: winner,
-                    players: (players||[]).map(function(p){
-                        return { id:p.id, name:p.name, team:p.team, runs:p.runs|0, balls:p.balls|0,
-                                 fours:p.fours|0, sixes:p.sixes|0, bowlBalls:p.bowlBalls|0, bowlRuns:p.bowlRuns|0,
-                                 wickets:p.wickets|0, dots:p.dots|0, economy: (p.bowlBalls>0?((p.bowlRuns/p.bowlBalls)*6).toFixed(2):'0.00') };
-                    }),
-                    matchSessionId: (typeof matchSessionId!=='undefined'?matchSessionId:('ms-'+Date.now().toString(36))),
-                    _savedAt: Date.now()
+            var caps = buildMatchOrangePurple();
+            var mom = '';
+            try {
+                if (typeof computeManOfTheMatch === 'function') {
+                    var cm = computeManOfTheMatch(players);
+                    mom = cm && cm.name ? cm.name : '';
+                }
+            } catch(e){}
+            if (!mom && caps.orange[0]) mom = caps.orange[0].name;
+            var matchNo = hist.length + 1;
+            var commKey = 'cricket_match_comm_' + matchNo + '_' + Date.now();
+            // Store commentary separately so history list stays small
+            try {
+                var lines = (commentaryLog || []).slice(-80);
+                localStorage.setItem(commKey, JSON.stringify({ matchNo: matchNo, lines: lines, ts: Date.now() }));
+            } catch(eC) { commKey = ''; }
+            var slimPlayers = (players||[]).map(function(p){
+                return {
+                    id:p.id, name:p.name, team:p.team,
+                    runs:p.runs|0, balls:p.balls|0, fours:p.fours|0, sixes:p.sixes|0,
+                    bowlBalls:p.bowlBalls|0, bowlRuns:p.bowlRuns|0, wickets:p.wickets|0, dots:p.dots|0,
+                    isOut:!!p.isOut, howOut:p.howOut||'', outFielder:p.outFielder||''
                 };
-            }
+            });
+            var slimDeliv = (deliveryHistory||[]).slice(-150).map(function(d){
+                return {
+                    batsman:d.batsman, bowler:d.bowler, runs:d.runs|0, runsConceded:d.runsConceded|0,
+                    legal:!!d.legal, isWicket:!!d.isWicket, chipLabel:d.chipLabel||'', zone:d.zone||null,
+                    innings:d.innings||1, bound:d.bound|0,
+                    over: d.over != null ? String(d.over) : '',
+                    overNum: d.over != null ? String(d.over).split('.')[0] : ''
+                };
+            });
+            var entry = {
+                matchNo: matchNo,
+                date: new Date().toLocaleDateString(),
+                time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+                teamA: teamConfig.A.name, teamB: teamConfig.B.name,
+                firstBattingTeam: firstBattingTeam,
+                score: totalScore|0, wickets: totalWickets|0,
+                overs: (typeof formatOvers==='function'?formatOvers(totalBalls):String(Math.floor((totalBalls|0)/6)+'.'+((totalBalls|0)%6))),
+                maxOvers: maxOversAllowed,
+                firstInningsScore: firstInningsScore, firstInningsWickets: firstInningsWickets,
+                firstInningsOvers: firstInningsOvers, firstInningsBalls: firstInningsBalls,
+                targetScore: targetScore,
+                winner: winner, matchResult: (typeof getMatchResultText==='function'?getMatchResultText():''),
+                manOfTheMatch: mom,
+                abandonReason: abandonReason||'',
+                players: slimPlayers,
+                fallOfWickets: (fallOfWickets||[]).slice(),
+                deliveryHistory: slimDeliv,
+                commentaryFileKey: commKey,
+                commentaryLog: (commentaryLog||[]).slice(-30),
+                orangeCap: caps.orange,
+                purpleCap: caps.purple,
+                // Snapshot of series totals at end of this match
+                seriesSnapshot: {
+                    orangeCap: caps.orange.slice(0, 15),
+                    purpleCap: caps.purple.slice(0, 15),
+                    totalRuns: (totalScore|0) + (firstInningsScore|0),
+                    totalWickets: (totalWickets|0) + (firstInningsWickets|0),
+                    totalBalls: (totalBalls|0) + (firstInningsBalls|0)
+                },
+                stage: (typeof currentMatchStage!=='undefined'?currentMatchStage:'normal'),
+                matchDescription: (typeof getMatchDescription==='function'?getMatchDescription():''),
+                umpires: (typeof currentUmpires!=='undefined'?currentUmpires:'') || '',
+                commentators: (typeof currentCommentators!=='undefined'?currentCommentators:'') || '',
+                venue: (typeof currentVenue!=='undefined'?currentVenue:'') || ''
+            };
             hist.push(entry);
-            try { if (typeof saveRankMatchBackup === 'function') saveRankMatchBackup(entry); } catch(eB){}
             // Cap to last 50 matches
             if (hist.length > 50) {
                 var drop = hist.splice(0, hist.length - 50);
@@ -10502,73 +10520,34 @@ function updateView() {
                 hist.forEach(function(m,i){ m.matchNo = i + 1; });
             }
             function writeHist(arr) {
-                function slim(m){
-                    if (!m) return m;
-                    m.deliveryHistory = (m.deliveryHistory||[]).slice(-40);
-                    m.commentaryLog = (m.commentaryLog||[]).slice(-8);
-                    if (m.players && m.players.length > 30) m.players = m.players.slice(0, 30);
-                    if (m.orangeCap) m.orangeCap = m.orangeCap.slice(0, 10);
-                    if (m.purpleCap) m.purpleCap = m.purpleCap.slice(0, 10);
-                    if (m.seriesSnapshot) {
-                      if (m.seriesSnapshot.orangeCap) m.seriesSnapshot.orangeCap = m.seriesSnapshot.orangeCap.slice(0, 8);
-                      if (m.seriesSnapshot.purpleCap) m.seriesSnapshot.purpleCap = m.seriesSnapshot.purpleCap.slice(0, 8);
-                    }
-                    return m;
-                }
-                function tryWrite(list){
-                    var json = JSON.stringify(list);
-                    localStorage.setItem(HKEY, json);
-                    try { localStorage.setItem(HKEY + '_bak', json); } catch(eB){}
-                    try { localStorage.setItem('cricket_match_history', json); } catch(eC){}
-                    try { localStorage.setItem('cricket_match_history_v1', json); } catch(eD){}
-                    return true;
-                }
+                var json = JSON.stringify(arr);
                 try {
-                    return tryWrite(arr);
+                    localStorage.setItem(HKEY, json);
+                    localStorage.setItem(HKEY + '_bak', json);
+                    return true;
                 } catch(e) {
-                    // Quota / size — progressive shrink, keep as many matches as possible
+                    // Shrink and retry
                     try {
-                        arr = arr.map(slim);
-                        try { return tryWrite(arr); } catch(e1){}
-                        while (arr.length > 5) {
-                            var o = arr.shift();
-                            try { if (o && o.commentaryFileKey) localStorage.removeItem(o.commentaryFileKey); } catch(e2){}
-                            arr.forEach(function(m,i){ if(m) m.matchNo = i + 1; });
-                            try { return tryWrite(arr); } catch(e3){}
-                        }
-                        // Last resort: ultra-light records
-                        arr = arr.map(function(m){
-                            return {
-                              matchNo: m.matchNo, id: m.id, _savedAt: m._savedAt,
-                              date: m.date, time: m.time, teamA: m.teamA, teamB: m.teamB,
-                              score: m.score|0, wickets: m.wickets|0, overs: m.overs,
-                              firstInningsScore: m.firstInningsScore|0, firstInningsWickets: m.firstInningsWickets|0,
-                              targetScore: m.targetScore|0, winner: m.winner, matchResult: m.matchResult,
-                              manOfTheMatch: m.manOfTheMatch||'', venue: m.venue||''
-                            };
+                        arr.forEach(function(m){
+                            m.deliveryHistory = (m.deliveryHistory||[]).slice(-60);
+                            m.commentaryLog = (m.commentaryLog||[]).slice(-10);
+                            if (m.orangeCap) m.orangeCap = m.orangeCap.slice(0, 12);
+                            if (m.purpleCap) m.purpleCap = m.purpleCap.slice(0, 12);
                         });
-                        tryWrite(arr);
+                        while (arr.length > 15) {
+                            var o = arr.shift();
+                            try { if (o.commentaryFileKey) localStorage.removeItem(o.commentaryFileKey); } catch(e2){}
+                        }
+                        arr.forEach(function(m,i){ m.matchNo = i + 1; });
+                        localStorage.setItem(HKEY, JSON.stringify(arr));
                         return true;
-                    } catch(e4) {
-                        console.log('history write failed', e4);
-                        try {
-                          if (typeof showModal === 'function')
-                            showModal({ title: 'History full', message: 'Could not save match history (storage full). Clear old history or browser data.', icon: '⚠️' });
-                        } catch(eM){}
+                    } catch(e3) {
+                        console.log('history write failed', e3);
                         return false;
                     }
                 }
             }
             writeHist(hist);
-            // Keep the single cloud recovery snapshot current after a completed match.
-            try { backupHistoryToCloud(true); } catch(eCloud) {}
-            // Verify save stuck
-            try {
-              var check = JSON.parse(localStorage.getItem(HKEY) || '[]');
-              if (!Array.isArray(check) || check.length < hist.length) {
-                console.log('history verify mismatch', (check&&check.length), hist.length);
-              }
-            } catch(eV){}
             try { renderHistory(); } catch(e){}
             try { rebuildStatsFromHistory(); } catch(e){}
         } catch(err) { console.log('saveMatchToHistorySafe', err); }
@@ -11913,63 +11892,28 @@ function computeManOfTheMatch(plist) {
         try { renderHistory(); } catch(e){}
     }
     function renderHistory(){
-        try {
+        try{
             var container = document.getElementById('history-list');
-            if (!container) { console.log('history-list missing'); return; }
-            var hist = [];
-            if (window.__historySource === 'cloud') {
-                hist = (typeof loadCloudHistory === 'function') ? loadCloudHistory() : [];
-            } else {
-                hist = (typeof loadAllMatchHistory === 'function') ? loadAllMatchHistory() : [];
-            }
-            console.log('renderHistory', hist.length, 'matches');
-            var count = document.getElementById('history-match-count');
-            if (count) count.textContent = hist.length + (hist.length === 1 ? ' MATCH' : ' MATCHES');
-            // Force clear initial empty message
-            container.innerHTML = '';
-            // Always show local storage history even if cloud fails
-            if (!hist.length) {
-                container.innerHTML = '<div class="history-pro-card"><p class="text-sm theme-muted text-center py-8">No matches saved on this device. Use Restore Cloud to recover your archive.</p></div>';
-                return;
-            }
-            // Simple fallback list in case fancy cards fail
-            try {
-                var simple = hist.map(function(m, i){
-                    var win = m.winner==='A'?(m.teamA||'A')+' won':m.winner==='B'?(m.teamB||'B')+' won':(m.winner||'');
-                    return '<div class="p-3 mb-2 rounded-lg border bg-white"><b>#'+(m.matchNo||i+1)+'</b> '+(m.teamA||'A')+' vs '+(m.teamB||'B')+' · '+(m.score||'-')+'/'+(m.wickets||'-')+' · '+win+'</div>';
-                }).join('');
-                container.innerHTML = simple;
-            } catch(eSimple){ console.log('simple list', eSimple); }
-            function esc(v) {
-                return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-            }
-            var sorted = hist.slice().sort(function(a,b){ return (b._savedAt||0)-(a._savedAt||0) || String(b.date||'').localeCompare(String(a.date||'')); });
-            var groups = {};
-            sorted.forEach(function(m){ var day=String(m.date||'Date unavailable'); (groups[day]||(groups[day]=[])).push(m); });
-            container.innerHTML = Object.keys(groups).map(function(day){
-                var cards = groups[day].map(function(m) {
-                    var winText = m.winner === 'Tie' ? 'Match tied' :
-                        m.winner === 'Abandoned' ? 'Match abandoned' :
-                        m.winner === 'A' ? (m.teamA || 'Team A') + ' won' :
-                        m.winner === 'B' ? (m.teamB || 'Team B') + ' won' : (m.winner || m.matchResult || 'Result unavailable');
-                    var stage = m.matchDescription || m.stageLabel || stageLabel(m.stage || 'normal');
-                    var score = (m.score != null ? m.score : '-') + '/' + (m.wickets != null ? m.wickets : '-');
-                    var overs = (m.overs || '-') + (m.maxOvers ? ' / ' + m.maxOvers : '') + ' overs';
-                    var matchNo = Number(m.matchNo) || 0;
-                    return '<article class="history-pro-card">' +
-                        '<div class="history-pro-top"><div class="history-pro-meta">MATCH #' + esc(matchNo) + ' · ' + esc(m.time || '') + '</div><span class="history-pro-stage">' + esc(stage) + '</span></div>' +
-                        '<div class="history-pro-teams"><div class="history-pro-team">' + esc(m.teamA || 'Team A') + '</div><div class="history-pro-vs">VS</div><div class="history-pro-team">' + esc(m.teamB || 'Team B') + '</div></div>' +
-                        '<div class="history-pro-score"><span>' + esc(score) + '</span><span>' + esc(overs) + '</span><span>Target ' + esc(m.targetScore != null ? m.targetScore : '-') + '</span></div>' +
-                        '<div class="history-pro-result">' + esc(winText) + snapBadge + '</div>' +
-                        '<div class="history-pro-actions no-print"><button onclick="deleteHistoryMatch('+matchNo+')" class="text-red-600 text-xs mr-2">Delete</button><button class="view" onclick="openHistoryDetail(' + matchNo + ')">VIEW SCORECARD</button><button onclick="downloadMatchCommentaryFile(' + matchNo + ')">COMMENTARY</button><button class="delete" onclick="deleteHistoryEntry(' + matchNo + ')">DELETE</button></div>' +
-                    '</article>';
-                }).join('');
-                return '<section class="history-date-group"><h3 class="history-date-heading">' + esc(day) + ' · ' + groups[day].length + ' MATCH' + (groups[day].length===1?'':'ES') + '</h3>' + cards + '</section>';
+            if(!container) return;
+            var hist = (typeof loadAllMatchHistory === 'function') ? loadAllMatchHistory() : JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            if(!hist || hist.length===0){ container.innerHTML = '<p class="text-sm italic text-slate-400 text-center py-6">No matches saved yet. Complete a match to see it here.</p>'; return; }
+            var sorted = hist.slice().reverse();
+            var stageColors = { normal: 'bg-slate-600', knockout: 'bg-rose-600', quarter: 'bg-indigo-600', semi: 'bg-purple-600', final: 'bg-amber-500 text-slate-900', qualifier: 'bg-slate-600', friendly: 'bg-slate-500' };
+            var html = sorted.map(function(m){
+                var winText = m.winner==='Tie' ? 'Match Tied' : (m.winner==='Abandoned' ? 'Abandoned' + (m.abandonReason ? ' ('+m.abandonReason+')' : '') : (m.winner==='A' ? m.teamA+' Won' : m.winner==='B' ? m.teamB+' Won' : m.winner));
+                var st = m.stage || 'normal';
+                var stLab = m.stageLabel || stageLabel(st);
+                var badgeCls = stageColors[st] || 'bg-slate-500';
+                var desc = m.matchDescription || stLab;
+                var officials = '';
+                if (m.venue) officials += '<p class="text-[11px] theme-muted mt-0.5">📍 Venue: '+m.venue+'</p>';
+                if (m.umpires) officials += '<p class="text-[11px] theme-muted mt-0.5">Umpires: '+m.umpires+'</p>';
+                if (m.commentators) officials += '<p class="text-[11px] theme-muted">Commentators: '+m.commentators+'</p>';
+                return '<div class="theme-card border theme-border rounded-xl p-3 shadow-sm history-print-card"><div class="flex justify-between items-start"><div class="flex-1 pr-2"><p class="text-[11px] font-black uppercase tracking-widest theme-muted">Match #'+m.matchNo+' • '+m.date+' '+m.time+'</p><span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase text-white '+badgeCls+'">'+desc+'</span><p class="font-bold text-sm mt-1 theme-text">'+m.teamA+' vs '+m.teamB+'</p><p class="text-xs theme-muted mt-1">'+m.score+'/'+m.wickets+' in '+m.overs+'/'+m.maxOvers+' ov • Target '+(m.targetScore||'-')+'</p><p class="text-xs font-bold text-emerald-600 mt-1">'+winText+'</p>'+officials+'</div><div class="flex flex-col gap-1.5 shrink-0 no-print"><button onclick="openHistoryDetail('+m.matchNo+')" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[11px] font-bold uppercase">View 📋</button><button onclick="downloadMatchCommentaryFile('+m.matchNo+')" class="px-3 py-1 bg-slate-700 text-white rounded-lg text-[10px] font-bold uppercase">🎙️ Comm</button><button onclick="deleteHistoryEntry('+m.matchNo+')" class="px-3 py-1 bg-red-50 text-red-600 border border-red-200 rounded-lg text-[10px] font-bold uppercase">🗑️ Delete</button></div></div></div>';
             }).join('');
-        } catch(e) { console.log('renderHistory', e); }
+            container.innerHTML = html;
+        }catch(e){}
     }
-    // One rolling D1 backup. It is written after a successful completed-match save,
-    // never after deleting/resetting the visible local history.
     function cloudBackupKey() {
         try { return localStorage.getItem(LIVE_PUBLISH_KEY) || 'PUBLISH_2026'; }
         catch(e) { return 'PUBLISH_2026'; }
@@ -12164,12 +12108,12 @@ function computeManOfTheMatch(plist) {
                 if (Array.isArray(arr)) hist = hist.concat(arr);
             } catch(e){}
         });
-        // de-dupe: prefer matchSessionId so the same match is never listed twice
+        // de-dupe by matchNo+date+teams
         var map = {};
         hist.forEach(function(m){
             if (!m) return;
-            var id = m.matchSessionId || m.id || (String(m._savedAt||'') + '|' + (m.date||'') + '|' + (m.time||'') + '|' + (m.teamA||'') + '|' + (m.teamB||'') + '|' + (m.score||'') + '|' + (m.winner||''));
-            if (!map[id] || ((m.players&&m.players.length) > ((map[id].players&&map[id].players.length)||0))) map[id] = m;
+            var id = String(m.matchNo||'') + '|' + (m.date||'') + '|' + (m.teamA||'') + '|' + (m.teamB||'') + '|' + (m.score||'');
+            if (!map[id] || (m.players && m.players.length)) map[id] = m;
         });
         var out = Object.keys(map).map(function(k){ return map[k]; });
         out.sort(function(a,b){ return (a.matchNo|0) - (b.matchNo|0); });
