@@ -2,8 +2,11 @@
   "name": "mysportzstats",
   "private": true,
   "scripts": {
+    "dev": "vite --config vite.react.config.js",
     "dev:react": "vite --config vite.react.config.js",
-    "build:react": "vite build --config vite.react.config.js"
+    "build": "vite build --config vite.react.config.js",
+    "build:react": "vite build --config vite.react.config.js",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "react": "^18.3.1",
