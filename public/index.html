@@ -12082,6 +12082,16 @@ function computeManOfTheMatch(plist) {
                 if (Array.isArray(candidate) && candidate.length) { hist = candidate; break; }
             } catch(eRead){}
         }
+        // Last-resort recovery from the app-wide snapshot created by older builds.
+        if (!hist.length) {
+            try {
+                var appBackup = JSON.parse(localStorage.getItem('cricket_score_backup_v1') || 'null');
+                var backupRaw = appBackup && (appBackup['cricket_match_history'] ||
+                    appBackup['cricket_match_history_bak'] || appBackup['cricket_match_history_v1']);
+                var recovered = (typeof backupRaw === 'string') ? JSON.parse(backupRaw) : backupRaw;
+                if (Array.isArray(recovered) && recovered.length) hist = recovered;
+            } catch(eBackupRecovery){}
+        }
         var out = [];
         hist.forEach(function(m) {
             if (!m) return;
