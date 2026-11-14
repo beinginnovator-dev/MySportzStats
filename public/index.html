@@ -3959,11 +3959,11 @@ body:has(#history-detail-modal:not(.hidden)) .espn-tabbar{
         </div>
 
         <!-- PAGE: QUICK INFO (live tournament-style analytics) -->
-        <div id="page-quickinfo" data-rank-source="local"
+        <div id="page-quickinfo" data-rank-source="local" class="hidden space-y-4">
             <div class="flex gap-2 mb-3 px-2 pt-2">
                 <button onclick="setRankSource('local')" class="flex-1 py-1.5 rounded text-xs font-bold bg-emerald-600 text-white">Rank from Local</button>
                 <button onclick="setRankSource('cloud')" class="flex-1 py-1.5 rounded text-xs font-bold bg-slate-200 text-slate-700">Rank from Cloud</button>
-            </div> class="hidden space-y-4">
+            </div>
             <div class="qi-hero rounded-xl p-4 shadow-lg" style="background:var(--sa-card,#132033);color:var(--sa-text,#f1f5f9);border:1.5px solid #4b5c72">
                 <h2 class="text-base font-black uppercase tracking-widest mb-1" style="color:#fff !important">⚡ Quick Info</h2>
                 <p class="text-xs" style="color:rgba(255,255,255,0.9) !important">Live match &amp; player stats — updates as you score. Series totals from History.</p>
