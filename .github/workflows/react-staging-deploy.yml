@@ -1,4 +1,4 @@
-name: Deploy React to Cloudflare staging
+name: Build React staging package
 
 on:
   push:
@@ -18,7 +18,7 @@ permissions:
   contents: read
 
 jobs:
-  deploy-staging:
+  build-package:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -28,10 +28,13 @@ jobs:
           node-version: 20
       - run: npm install
       - run: npm run build
-      - name: Deploy only to staging Worker
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ba8a622afdfd4eb49e4f6ac443265ede
-        run: |
-          test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing GitHub Actions secret CLOUDFLARE_API_TOKEN"; exit 1; }
-          npx wrangler deploy --config wrangler.staging.toml
+      - name: Bundle Worker for staging
+        run: npx wrangler deploy --dry-run --outdir dist --config wrangler.staging.toml
+      - name: Upload React and Worker deployment package
+        uses: actions/upload-artifact@v4
+        with:
+          name: react-staging-package
+          path: |
+            public/react/**
+            dist/**
+          if-no-files-found: error
