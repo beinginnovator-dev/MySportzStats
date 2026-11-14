@@ -1,11 +1,12 @@
 import { defineConfig } from "vite";
-import { resolve } from "node:path";
-
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
+const here = dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
-  root: resolve(__dirname, "react-app"),
+  root: resolve(here, "react-app"),
   base: "/react/",
   build: {
-    outDir: resolve(__dirname, "public/react"),
+    outDir: resolve(here, "public/react"),
     emptyOutDir: true,
     sourcemap: true
   },
