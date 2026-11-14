@@ -11932,6 +11932,14 @@ function computeManOfTheMatch(plist) {
                 container.innerHTML = '<div class="history-pro-card"><p class="text-sm theme-muted text-center py-8">No matches saved on this device. Use Restore Cloud to recover your archive.</p></div>';
                 return;
             }
+            // Simple fallback list in case fancy cards fail
+            try {
+                var simple = hist.map(function(m, i){
+                    var win = m.winner==='A'?(m.teamA||'A')+' won':m.winner==='B'?(m.teamB||'B')+' won':(m.winner||'');
+                    return '<div class="p-3 mb-2 rounded-lg border bg-white"><b>#'+(m.matchNo||i+1)+'</b> '+(m.teamA||'A')+' vs '+(m.teamB||'B')+' · '+(m.score||'-')+'/'+(m.wickets||'-')+' · '+win+'</div>';
+                }).join('');
+                container.innerHTML = simple;
+            } catch(eSimple){ console.log('simple list', eSimple); }
             function esc(v) {
                 return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
             }
