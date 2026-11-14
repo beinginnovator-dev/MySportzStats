@@ -752,8 +752,8 @@ try{ if(window.speechSynthesis){ speechSynthesis.getVoices(); speechSynthesis.on
 
   var useState=React.useState, useEffect=React.useEffect, useRef=React.useRef, useMemo=React.useMemo, useCallback=React.useCallback;
 
-  var FLAG_POOL=['in','au','eng','nz','za','pk','bd','sl','af','ie','wi','np','nl','zw','sc'];
-  var FLAG_URL={in:'https://flagcdn.com/w40/in.png',au:'https://flagcdn.com/w40/au.png',eng:'https://flagcdn.com/w40/gb-eng.png',nz:'https://flagcdn.com/w40/nz.png',za:'https://flagcdn.com/w40/za.png',pk:'https://flagcdn.com/w40/pk.png',bd:'https://flagcdn.com/w40/bd.png',sl:'https://flagcdn.com/w40/lk.png',af:'https://flagcdn.com/w40/af.png',ie:'https://flagcdn.com/w40/ie.png',wi:'https://flagcdn.com/w40/jm.png',np:'https://flagcdn.com/w40/np.png',nl:'https://flagcdn.com/w40/nl.png',zw:'https://flagcdn.com/w40/zw.png',sc:'https://flagcdn.com/w40/gb-sct.png'};
+  var FLAG_POOL=['in','au','eng','nz','za','bd','sl','af','ie','wi','np','nl','zw','sc'];
+  var FLAG_URL={in:'https://flagcdn.com/w40/in.png',au:'https://flagcdn.com/w40/au.png',eng:'https://flagcdn.com/w40/gb-eng.png',nz:'https://flagcdn.com/w40/nz.png',za:'https://flagcdn.com/w40/za.png',bd:'https://flagcdn.com/w40/bd.png',sl:'https://flagcdn.com/w40/lk.png',af:'https://flagcdn.com/w40/af.png',ie:'https://flagcdn.com/w40/ie.png',wi:'https://flagcdn.com/w40/jm.png',np:'https://flagcdn.com/w40/np.png',nl:'https://flagcdn.com/w40/nl.png',zw:'https://flagcdn.com/w40/zw.png',sc:'https://flagcdn.com/w40/gb-sct.png'};
 
   function hashStr(s){s=String(s||'');var x=0;for(var i=0;i<s.length;i++)x=((x<<5)-x)+s.charCodeAt(i)|0;return Math.abs(x);}
   function flagsForMatch(d){
