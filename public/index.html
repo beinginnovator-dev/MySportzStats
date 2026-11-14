@@ -4619,12 +4619,24 @@ body:has(#history-detail-modal:not(.hidden)) .espn-tabbar{
         try { nameEl.focus(); } catch (e) {}
         // Immediate save so name appears in one go
         try {
+            // Update the team currently being edited in cupTeams
+            var editing = (document.getElementById('cup-edit-team') || {}).value || (document.getElementById('cup-team-name') || {}).value || '';
+            if (editing && typeof findCupTeam === 'function') {
+                var t = findCupTeam(editing);
+                if (t) {
+                    t.players = (__cupNewPlayers || []).slice();
+                    if (typeof saveCupTeams === 'function') saveCupTeams();
+                }
+            }
             if (typeof saveCupTeams === 'function') saveCupTeams();
             var aSel = (document.getElementById('cup-team-a') || {}).value;
             var bSel = (document.getElementById('cup-team-b') || {}).value;
             if (aSel || bSel) {
                 if (typeof syncCupPlayersToScoreboard === 'function') syncCupPlayersToScoreboard(aSel, bSel);
             }
+            // Force scoreboard refresh
+            try { if (typeof initSelectors === 'function') initSelectors(); } catch(eI){}
+            try { if (typeof updateView === 'function') updateView(); } catch(eU){}
         } catch(eSync){}
     }
     function cupRemoveNewPlayerRow(i) {
@@ -10165,7 +10177,7 @@ function updateView() {
                 winner: winner,
                 players: (players||[]).map(function(p){
                     var bb = p.bowlBalls|0, br = p.bowlRuns|0;
-                    return { id:p.id, name:p.name, team:p.team,
+                    return { id:p.id, name:p.name||'', team:p.team||'A',
                              runs:p.runs|0, balls:p.balls|0, fours:p.fours|0, sixes:p.sixes|0,
                              bowlBalls:bb, bowlRuns:br, wickets:p.wickets|0, dots:p.dots|0,
                              economy: bb>0 ? ((br/bb)*6).toFixed(2) : '0.00',
@@ -12133,8 +12145,10 @@ function computeManOfTheMatch(plist) {
             var summaryBanner = '<div class="bg-gradient-to-br from-indigo-600 to-blue-700 text-white rounded-xl p-4 mb-3"><p class="text-xs font-black uppercase tracking-widest opacity-80 mb-1">📝 Match Summary</p><p class="text-[11px] font-black uppercase tracking-wider mb-1 opacity-90">' + stLab + '</p><p class="text-sm font-semibold leading-relaxed">' + summaryText + '</p>' + officialsHtml + '</div>';
 
             var plist = Array.isArray(m.players) ? m.players : [];
-            var teamAList = plist.filter(function(p){ return p && p.team === 'A'; });
-            var teamBList = plist.filter(function(p){ return p && p.team === 'B'; });
+            var teamAList = plist.filter(function(p){ return p && (p.team === 'A' || p.team === 'a' || String(p.team||'').toUpperCase()==='A'); });
+            if (!teamAList.length && plist.length) teamAList = plist.filter(function(p){ return p && p.name; });
+            var teamBList = plist.filter(function(p){ return p && (p.team === 'B' || p.team === 'b' || String(p.team||'').toUpperCase()==='B'); });
+            if (!teamBList.length && plist.length && teamAList.length < plist.length) teamBList = plist.filter(function(p){ return p && p.name && teamAList.indexOf(p)<0; });
             // Enrich howOut from this match FOW for clean history display
             (function(){
                 var fow = m.fallOfWickets || [];
